@@ -1,8 +1,8 @@
 # APEX-Blockchain-CLI
 
-## ¹¹½¨·½·¨£º
+## æ„å»ºæ–¹æ³•ï¼š
 * gradle release
 
 
-## ÔËĞĞ·½·¨£º
+## è¿è¡Œæ–¹æ³•ï¼š
 * java -jar build\libs\APEX-Blockchain-CLI-1.0-SNAPSHOT.jar
