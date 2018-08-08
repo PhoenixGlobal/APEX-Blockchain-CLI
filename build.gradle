@@ -1,0 +1,63 @@
+group 'apex'
+version '1.0-SNAPSHOT'
+
+
+apply plugin: 'idea'
+apply plugin: 'scala'
+
+task "createDirs" << {
+    sourceSets*.scala.srcDirs*.each { it.mkdirs() }
+    sourceSets*.resources.srcDirs*.each { it.mkdirs() }
+}
+
+configurations.all {
+    exclude group: 'ch.qos.logback'
+    exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
+configurations {
+    runtime.exclude group: "'ch.qos.logback'"
+    runtime.exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
+}
+
+repositories{
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies{
+    compile "org.scala-lang:scala-library:2.12.3"
+    compile "org.scala-lang:scala-compiler:2.12.3"
+    compile "org.scala-lang:scala-reflect:2.12.3"
+    compile "org.slf4j:slf4j-api:1.8.0-beta1"
+    compile "org.slf4j:slf4j-log4j12:1.8.0-beta1"
+    compile "log4j:log4j:1.2.17"
+
+    testCompile "junit:junit:4.11"
+}
+
+jar {
+    String someString = ''
+    configurations.runtime.each {someString = someString + " lib\\"+it.name}
+
+    manifest {
+        attributes 'Main-Class': 'com.apex.cli.APP'
+        attributes 'Class-Path': someString
+    }
+}
+
+task run(type: JavaExec, dependsOn: classes) {
+    main = 'Main'
+    classpath sourceSets.main.runtimeClasspath
+    classpath configurations.runtime
+}
+
+task copyJar(type: Copy){
+    from configurations.runtime
+    into ('build/libs/lib')
+}
+
+task release(type: Copy,dependsOn: [build,copyJar]) {
+    from  'conf'
+    into ('build/libs/conf')
+}
