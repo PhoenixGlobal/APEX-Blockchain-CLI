@@ -1,3 +1,11 @@
+/*
+ * Copyright  2018 APEX Technologies.Co.Ltd. All rights reserved.
+ *
+ * FileName: Parameter.scala
+ *
+ * @author: ruixiao.xiao@chinapex.com: 18-8-10 下午1:55@version: 1.0
+ */
+
 package com.apex.cli
 
 import play.api.libs.json.{JsNumber, JsObject, JsString, JsValue}
@@ -11,7 +19,8 @@ trait Parameter {
   def validate(n: String, v: String): Boolean
 
   protected def validateName(s: String): Boolean = {
-    s.equals(s"-$shortName") || s.equals(s"-$name")
+//    s.equals(s"-$shortName") || s.equals(s"-$name")
+    s.trim.equals(shortName) || s.trim.equals(name)
   }
 }
 
@@ -129,68 +138,102 @@ abstract class ParameterList(val params: Seq[Parameter]) {
     ).toString
   }
 
+  override def toString: String = {
+    params.map(p => s"-${p.shortName}").mkString(",")
+  }
+
   protected def validate(list: List[String], i: Int): Boolean
 }
 
 object ParameterList {
-  val empty = new AndList(Seq.empty)
+  val empty = new Ordered(Seq.empty)
 
-  def and(args: Parameter*): ParameterList = {
-    new AndList(args)
-  }
-
-  def or(args: Parameter*): ParameterList = {
-    new OrList(args)
+  def create(args: Parameter*): ParameterList = {
+    new UnOrdered(args)
   }
 
   def id() = {
-    new AndList(Seq(new IdParameter()))
+    new Ordered(Seq(new IdParameter()))
   }
 
   def address() = {
-    new AndList(Seq(new AddressParameter()))
+    new Ordered(Seq(new AddressParameter()))
   }
 
   def int(name: String, shortName: String) = {
-    new AndList(Seq(new IntParameter(name, shortName)))
+    new Ordered(Seq(new IntParameter(name, shortName)))
   }
 
   def str(name: String, shortName: String) = {
-    new AndList(Seq(new StringParameter(name, shortName)))
+    new Ordered(Seq(new StringParameter(name, shortName)))
   }
 }
 
-class AndList(params: Seq[Parameter]) extends ParameterList(params) {
+class Ordered(params: Seq[Parameter]) extends ParameterList(params) {
   val indexes = (0 to params.length - 1).permutations.toSeq
 
   override protected def validate(list: List[String], i: Int): Boolean = {
     indexes.exists(index => validateCore(list, index, 0))
   }
 
-  override def toString: String = {
-    params.map(p => s"-${p.shortName}").mkString(",")
-  }
-
   private def validateCore(list: List[String], index: Seq[Int], i: Int): Boolean = {
     i < params.length && (list match {
-      case n :: v :: Nil => if(i == params.length - 1) params(index(i)).validate(n, v) else false
+      case n :: v :: Nil => if (i == params.length - 1) params(index(i)).validate(n, v) else false
       case n :: v :: tail if params(index(i)).validate(n, v) => validateCore(tail, index, i + 1)
       case _ => false
     })
   }
 }
 
-class OrList(params: Seq[Parameter]) extends ParameterList(params) {
-  override protected def validate(list: List[String], i: Int): Boolean = {
-    list match {
-      case n :: v :: Nil => params(i).validate(n, v)
-      case n :: v :: tail if params(i).validate(n, v) => validate(tail, i + 1)
-      case _ :: _ :: tail => validate(tail, i + 1)
-      case _ => false
+class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
+
+  case class TrackItem(parameter: Parameter, var flag: Boolean = false) {
+    def markThenValidate(n: String, v: String) = {
+      if (!flag) {
+        flag = true
+        parameter.validate(n, v)
+      } else {
+        false
+      }
     }
   }
 
-  override def toString: String = {
-    s"-${params.map(_.shortName).mkString("|")}"
+  class Track(params: Seq[Parameter]) {
+    val dic = params.map(p => p.name -> TrackItem(p, false)).toMap
+    val regex = """^-(.*)""".r
+
+    def reset() = {
+      dic.values.foreach(_.flag = false)
+      this
+    }
+
+    //
+    //    def finalResult() = {
+    //      dic.values.forall(_.flag)
+    //    }
+
+    def validate(name: String, v: String): Boolean = {
+      name match {
+        case regex(n) => dic.get(n) match {
+          case Some(item) => item.markThenValidate(n, v)
+          case None => false
+        }
+        case _ => false
+      }
+    }
+  }
+
+  private val track = new Track(params)
+
+  override protected def validate(list: List[String], i: Int): Boolean = {
+    validateCore(list, track.reset)
+  }
+
+  private def validateCore(list: List[String], track: Track): Boolean = {
+    list match {
+      case n :: v :: Nil => track.validate(n, v)
+      case n :: v :: tail if track.validate(n, v) => validateCore(tail, track)
+      case _ => false
+    }
   }
 }

@@ -1,3 +1,11 @@
+/*
+ * Copyright  2018 APEX Technologies.Co.Ltd. All rights reserved.
+ *
+ * FileName: RPC.scala
+ *
+ * @author: ruixiao.xiao@chinapex.com: 18-8-10 下午1:55@version: 1.0
+ */
+
 package com.apex.cli
 
 import okhttp3.{MediaType, OkHttpClient, Request, RequestBody}
@@ -17,8 +25,11 @@ object RPC {
       .build();
 
     val res = client.newCall(req).execute()
-    val result = res.body.string()
-    res.close()
-    Json parse result
+    try {
+      val result = res.body.string()
+      Json parse result
+    } finally {
+      res.close()
+    }
   }
 }
