@@ -8,6 +8,8 @@
 
 package com.apex.cli
 
+import com.apex.core.{Transaction, TransactionType}
+import com.apex.crypto.{BinaryData, Ecdsa, Fixed8, UInt256}
 import play.api.libs.json.Json
 
 trait Result
@@ -86,13 +88,44 @@ class GetTransaction extends Command {
 }
 
 class Transfer extends Command {
-  override val cmd = "send"
+  override val cmd = "sendrawtransaction"
   override val description = "transfer money"
   override val paramList: ParameterList = ParameterList.create(
+    new PrivKeyParameter(),
     new AddressParameter(),
     new IdParameter("assetId", "assetId"),
-    new AmountParameter()
+    new AmountParameter(),
+    new IntParameter("nonce", "nonce")
   )
+
+  override def execute(params: List[String]): Result = {
+    try {
+      val privKey = Ecdsa.PrivateKey(paramList.params(0).asInstanceOf[PrivKeyParameter].value)
+      val toAddress = paramList.params(1).asInstanceOf[AddressParameter].value
+      val assetId = paramList.params(2).asInstanceOf[IdParameter].value
+      val amount = paramList.params(3).asInstanceOf[AmountParameter].value
+      val nonce = paramList.params(4).asInstanceOf[IntParameter].value
+
+      val tx = new Transaction(TransactionType.Transfer,
+        privKey.publicKey.toBin,
+        Ecdsa.PublicKeyHash.fromAddress(toAddress).get,
+        "",
+        Fixed8.fromDecimal(amount),
+        UInt256.fromBytes(BinaryData(assetId)),
+        nonce,
+        BinaryData.empty,
+        BinaryData.empty)
+
+      tx.sign(privKey)
+
+      val txRawData = BinaryData(tx.toBytes)
+      val rawTx: String = "{\"rawTx\":\""  + txRawData.toString  + "\"}"
+      val result = RPC.post(cmd, rawTx)
+      Success(Json prettyPrint result)
+    } catch {
+      case e: Throwable => Error(e)
+    }
+  }
 }
 
 class ImportPrivateKey extends Command {

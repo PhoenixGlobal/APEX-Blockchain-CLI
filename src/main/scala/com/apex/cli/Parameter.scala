@@ -25,7 +25,7 @@ trait Parameter {
 }
 
 class IntParameter(override val name: String, override val shortName: String) extends Parameter {
-  private var value: Int = 0
+  var value: Int = 0
 
   override def toJson: JsValue = JsNumber(value)
 
@@ -59,7 +59,7 @@ class StringParameter(override val name: String, override val shortName: String)
 }
 
 class IdParameter(override val name: String = "id", override val shortName: String = "id") extends Parameter {
-  private var value: String = null
+  var value: String = null
   //  private val regex = """[0-9a-fA-F]32""".r
 
   override def toJson: JsValue = JsString(value)
@@ -86,7 +86,7 @@ class IdParameter(override val name: String = "id", override val shortName: Stri
 }
 
 class AddressParameter(override val name: String = "address", override val shortName: String = "address") extends Parameter {
-  private var value: String = null
+  var value: String = null
 
   override def toJson: JsValue = JsString(value)
 
@@ -104,8 +104,28 @@ class AddressParameter(override val name: String = "address", override val short
   }
 }
 
+class PrivKeyParameter(override val name: String = "privkey", override val shortName: String = "privkey") extends Parameter {
+  var value: String = null
+
+  override def toJson: JsValue = JsString(value)
+
+  override def validate(n: String, v: String): Boolean = {
+    validateName(n) && setValue(v)
+  }
+
+  private def setValue(s: String): Boolean = {
+    if (s.length == 64) {
+      value = s
+      true
+    } else {
+      false
+    }
+  }
+}
+
+
 class AmountParameter(override val name: String = "amount", override val shortName: String = "amount") extends Parameter {
-  private var value: BigDecimal = null
+  var value: BigDecimal = null
 
   override def toJson: JsValue = JsString(value.toString)
 
@@ -153,19 +173,19 @@ object ParameterList {
   }
 
   def id() = {
-    new Ordered(Seq(new IdParameter()))
+    new UnOrdered(Seq(new IdParameter()))
   }
 
   def address() = {
-    new Ordered(Seq(new AddressParameter()))
+    new UnOrdered(Seq(new AddressParameter()))
   }
 
   def int(name: String, shortName: String) = {
-    new Ordered(Seq(new IntParameter(name, shortName)))
+    new UnOrdered(Seq(new IntParameter(name, shortName)))
   }
 
   def str(name: String, shortName: String) = {
-    new Ordered(Seq(new StringParameter(name, shortName)))
+    new UnOrdered(Seq(new StringParameter(name, shortName)))
   }
 }
 
@@ -199,7 +219,8 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
   }
 
   class Track(params: Seq[Parameter]) {
-    val dic = params.map(p => p.name -> TrackItem(p, false)).toMap
+    val dic = params.map(p => p.shortName -> TrackItem(p, false)).toMap
+    //val dic = params.flatMap(p => Seq(p.shortName -> p, p.name -> p)).map(p => p._1 -> TrackItem(p._2, false)).toMap
     val regex = """^-(.*)""".r
 
     def reset() = {
