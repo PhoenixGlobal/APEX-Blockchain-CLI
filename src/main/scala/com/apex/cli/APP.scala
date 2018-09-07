@@ -2,6 +2,7 @@ package com.apex.cli
 
 object APP {
   def main(args: Array[String]): Unit = {
+    println("Welcome to CLI, type \"help\" for command list:")
     while (true) {
       Command.execute(Console.in.readLine()) match {
         case UnKnown(cmd) => println(s"unknown command: $cmd")
