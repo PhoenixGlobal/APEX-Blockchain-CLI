@@ -107,7 +107,7 @@ class Transfer extends Command {
       val nonce = paramList.params(4).asInstanceOf[IntParameter].value
 
       val tx = new Transaction(TransactionType.Transfer,
-        privKey.publicKey.toBin,
+        privKey.publicKey,
         Ecdsa.PublicKeyHash.fromAddress(toAddress).get,
         "",
         Fixed8.fromDecimal(amount),
