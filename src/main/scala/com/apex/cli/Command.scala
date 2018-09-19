@@ -52,42 +52,42 @@ trait Command {
   }
 }
 
-class ListBlock extends Command {
+class ListBlockCmd extends Command {
   override val cmd = "getblocks"
   override val description = "list block"
 }
 
-class GetBlockById extends Command {
+class GetBlockByIdCmd extends Command {
   override val cmd = "getblock"
   override val description = "get block by id"
   override val paramList: ParameterList = ParameterList.id
 }
 
-class GetBlockByHeight extends Command {
+class GetBlockByHeightCmd extends Command {
   override val cmd = "getblock"
   override val description = "get block by height"
   override val paramList: ParameterList = ParameterList.int("height", "h")
 }
 
-class GetBlockCount extends Command {
+class GetBlockCountCmd extends Command {
   override val cmd = "getblockcount"
   override val description = "get block count"
   override val paramList: ParameterList = ParameterList.empty
 }
 
-class ProduceBlock extends Command {
-  override val cmd = "produceblock"
-  override val description = "produce block"
-  override val paramList: ParameterList = ParameterList.empty
-}
+//class ProduceBlockCmd extends Command {
+//  override val cmd = "produceblock"
+//  override val description = "produce block"
+//  override val paramList: ParameterList = ParameterList.empty
+//}
 
-class GetTransaction extends Command {
+class GetTransactionCmd extends Command {
   override val cmd = "gettx"
   override val description = "get transaction"
   override val paramList: ParameterList = ParameterList.id
 }
 
-class Transfer extends Command {
+class SendRawTransactionCmd extends Command {
   override val cmd = "sendrawtransaction"
   override val description = "transfer money"
   override val paramList: ParameterList = ParameterList.create(
@@ -128,10 +128,28 @@ class Transfer extends Command {
   }
 }
 
-class ImportPrivateKey extends Command {
+class ImportPrivateKeyCmd extends Command {
   override val cmd: String = "importprivkey"
   override val description: String = "import private key"
   override val paramList: ParameterList = ParameterList.str("key", "key")
+
+  override def execute(params: List[String]): Result = {
+    val key = params(1)
+
+    if (Wallet.importPrivKeyFromWIF(key)) {
+      Success("OK")
+    }
+    else {
+      InvalidParams("key error")
+    }
+  }
+}
+
+class GetAccountCmd extends Command {
+  override val cmd: String = "getaccount"
+  override val description: String = "get account"
+  override val paramList: ParameterList = ParameterList.address
+
 }
 
 class HelpC extends Command {
@@ -197,14 +215,15 @@ object Command {
   }
 
   val all = Seq(
-    new ListBlock,
-    new GetBlockById,
-    new GetBlockByHeight,
-    new GetBlockCount,
-    new ProduceBlock,
-    new Transfer,
-    new GetTransaction,
-    new ImportPrivateKey,
+    new ListBlockCmd,
+    new GetBlockByIdCmd,
+    new GetBlockByHeightCmd,
+    new GetBlockCountCmd,
+    //new ProduceBlockCmd,
+    new SendRawTransactionCmd,
+    new GetTransactionCmd,
+    new ImportPrivateKeyCmd,
+    new GetAccountCmd,
     new HelpC,
     new QuitC,
     new ExitC
