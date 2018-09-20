@@ -10,7 +10,7 @@ package com.apex.cli
 
 import com.apex.core.{Transaction, TransactionType}
 import com.apex.crypto.{BinaryData, Ecdsa, Fixed8, UInt256}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsNull, Json}
 
 trait Result
 
@@ -52,7 +52,7 @@ trait Command {
   }
 }
 
-class ListBlockCmd extends Command {
+class GetBlocksCmd extends Command {
   override val cmd = "getblocks"
   override val description = "list block"
 }
@@ -89,7 +89,7 @@ class GetTransactionCmd extends Command {
 
 class SendRawTransactionCmd extends Command {
   override val cmd = "sendrawtransaction"
-  override val description = "transfer money"
+  override val description = "send raw transaction"
   override val paramList: ParameterList = ParameterList.create(
     new PrivKeyParameter(),
     new AddressParameter(),
@@ -128,6 +128,51 @@ class SendRawTransactionCmd extends Command {
   }
 }
 
+class SendCmd extends Command {
+  override val cmd = "send"
+  override val description = "transfer money"
+  override val paramList: ParameterList = ParameterList.create(
+    new AddressParameter("to", "to"),
+    new AmountParameter()
+  )
+
+  override def execute(params: List[String]): Result = {
+    try {
+      val privKey = Wallet.getPrivKey()
+
+      val toAddress = paramList.params(0).asInstanceOf[AddressParameter].value
+      val amount = paramList.params(1).asInstanceOf[AmountParameter].value
+
+      val account = RPC.post("getaccount", s"""{"address":"${privKey.publicKey.toAddress}"}""")
+
+      var nextNonce: Long = 0
+      if (account != JsNull) {
+        nextNonce = (account \ "nextNonce").as[Long]
+      }
+
+      val tx = new Transaction(TransactionType.Transfer,
+        privKey.publicKey,
+        Ecdsa.PublicKeyHash.fromAddress(toAddress).get,
+        "",
+        Fixed8.fromDecimal(amount),
+        UInt256.Zero,
+        nextNonce,
+        BinaryData.empty,
+        BinaryData.empty)
+
+      tx.sign(privKey)
+
+      val txRawData = BinaryData(tx.toBytes)
+      val rawTx: String = "{\"rawTx\":\""  + txRawData.toString  + "\"}"
+      val result = RPC.post("sendrawtransaction", rawTx)
+
+      Success(Json prettyPrint result)
+    } catch {
+      case e: Throwable => Error(e)
+    }
+  }
+}
+
 class ImportPrivateKeyCmd extends Command {
   override val cmd: String = "importprivkey"
   override val description: String = "import private key"
@@ -150,6 +195,21 @@ class GetAccountCmd extends Command {
   override val description: String = "get account"
   override val paramList: ParameterList = ParameterList.address
 
+}
+
+class WalletInfoCmd extends Command {
+  override val cmd = "walletinfo"
+  override val description = "list wallet info"
+
+  override def execute(params: List[String]): Result = {
+    try {
+      val privKey = Wallet.getPrivKey()
+      println(s"Address: ${privKey.publicKey.toAddress}")
+      Success("")
+    } catch {
+      case e: Throwable => Error(e)
+    }
+  }
 }
 
 class HelpC extends Command {
@@ -215,15 +275,17 @@ object Command {
   }
 
   val all = Seq(
-    new ListBlockCmd,
+    new GetBlocksCmd,
     new GetBlockByIdCmd,
     new GetBlockByHeightCmd,
     new GetBlockCountCmd,
     //new ProduceBlockCmd,
     new SendRawTransactionCmd,
+    new SendCmd,
     new GetTransactionCmd,
     new ImportPrivateKeyCmd,
     new GetAccountCmd,
+    new WalletInfoCmd,
     new HelpC,
     new QuitC,
     new ExitC

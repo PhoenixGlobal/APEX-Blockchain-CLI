@@ -18,7 +18,7 @@ import scala.collection.mutable.{ArrayBuffer, Set}
 
 object Wallet {
 
-  val privKeys = Set.empty[PrivateKey]
+  private val privKeys = Set.empty[PrivateKey]
 //
 //  def getBalance(address: String, assetId: UInt256): Fixed8 = {
 //    var sum: Fixed8 = Fixed8.Zero
@@ -52,6 +52,9 @@ object Wallet {
 //  }
 //
 
+  def getPrivKey(): PrivateKey = {
+    privKeys.head
+  }
 
   def generateNewPrivKey() = {
     privKeys.add(new PrivateKey(BinaryData(Crypto.randomBytes(32))))
