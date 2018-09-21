@@ -8,62 +8,34 @@
 
 package com.apex.cli
 
-import com.apex.core._
-import com.apex.crypto.{Base58Check, BinaryData, Crypto, Fixed8, UInt160, UInt256}
+import java.io.FileWriter
+import com.apex.crypto.{Base58Check, BinaryData, Crypto}
 import com.apex.crypto.Ecdsa.PrivateKey
-import com.apex.core.script.Script
+import play.api.libs.json._
+import play.api.libs.json.Reads._
+import play.api.libs.functional.syntax._
 
-import scala.collection.mutable.{ArrayBuffer, Set}
-//import java.security.SecureRandom
+case class Wallet(val name: String,
+                  var address: String,
+                  var privKey: String,
+                  val version: String) {
 
-object Wallet {
-
-  private val privKeys = Set.empty[PrivateKey]
-//
-//  def getBalance(address: String, assetId: UInt256): Fixed8 = {
-//    var sum: Fixed8 = Fixed8.Zero
-//    val utxoSet = Blockchain.Current.getUTXOByAddress(toScriptHash(address).get)
-//    if (utxoSet != None) {
-//      for (utxo <- utxoSet.get) {
-//        val tx = Blockchain.Current.getTransaction(utxo._1).get
-//        if (tx.outputs(utxo._2).assetId == assetId) {
-//          sum += tx.outputs(utxo._2).amount
-//        }
-//      }
-//    }
-//    sum
-//  }
-//
-//  def getBalance(assetId: UInt256): Fixed8 = {
-//    var sum = Fixed8.Zero
-//    for (pKey <- privKeys) {
-//      sum += getBalance(pKey.publicKey.toAddress, assetId)
-//    }
-//    sum
-//  }
-//
-//  def findPrivKey(pubKeyHash: UInt160): Option[PrivateKey] = {
-//    // fixme: use map or db
-//    for (pKey <- privKeys) {
-//      if (pubKeyHash.compare(UInt160.fromBytes(pKey.publicKey.hash160)) == 0)
-//        return Some(pKey)
-//    }
-//    None
-//  }
-//
+  //private val privKeys = Set.empty[PrivateKey]
 
   def getPrivKey(): PrivateKey = {
-    privKeys.head
+    PrivateKey.fromWIF(privKey).get
   }
 
   def generateNewPrivKey() = {
-    privKeys.add(new PrivateKey(BinaryData(Crypto.randomBytes(32))))
+    val key = new PrivateKey(BinaryData(Crypto.randomBytes(32)))
+    privKey = key.toWIF
+    address = key.publicKey.toAddress
   }
 
   def importPrivKeyFromWIF(wif: String): Boolean = {
     val key = getPrivKeyFromWIF(wif)
     if (key != None) {
-      privKeys.add(new PrivateKey(BinaryData(key.get), true))
+      privKey = wif
       true
     }
     else
@@ -83,45 +55,64 @@ object Wallet {
       None
     }
   }
-//
-//  def privKeyToWIF(privateKey: Array[Byte]): String = {
-//    assert(privateKey.length == 32)
-//    var data = new Array[Byte](34)
-//    // 0x80: mainnet
-//    data(0) = 0x80.toByte
-//    Array.copy(privateKey, 0, data, 1, 32)
-//    // 0x01: compressed
-//    data(33) = 0x01.toByte
-//    Base58Check.encode(data)
-//  }
-//
-//  def toAddress(scriptHash: Array[Byte]): String = {
-//    assert(scriptHash.length == 20)
-//
-//    // "0548" is for the "AP" prefix
-//    Base58Check.encode(BinaryData("0548"), scriptHash)
-//  }
-//
-//  def toAddress(scriptHash: UInt160): String = {
-//    toAddress(scriptHash.data)
-//  }
-//
-//  def toScriptHash(address: String): Option[UInt160] = {
-//    if (address.startsWith("AP") && address.length == 35) {
-//      val decode = Base58Check.decode(address).getOrElse(Array[Byte]())
-//      if (decode.length == 22) {
-//        // 2 bytes prefix + 20 bytes data (+ 4 bytes checksum)
-//        Some(UInt160.fromBytes(decode.slice(2, 22)))
-//      } else {
-//        None
-//      }
-//    } else {
-//      None
-//    }
-//  }
-
 }
 
-//object Wallet {
-//  final val Default: Wallet = new Wallet
-//}
+object Wallet {
+  var Default: Wallet = null
+
+  val fileName = "wallet.json"
+
+  implicit val walletWrites = new Writes[Wallet] {
+    override def writes(o: Wallet): JsValue = {
+      Json.obj(
+        "name" -> o.name,
+        "address" -> o.address,
+        "privKey"  -> o.privKey,
+        "version" -> o.version
+      )
+    }
+  }
+
+  implicit val walletReads: Reads[Wallet] = (
+    (JsPath \ "name").read[String] and
+      (JsPath \ "address").read[String] and
+      (JsPath \ "privKey").read[String] and
+      (JsPath \ "version").read[String]
+
+    ) (Wallet.apply _)
+
+  def load() = {
+
+    import scala.io.Source
+
+    Default = new Wallet("", "","", "0.1")
+    Default.generateNewPrivKey()
+
+    try {
+      val walletJson = Json.parse(Source.fromFile(fileName).getLines().mkString)
+
+      walletJson.validate[Wallet] match {
+        case w: JsSuccess[Wallet] => {
+          Default = w.get
+          println(s"Open wallet file: $fileName")
+        }
+        case _: JsError => {
+          println("error parse wallet file")
+        }
+      }
+    }
+    catch {
+      case e: Throwable => {
+        println(s"Created new wallet file: $fileName")
+        save()
+      }
+    }
+    save()
+  }
+
+  def save() = {
+    val fw = new FileWriter(fileName)
+    fw.write(Json.toJson(Default).toString)
+    fw.close()
+  }
+}

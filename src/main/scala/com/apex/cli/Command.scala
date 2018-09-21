@@ -138,7 +138,7 @@ class SendCmd extends Command {
 
   override def execute(params: List[String]): Result = {
     try {
-      val privKey = Wallet.getPrivKey()
+      val privKey = Wallet.Default.getPrivKey()
 
       val toAddress = paramList.params(0).asInstanceOf[AddressParameter].value
       val amount = paramList.params(1).asInstanceOf[AmountParameter].value
@@ -181,7 +181,8 @@ class ImportPrivateKeyCmd extends Command {
   override def execute(params: List[String]): Result = {
     val key = params(1)
 
-    if (Wallet.importPrivKeyFromWIF(key)) {
+    if (Wallet.Default.importPrivKeyFromWIF(key)) {
+      Wallet.save()
       Success("OK")
     }
     else {
@@ -203,7 +204,7 @@ class WalletInfoCmd extends Command {
 
   override def execute(params: List[String]): Result = {
     try {
-      val privKey = Wallet.getPrivKey()
+      val privKey = Wallet.Default.getPrivKey()
       println(s"Address: ${privKey.publicKey.toAddress}")
       Success("")
     } catch {
