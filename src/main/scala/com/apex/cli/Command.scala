@@ -9,7 +9,8 @@
 package com.apex.cli
 
 import com.apex.core.{Transaction, TransactionType}
-import com.apex.crypto.{BinaryData, Ecdsa, Fixed8, UInt256}
+import com.apex.crypto.Ecdsa.PrivateKey
+import com.apex.crypto.{BinaryData, Crypto, Ecdsa, Fixed8, UInt256}
 import play.api.libs.json.{JsNull, Json}
 
 trait Result
@@ -213,6 +214,22 @@ class WalletInfoCmd extends Command {
   }
 }
 
+class NewAddrCmd extends Command {
+  override val cmd = "newaddr"
+  override val description = "create new address"
+
+  override def execute(params: List[String]): Result = {
+    try {
+      val privKey = new PrivateKey(BinaryData(Crypto.randomBytes(32)))
+      println(s"Address: ${privKey.publicKey.toAddress}")
+      println(s"Private key: ${privKey.toWIF}")
+      Success("")
+    } catch {
+      case e: Throwable => Error(e)
+    }
+  }
+}
+
 class HelpC extends Command {
   override val cmd: String = "help"
   override val description: String = "help"
@@ -287,6 +304,7 @@ object Command {
     new ImportPrivateKeyCmd,
     new GetAccountCmd,
     new WalletInfoCmd,
+    new NewAddrCmd,
     new HelpC,
     new QuitC,
     new ExitC
