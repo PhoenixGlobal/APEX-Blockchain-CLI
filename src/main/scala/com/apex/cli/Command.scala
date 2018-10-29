@@ -144,7 +144,7 @@ class SendCmd extends Command {
       val toAddress = paramList.params(0).asInstanceOf[AddressParameter].value
       val amount = paramList.params(1).asInstanceOf[AmountParameter].value
 
-      val account = RPC.post("getaccount", s"""{"address":"${privKey.publicKey.toAddress}"}""")
+      val account = RPC.post("getaccount", s"""{"address":"${privKey.publicKey.address}"}""")
 
       var nextNonce: Long = 0
       if (account != JsNull) {
@@ -206,7 +206,7 @@ class WalletInfoCmd extends Command {
   override def execute(params: List[String]): Result = {
     try {
       val privKey = Wallet.Default.getPrivKey()
-      println(s"Address: ${privKey.publicKey.toAddress}")
+      println(s"Address: ${privKey.publicKey.address}")
       Success("")
     } catch {
       case e: Throwable => Error(e)
@@ -221,7 +221,7 @@ class NewAddrCmd extends Command {
   override def execute(params: List[String]): Result = {
     try {
       val privKey = new PrivateKey(BinaryData(Crypto.randomBytes(32)))
-      println(s"Address: ${privKey.publicKey.toAddress}")
+      println(s"Address: ${privKey.publicKey.address}")
       println(s"Private key: ${privKey.toWIF}")
       Success("")
     } catch {
@@ -300,8 +300,8 @@ object Command {
     //new ProduceBlockCmd,
     new SendRawTransactionCmd,
     new SendCmd,
-    new GetTransactionCmd,
-    new ImportPrivateKeyCmd,
+    //new GetTransactionCmd,
+    //new ImportPrivateKeyCmd,
     new GetAccountCmd,
     new WalletInfoCmd,
     new NewAddrCmd,

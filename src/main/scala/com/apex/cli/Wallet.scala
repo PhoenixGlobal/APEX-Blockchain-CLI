@@ -29,7 +29,7 @@ case class Wallet(val name: String,
   def generateNewPrivKey() = {
     val key = new PrivateKey(BinaryData(Crypto.randomBytes(32)))
     privKey = key.toWIF
-    address = key.publicKey.toAddress
+    address = key.publicKey.address
   }
 
   def importPrivKeyFromWIF(wif: String): Boolean = {
