@@ -26,13 +26,14 @@ repositories{
 }
 
 dependencies{
+    compile files('libs/APEX-Blockchain-Core-1.0-SNAPSHOT.jar')
     compile "org.scala-lang:scala-library:2.12.3"
     compile "org.scala-lang:scala-compiler:2.12.3"
     compile "org.scala-lang:scala-reflect:2.12.3"
     compile "org.slf4j:slf4j-api:1.8.0-beta1"
     compile "org.slf4j:slf4j-log4j12:1.8.0-beta1"
     compile "log4j:log4j:1.2.17"
-    compile 'com.squareup.okhttp3:okhttp:3.10.0'
+    compile "com.squareup.okhttp3:okhttp:3.10.0"
     compile group: 'com.typesafe.play', name: 'play-json_2.12', version: '2.6.9'
     testCompile "junit:junit:4.11"
 }
