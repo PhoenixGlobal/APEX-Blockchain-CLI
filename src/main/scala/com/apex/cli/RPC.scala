@@ -22,7 +22,7 @@ object RPC {
     val req = new Request.Builder()
       .url(url)
       .post(body)
-      .build();
+      .build()
 
     val res = client.newCall(req).execute()
     try {
