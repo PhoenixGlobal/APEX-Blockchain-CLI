@@ -9,7 +9,8 @@
 package com.apex.cli
 
 import com.apex.core.{Transaction, TransactionType}
-import com.apex.crypto.{BinaryData, Ecdsa, Fixed8, UInt256}
+import com.apex.crypto.Ecdsa.PrivateKey
+import com.apex.crypto.{BinaryData, Crypto, Ecdsa, Fixed8, UInt256}
 import play.api.libs.json.{JsNull, Json}
 
 trait Result
@@ -138,12 +139,12 @@ class SendCmd extends Command {
 
   override def execute(params: List[String]): Result = {
     try {
-      val privKey = Wallet.getPrivKey()
+      val privKey = Wallet.Default.getPrivKey()
 
       val toAddress = paramList.params(0).asInstanceOf[AddressParameter].value
       val amount = paramList.params(1).asInstanceOf[AmountParameter].value
 
-      val account = RPC.post("getaccount", s"""{"address":"${privKey.publicKey.toAddress}"}""")
+      val account = RPC.post("getaccount", s"""{"address":"${privKey.publicKey.address}"}""")
 
       var nextNonce: Long = 0
       if (account != JsNull) {
@@ -181,7 +182,8 @@ class ImportPrivateKeyCmd extends Command {
   override def execute(params: List[String]): Result = {
     val key = params(1)
 
-    if (Wallet.importPrivKeyFromWIF(key)) {
+    if (Wallet.Default.importPrivKeyFromWIF(key)) {
+      Wallet.save()
       Success("OK")
     }
     else {
@@ -203,8 +205,24 @@ class WalletInfoCmd extends Command {
 
   override def execute(params: List[String]): Result = {
     try {
-      val privKey = Wallet.getPrivKey()
-      println(s"Address: ${privKey.publicKey.toAddress}")
+      val privKey = Wallet.Default.getPrivKey()
+      println(s"Address: ${privKey.publicKey.address}")
+      Success("")
+    } catch {
+      case e: Throwable => Error(e)
+    }
+  }
+}
+
+class NewAddrCmd extends Command {
+  override val cmd = "newaddr"
+  override val description = "create new address"
+
+  override def execute(params: List[String]): Result = {
+    try {
+      val privKey = new PrivateKey(BinaryData(Crypto.randomBytes(32)))
+      println(s"Address: ${privKey.publicKey.address}")
+      println(s"Private key: ${privKey.toWIF}")
       Success("")
     } catch {
       case e: Throwable => Error(e)
@@ -282,10 +300,11 @@ object Command {
     //new ProduceBlockCmd,
     new SendRawTransactionCmd,
     new SendCmd,
-    new GetTransactionCmd,
-    new ImportPrivateKeyCmd,
+    //new GetTransactionCmd,
+    //new ImportPrivateKeyCmd,
     new GetAccountCmd,
     new WalletInfoCmd,
+    new NewAddrCmd,
     new HelpC,
     new QuitC,
     new ExitC

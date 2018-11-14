@@ -2,6 +2,9 @@ package com.apex.cli
 
 object APP {
   def main(args: Array[String]): Unit = {
+
+    Wallet.load()
+
     println("Welcome to CLI, type \"help\" for command list:")
     while (true) {
       Command.execute(Console.in.readLine()) match {
