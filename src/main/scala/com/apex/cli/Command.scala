@@ -144,7 +144,7 @@ class SendCmd extends Command {
       val toAddress = paramList.params(0).asInstanceOf[AddressParameter].value
       val amount = paramList.params(1).asInstanceOf[AmountParameter].value
 
-      val account = RPC.post("getaccount", s"""{"address":"${privKey.publicKey.address}"}""")
+      val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
 
       var nextNonce: Long = 0
       if (account != JsNull) {
@@ -193,8 +193,8 @@ class ImportPrivateKeyCmd extends Command {
 }
 
 class GetAccountCmd extends Command {
-  override val cmd: String = "getaccount"
-  override val description: String = "get account"
+  override val cmd: String = "showaccount"
+  override val description: String = "show account"
   override val paramList: ParameterList = ParameterList.address
 
 }
@@ -215,7 +215,7 @@ class WalletInfoCmd extends Command {
 }
 
 class NewAddrCmd extends Command {
-  override val cmd = "newaddr"
+  override val cmd = "createaddr"
   override val description = "create new address"
 
   override def execute(params: List[String]): Result = {
