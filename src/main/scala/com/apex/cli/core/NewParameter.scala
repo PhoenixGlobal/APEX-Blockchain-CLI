@@ -13,6 +13,7 @@ import play.api.libs.json.{JsNumber, JsObject, JsString, JsValue}
 trait NewParameter {
   val name: String
   val shortName: String
+  val isEmpty : Boolean = false
 
   def toJson(): JsValue
 
@@ -122,7 +123,6 @@ class NicknameParameter(override val name: String = "name", override val shortNa
   }
 
   private def setValue(s: String): Boolean = {
-    // 验证规则为（必须为字母+数字）
     if(regex.pattern.matcher(s).matches()){
       value = s
       true
@@ -141,7 +141,6 @@ class PasswordParameter(override val name: String = "password", override val sho
   }
 
   private def setValue(s: String): Boolean = {
-    // 验证规则为（必须大小字母+数字+特殊符号）
     if(regex.pattern.matcher(s).matches()){
       value = s
       true
@@ -290,6 +289,9 @@ class NewUnOrdered(params: Seq[NewParameter]) extends NewParameterList(params) {
   }
 
   private def validateCore(list: List[String], track: NewTrack): Boolean = {
+
+    if(NewCommand.checkHelpParam(list)) return true
+
     list match {
       case n :: v :: Nil => track.validate(n, v)
       case n :: v :: tail if track.validate(n, v) => validateCore(tail, track)

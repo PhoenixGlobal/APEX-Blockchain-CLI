@@ -16,8 +16,7 @@ class NewHelpC extends NewCommand {
 
   override def execute(params: List[String]): NewResult = {
 
-    val message = NewCommand.helpMessage(NewCommand.all, false)
-    NewHelp(message)
+    NewHelp(NewCommand.helpMessage(NewCommand.all))
   }
 }
 
@@ -30,7 +29,7 @@ class NewVerC extends NewCommand {
   override val description = "Version information"
   override val sys: Boolean = true
 
-  override def execute(params: List[String]): NewResult = new NewQuit
+  override def execute(params: List[String]): NewResult = {null}
 }
 
 class NewExitC extends NewCommand {

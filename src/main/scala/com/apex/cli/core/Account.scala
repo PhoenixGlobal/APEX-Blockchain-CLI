@@ -72,10 +72,17 @@ object Account {
   }
 }
 
-// ---------账户功能 start
 class AccountCommand extends NewCompositeCommand {
   override val subCommands: Seq[NewCommand] = Seq(
-    new NewAccountCommand
+    new NewAccountCommand,
+    new ImportCommand,
+    new ExportCommand,
+    new DeleteCommand,
+    new RemoveCommand,
+    new RenameCommand,
+    new ShowCommand,
+    new ImplyCommand,
+    new AccountListCommand
   )
 
   override val cmd: String = "account"
@@ -88,17 +95,16 @@ class NewAccountCommand extends NewCommand {
   override val description: String = "Add new account to current wallet"
 
   override val paramList: NewParameterList = NewParameterList.create(
-    new NicknameParameter("name", "n")
+    new NicknameParameter("alias", "a")
   )
 
   override def execute(params: List[String]): NewResult = {
 
     val name = paramList.params(0).asInstanceOf[NicknameParameter].value
 
-    // 判断当前是否有活跃钱包
     if (WalletCache.size() < 1) {
       return NewSuccess("please load wallet")
-    } else if (WalletCache.activityWallet.isEmpty) {
+    } else if (WalletCache.activityWallet.isEmpty || !WalletCache.checkTime()) {
       return NewSuccess("please active Wallet, use \"wallet activate\" command to activate it.")
     }
     val walletCache = WalletCache.get(WalletCache.activityWallet)
@@ -110,4 +116,116 @@ class NewAccountCommand extends NewCommand {
     NewSuccess("address："+account.address)
   }
 }
-// ---------账户功能 end
+
+class ImportCommand extends NewCommand {
+
+  override val cmd: String = "import"
+  override val description: String = "Import account to current wallet"
+
+  override val paramList: NewParameterList = NewParameterList.create(
+    new NewPrivKeyParameter("key", "k"),
+    new NicknameParameter("alias", "a")
+  )
+
+  override def execute(params: List[String]): NewResult = {
+
+    NewSuccess("import")
+  }
+}
+
+class ExportCommand extends NewCommand {
+
+  override val cmd: String = "export"
+  override val description: String = "Export one account within current wallet"
+
+  override val paramList: NewParameterList = NewParameterList.create(
+    new NicknameParameter("alias", "a"),
+    new NewStringParameter("console", "console"),
+    new NewStringParameter("file", "file")
+  )
+
+  override def execute(params: List[String]): NewResult = {
+
+    NewSuccess("export")
+  }
+}
+
+class DeleteCommand extends NewCommand {
+
+  override val cmd: String = "delete"
+  override val description: String = "Delete one account from current wallet"
+
+  override val paramList: NewParameterList = NewParameterList.create(
+    new NicknameParameter("alias", "a"),
+    new NewAddressParameter("address", "address")
+  )
+
+  override def execute(params: List[String]): NewResult = {
+
+    NewSuccess("delete")
+  }
+}
+
+class RemoveCommand extends DeleteCommand{
+  override val cmd: String = "remove"
+  override val description: String = "Same to \"delete\" command"
+}
+
+class RenameCommand extends NewCommand {
+
+  override val cmd: String = "rename"
+  override val description: String = "Change the alias of one account within current wallet"
+
+  override val paramList: NewParameterList = NewParameterList.create(
+    new NicknameParameter("alias", "a"),
+    new NewAddressParameter("to", "to")
+  )
+
+  override def execute(params: List[String]): NewResult = {
+
+    NewSuccess("rename")
+  }
+}
+
+class ShowCommand extends NewCommand {
+
+  override val cmd: String = "show"
+  override val description: String = "Show the status of account"
+
+  override val paramList: NewParameterList = NewParameterList.create(
+    new NicknameParameter("alias", "a"),
+    new NewAddressParameter("address", "address")
+  )
+
+  override def execute(params: List[String]): NewResult = {
+
+    NewSuccess("show")
+  }
+}
+
+class ImplyCommand extends NewCommand {
+
+  override val cmd: String = "imply"
+  override val description: String = "Set account as default account in the wallet"
+
+  override val paramList: NewParameterList = NewParameterList.create(
+    new NicknameParameter("alias", "a"),
+    new NewAddressParameter("address", "address")
+  )
+
+  override def execute(params: List[String]): NewResult = {
+
+    NewSuccess("imply")
+  }
+}
+
+class AccountListCommand extends NewCommand {
+
+  override val cmd: String = "list"
+  override val description: String = "List all accounts of current wallet"
+
+  override def execute(params: List[String]): NewResult = {
+
+    NewSuccess("list")
+  }
+}

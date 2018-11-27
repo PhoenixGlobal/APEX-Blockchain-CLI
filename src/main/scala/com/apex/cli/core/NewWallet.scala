@@ -66,10 +66,18 @@ object WalletCache{
     return walletCaches.size
   }
 
-  /*def checkTime(n:String): Boolean ={
-    val walletCache = get(n)
-    walletCache.lastModify
-  }*/
+  def checkTime(): Boolean ={
+    val walletCache = get(WalletCache.activityWallet)
+    val between = Calendar.getInstance().getTimeInMillis - walletCache.lastModify
+    val second = between / 1000
+    /*val hour = between / 1000 / 3600
+    val day = between / 1000 / 3600 / 24
+    val year = between / 1000 / 3600 / 24 / 365*/
+
+    if(second < 11) return true
+
+    return false;
+  }
 
   def newWalletCache(wallet: NewWallet): mutable.HashMap[String, WalletCache] ={
 
@@ -141,7 +149,10 @@ class WalletCommand extends NewCompositeCommand {
   override val subCommands: Seq[NewCommand] = Seq(
     new WalletCreateCommand,
     new WalletLoadCommand,
-    new WalletCloseCommand
+    new WalletCloseCommand,
+    new WalletActivateCommand,
+    new WalletActCommand,
+    new WalletListCommand
   )
 
   override val cmd: String = "wallet"
@@ -237,7 +248,6 @@ class WalletLoadCommand extends NewCommand {
     if(new String(wallet.p) == new String(key)){
       NewSuccess("wallet load success："+walletContent)
     }else NewSuccess("\nInvalid password\n")
-
   }
 }
 
@@ -261,6 +271,37 @@ class WalletCloseCommand extends NewCommand {
 
     WalletCache.remove(name)
     NewSuccess("\nInvalid password\n")
+  }
+}
 
+class WalletActivateCommand extends NewCommand {
+
+  override val cmd: String = "activate"
+  override val description: String = "Activate a candidate wallet. Use this command to switch amount different wallets"
+
+  override val paramList: NewParameterList = NewParameterList.create(
+    new NicknameParameter("name", "n")
+  )
+
+  override def execute(params: List[String]): NewResult = {
+
+    val name = paramList.params(0).asInstanceOf[NicknameParameter].value
+
+    NewSuccess("\nInvalid password\n")
+  }
+}
+
+class WalletActCommand extends WalletActivateCommand {
+  override val cmd: String = "act"
+}
+
+class WalletListCommand extends NewCommand {
+
+  override val cmd: String = "list"
+  override val description: String = "List all candidate wallet"
+
+  override def execute(params: List[String]): NewResult = {
+
+    NewSuccess("")
   }
 }

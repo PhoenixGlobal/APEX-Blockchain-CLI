@@ -8,7 +8,7 @@
 
 package com.apex.cli.core
 
-import com.apex.cli.RPC
+import com.apex.cli.{RPC, core}
 import play.api.libs.json.Json
 
 trait NewResult
@@ -67,6 +67,7 @@ object NewCommand {
       case cmd :: tail if all.contains(cmd) =>
         all(cmd).find(_.validate(tail)) match {
           case Some(newCommand) =>
+            if(checkHelpParam(tail)) return core.NewHelp(newCommand.description);
             newCommand.execute(tail)
           case None =>
             NewInvalidParams(tail.mkString(" "))
@@ -77,7 +78,7 @@ object NewCommand {
     }
   }
 
-  def helpMessage(all: Map[String, Seq[NewCommand]], h: Boolean): String = {
+  def helpMessage(all: Map[String, Seq[NewCommand]]): String = {
 
     var message: String = null
     def paddingTail(str: String, padding: Int): String = {
@@ -87,27 +88,26 @@ object NewCommand {
     if (message == null) {
       val title = "APEX NETWORK\n"
 
-      var column= s"${paddingTail("name", 15)} description"
-      if(h){
-        column = s"${paddingTail("name", 15)} ${paddingTail("parameter", 30)} description"
-      }
+      val column = s"${paddingTail("name", 15)} ${paddingTail("parameter", 30)} description"
 
       val content = all.flatMap(
         p => p._2.filterNot(_.sys).map(c => {
           val cmd = if (c == p._2(0)) c.cmd else ""
 
-          if(h){
-            val params = s"[${c.paramList}]"
-            s"${paddingTail(cmd, 15)} ${paddingTail(params, 30)} ${c.description}"
-          }else{
-            s"${paddingTail(cmd, 15)} ${c.description}"
-          }
+          val params = s"[${c.paramList}]"
+          s"${paddingTail(cmd, 15)} ${paddingTail(params, 30)} ${c.description}"
 
         })).mkString("\n")
       message = s"$title\n$column\n$content"
     }
 
     return message;
+  }
+
+  def checkHelpParam(params: List[String]):Boolean={
+    if(params.size>1)false
+    else if(!params(0).equals("-h")) false
+    else true
   }
 
   val all = Seq(
@@ -118,7 +118,10 @@ object NewCommand {
     new AssetCommand,
     new NewHelpC,
     new NewVerC,
-    new NewExitC
+    new NewExitC,
+    new NewVersionC,
+    new StatusCommand,
+    new BlockCommand
   ).groupBy(_.cmd)
 }
 
@@ -129,29 +132,25 @@ trait NewCompositeCommand extends NewCommand {
 
     if(params.size == 0){
 
-      NewHelp(helpMessage(false));
+      NewHelp(NewCommand.helpMessage(subCommands.groupBy(_.cmd)))
     }else if(params(0).startsWith("-")){
 
-      checkHelpParam(params) match{
-        case true => NewHelp(helpMessage(true))
-        case _ => NewInvalidParams(params.mkString(" "))
-      }
+      if(NewCommand.checkHelpParam(params)){
+        NewHelp(description)
+      }else NewInvalidParams(params.mkString(" "))
 
     }else{
       NewCommand.execCommand(params, subCommands.groupBy(_.cmd))
     }
 
-  }
-
-  private def helpMessage(h:Boolean): String ={
-    val message = NewCommand.helpMessage(subCommands.groupBy(_.cmd), h)
-    return message
-  }
-
-  private def checkHelpParam(params: List[String]):Boolean={
-    if(params.size>1)false
-    else if(!params(0).equals("-h")) false
-    else true
+    /*val test = subCommands.groupBy(_.cmd)
+    println(test)
+    val result = Command.execCommand(params, test)
+    result match {
+      case NoInput() => println(subCommands.map(_.cmd).mkString("\n"))
+        case _ =>
+    }
+    result*/
   }
 }
 
