@@ -101,11 +101,11 @@ class NewAccountCommand extends NewCommand {
     } else if (WalletCache.activityWallet.isEmpty) {
       return NewSuccess("please active Wallet, use \"wallet activate\" command to activate it.")
     }
-    val wallet = WalletCache.get(WalletCache.activityWallet)
-    val path = "D:\\chain\\whitney\\" + wallet.n + ".json"
+    val walletCache = WalletCache.get(WalletCache.activityWallet)
+    val path = "D:\\chain\\whitney\\" + walletCache.n + ".json"
     val account = WalletCache.addAccount(name)
 
-    WalletCache.writeWallet(path, wallet.n, wallet.p, wallet.accounts)
+    WalletCache.writeWallet(path, walletCache.n, walletCache.p, walletCache.accounts)
 
     NewSuccess("address："+account.address)
   }

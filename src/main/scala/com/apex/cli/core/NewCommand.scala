@@ -113,8 +113,11 @@ object NewCommand {
   val all = Seq(
     new WalletCommand,
     new AccountCommand,
+    new SysCommand,
+    new ChainCommand,
+    new AssetCommand,
     new NewHelpC,
-    new NewQuitC,
+    new NewVerC,
     new NewExitC
   ).groupBy(_.cmd)
 }
@@ -151,36 +154,4 @@ trait NewCompositeCommand extends NewCommand {
     else true
   }
 }
-
-
-// ---------系统功能 start
-class NewHelpC extends NewCommand {
-  override val cmd: String = "help"
-  override val description: String = "help"
-  override val sys: Boolean = true
-
-  override def execute(params: List[String]): NewResult = {
-
-    val message = NewCommand.helpMessage(NewCommand.all, false)
-    NewHelp(message)
-  }
-}
-
-class NewQuitC extends NewCommand {
-  override val cmd = "quit"
-  override val description = "quit"
-  override val sys: Boolean = true
-
-  override def execute(params: List[String]): NewResult = new NewQuit
-}
-
-class NewExitC extends NewCommand {
-  override val cmd = "exit"
-  override val description = "exit"
-  override val sys: Boolean = true
-
-  override def execute(params: List[String]): NewResult = new NewQuit
-}
-// ---------系统功能 end
-
 

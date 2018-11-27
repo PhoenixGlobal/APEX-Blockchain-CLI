@@ -9,7 +9,7 @@ object NewAPP {
         case NewUnKnown(cmd) =>
           println(s"unknown command: $cmd")
         case NewInvalidParams(input) =>
-          println(s"invalid parameters: $input")
+      println(s"invalid parameters: $input")
         case NewSuccess(result) =>
           println(result)
         case NewHelp(message) =>

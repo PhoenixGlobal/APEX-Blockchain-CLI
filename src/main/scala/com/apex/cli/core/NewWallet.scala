@@ -66,13 +66,18 @@ object WalletCache{
     return walletCaches.size
   }
 
+  /*def checkTime(n:String): Boolean ={
+    val walletCache = get(n)
+    walletCache.lastModify
+  }*/
+
   def newWalletCache(wallet: NewWallet): mutable.HashMap[String, WalletCache] ={
 
     if(walletCaches.contains(wallet.n)){
-      val test = walletCaches.get(wallet.n).get
-      test.lastModify = Calendar.getInstance().getTimeInMillis
+      val walletCache = walletCaches.get(wallet.n).get
+      walletCache.lastModify = Calendar.getInstance().getTimeInMillis
 
-      walletCaches.put(wallet.n, test)
+      walletCaches.put(wallet.n, walletCache)
     }else {
       walletCaches.put(wallet.n, new WalletCache(wallet.n, wallet.p))
     }
@@ -97,26 +102,26 @@ object WalletCache{
   def addAccount(n:String): Account ={
     val account = Account.newAccount(n)
 
-    val wallet = walletCaches.get(activityWallet).get
-    val accounts = wallet.accounts.+:(account)
+    val walletCache = walletCaches.get(activityWallet).get
+    val accounts = walletCache.accounts.+:(account)
 
-    wallet.accounts = accounts
-    wallet.implyAccount = n
-    wallet.lastModify = Calendar.getInstance().getTimeInMillis
+    walletCache.accounts = accounts
+    walletCache.implyAccount = n
+    walletCache.lastModify = Calendar.getInstance().getTimeInMillis
 
-    walletCaches.put(activityWallet, wallet)
+    walletCaches.put(activityWallet, walletCache)
 
     return account
   }
 
   def writeWallet(path:String, name:String, key:Array[Byte], accounts:Seq[Account]): NewWallet ={
 
-    val newWallet = new NewWallet(name, key, accounts)
+    val wallet = new NewWallet(name, key, accounts)
 
     val bs = new ByteArrayOutputStream()
     val os = new DataOutputStream(bs)
 
-    newWallet.serialize(os)
+    wallet.serialize(os)
 
     val iv : Array[Byte] = new Array(16)
     key.copyToArray(iv,0,16)
@@ -128,10 +133,9 @@ object WalletCache{
     fw.write(base64encoder.encode(encrypted1))
     fw.close()
 
-    return newWallet
+    return wallet
   }
 }
-// ---------钱包功能 start
 
 class WalletCommand extends NewCompositeCommand {
   override val subCommands: Seq[NewCommand] = Seq(
@@ -180,8 +184,8 @@ class WalletCreateCommand extends NewCommand {
 
       val key = Crypto.sha256(password.getBytes("UTF-8"))
 
-      val newWallet = WalletCache.writeWallet(path, name, key, Seq[Account](Account.Default))
-      WalletCache.newWalletCache(newWallet)
+      val wallet = WalletCache.writeWallet(path, name, key, Seq[Account](Account.Default))
+      WalletCache.newWalletCache(wallet)
       NewSuccess("wallet create success")
     } catch {
       case e: Throwable => NewError(e)
@@ -260,4 +264,3 @@ class WalletCloseCommand extends NewCommand {
 
   }
 }
-// ---------钱包功能 end
