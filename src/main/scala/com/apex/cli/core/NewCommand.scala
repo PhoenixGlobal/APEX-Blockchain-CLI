@@ -115,13 +115,14 @@ object NewCommand {
     new AccountCommand,
     new SysCommand,
     new ChainCommand,
-    new AssetCommand,
     new NewHelpC,
     new NewVerC,
     new NewExitC,
     new NewVersionC,
     new StatusCommand,
-    new BlockCommand
+    new BlockCommand,
+    new SendCommand,
+    new CirculateCommand
   ).groupBy(_.cmd)
 }
 

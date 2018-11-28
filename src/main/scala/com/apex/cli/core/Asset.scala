@@ -5,41 +5,29 @@ class AssetCommand extends NewCompositeCommand {
   override val description: String = "Interface to operate your funds,  omit it and type the sub command directly is legal."
 
   override val subCommands: Seq[NewCommand] = Seq(
-    new StatusCommand,
-    new BlockCommand,
-    new TransactionCommand
+    new CirculateCommand,
+    new SendCommand
   )
 }
 
-class StatusCommand extends NewCommand {
-  override val cmd = "status"
-  override val description = "Show the status of block chain"
+class CirculateCommand extends SendCommand {
+  override val cmd = "circulate"
+  override val description = "Transfer tokens between accounts within current wallet. "
+}
+
+class SendCommand extends NewCommand {
+  override val cmd = "send"
+  override val description = "Transfer tokens."
   override val sys: Boolean = true
 
-  override def execute(params: List[String]): NewResult = {null}
-}
-
-class BlockCommand extends NewCommand {
-  override val cmd = "block"
-  override val description = "Show data of the block"
-  override val sys: Boolean = true
-
-
   override val paramList: NewParameterList = NewParameterList.create(
-    new NewIntParameter("height", "height"),
-    new NewIntParameter("id", "id")
+    new NewAddressParameter("from", "from", true),
+    new NewAddressParameter("to", "to"),
+    new NewAmountParameter("amount", "amount")
   )
 
-  override def execute(params: List[String]): NewResult = {null}
+  override def execute(params: List[String]): NewResult = {
+    NewSuccess("send")
+  }
 }
 
-class TransactionCommand extends NewCommand {
-  override val cmd = "transaction"
-  override val description = "how data of the transaction"
-
-  override val paramList: NewParameterList = NewParameterList.create(
-    new NewIntParameter("id", "id")
-  )
-
-  override def execute(params: List[String]): NewResult = {null}
-}

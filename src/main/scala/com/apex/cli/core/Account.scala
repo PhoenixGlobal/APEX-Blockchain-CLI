@@ -1,7 +1,6 @@
 package com.apex.cli.core
 
 import java.io.{ByteArrayInputStream, DataInputStream, DataOutputStream}
-
 import com.apex.crypto.{Base58Check, BinaryData, Crypto}
 import com.apex.crypto.Ecdsa.PrivateKey
 
@@ -123,7 +122,7 @@ class ImportCommand extends NewCommand {
   override val description: String = "Import account to current wallet"
 
   override val paramList: NewParameterList = NewParameterList.create(
-    new NewPrivKeyParameter("key", "k"),
+    new NewPrivKeyParameter("key", "key"),
     new NicknameParameter("alias", "a")
   )
 
@@ -140,7 +139,6 @@ class ExportCommand extends NewCommand {
 
   override val paramList: NewParameterList = NewParameterList.create(
     new NicknameParameter("alias", "a"),
-    new NewStringParameter("console", "console"),
     new NewStringParameter("file", "file")
   )
 
@@ -156,8 +154,8 @@ class DeleteCommand extends NewCommand {
   override val description: String = "Delete one account from current wallet"
 
   override val paramList: NewParameterList = NewParameterList.create(
-    new NicknameParameter("alias", "a"),
-    new NewAddressParameter("address", "address")
+    new NicknameParameter("alias", "a", true),
+    new NewAddressParameter("address", "address", true)
   )
 
   override def execute(params: List[String]): NewResult = {
@@ -193,8 +191,8 @@ class ShowCommand extends NewCommand {
   override val description: String = "Show the status of account"
 
   override val paramList: NewParameterList = NewParameterList.create(
-    new NicknameParameter("alias", "a"),
-    new NewAddressParameter("address", "address")
+    new NicknameParameter("alias", "a", true),
+    new NewAddressParameter("address", "address", true)
   )
 
   override def execute(params: List[String]): NewResult = {
@@ -209,8 +207,8 @@ class ImplyCommand extends NewCommand {
   override val description: String = "Set account as default account in the wallet"
 
   override val paramList: NewParameterList = NewParameterList.create(
-    new NicknameParameter("alias", "a"),
-    new NewAddressParameter("address", "address")
+    new NicknameParameter("alias", "a", true),
+    new NewAddressParameter("address", "address", true)
   )
 
   override def execute(params: List[String]): NewResult = {

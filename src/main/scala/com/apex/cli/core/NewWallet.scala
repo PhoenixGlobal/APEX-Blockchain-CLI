@@ -3,12 +3,7 @@ package com.apex.cli.core
 import java.io._
 import java.nio.file.{Files, Paths}
 import java.util.Calendar
-
-import com.apex.common.LRUCache
-import com.apex.crypto.{Base58Check, BinaryData, Crypto}
-import com.apex.crypto.Ecdsa.PrivateKey
-
-import collection.JavaConversions._
+import com.apex.crypto.{Crypto}
 import scala.collection.mutable
 import scala.io.Source
 import scala.util.control.Breaks
@@ -202,7 +197,6 @@ class WalletCreateCommand extends NewCommand {
       case e: Throwable => NewError(e)
     }
   }
-
 }
 
 class WalletLoadCommand extends NewCommand {

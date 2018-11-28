@@ -13,7 +13,8 @@ import play.api.libs.json.{JsNumber, JsObject, JsString, JsValue}
 trait NewParameter {
   val name: String
   val shortName: String
-  val isEmpty : Boolean = false
+  val halt : Boolean = false
+
 
   def toJson(): JsValue
 
@@ -24,7 +25,7 @@ trait NewParameter {
   }
 }
 
-class NewIntParameter(override val name: String, override val shortName: String) extends NewParameter {
+class NewIntParameter(override val name: String, override val shortName: String, override val halt: Boolean = false) extends NewParameter {
   var value: Int = 0
 
   override def toJson: JsValue = JsNumber(value)
@@ -78,7 +79,7 @@ class NewIdParameter(override val name: String = "id", override val shortName: S
   }
 }
 
-class NewAddressParameter(override val name: String = "address", override val shortName: String = "address") extends NewParameter {
+class NewAddressParameter(override val name: String = "address", override val shortName: String = "address", override val halt: Boolean = false) extends NewParameter {
   var value: String = null
 
   override def toJson: JsValue = JsString(value)
@@ -111,7 +112,7 @@ class HelpParameter(override val name: String = "help", override val shortName: 
   }
 }
 
-class NicknameParameter(override val name: String = "name", override val shortName: String = "n") extends NewParameter {
+class NicknameParameter(override val name: String, override val shortName: String, override val halt: Boolean = false) extends NewParameter {
   var value: String = null
 
   private val regex = """^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{1,12}$""".r
@@ -265,6 +266,8 @@ class NewUnOrdered(params: Seq[NewParameter]) extends NewParameterList(params) {
   class NewTrack(params: Seq[NewParameter]) {
     val dic = params.map(p => p.shortName -> TrackItem(p, false)).toMap
     val regex = """^-(.*)""".r
+    var halt = false
+    var cloneDic = dic
 
     def reset() = {
       dic.values.foreach(_.flag = false)
@@ -273,8 +276,18 @@ class NewUnOrdered(params: Seq[NewParameter]) extends NewParameterList(params) {
 
     def validate(name: String, v: String): Boolean = {
       name match {
-        case regex(n) => dic.get(n) match {
-          case Some(item) => item.markThenValidate(n, v)
+        case regex(n) =>
+          dic.get(n) match {
+          case Some(item) =>
+            // 判断是否为可跳过参数
+            if(halt && item.parameter.halt) return halt
+            // 验证参数规则
+            val validate = item.markThenValidate(n, v)
+            // 定义可跳过参数值正确
+            if(validate && item.parameter.halt) halt = true
+            // 将克隆dic集合减少
+            cloneDic = cloneDic.-(n)
+            validate
           case None => false
         }
         case _ => false
@@ -285,17 +298,40 @@ class NewUnOrdered(params: Seq[NewParameter]) extends NewParameterList(params) {
   private val track = new NewTrack(params)
 
   override protected def validate(list: List[String], i: Int): Boolean = {
-    validateCore(list, track.reset)
+
+    // 验证若是帮助参数，返回true
+    if(NewCommand.checkHelpParam(list)) return true
+
+    // 重新赋值克隆dic值
+    track.cloneDic = track.dic
+
+    // 验证 参数值 是否合规
+    val validateV = validateCore(list, track.reset)
+
+    // 验证无 参数 是否合规
+    val validateP = validateParam(track.cloneDic)
+
+    track.halt = false
+    if(validateV && validateP) true
+    else false
+  }
+
+  private def validateParam(cloneDic: Map[String, TrackItem]) : Boolean = {
+    // 循环剩余参数进行判断
+    cloneDic.values.foreach{i =>
+      if(!i.parameter.halt)  return false
+    }
+    true
   }
 
   private def validateCore(list: List[String], track: NewTrack): Boolean = {
 
-    if(NewCommand.checkHelpParam(list)) return true
-
+    var result = false
     list match {
-      case n :: v :: Nil => track.validate(n, v)
-      case n :: v :: tail if track.validate(n, v) => validateCore(tail, track)
-      case _ => false
+      case n :: v :: Nil => result = track.validate(n, v)
+      case n :: v :: tail if track.validate(n, v) => result = validateCore(tail, track)
+      case _ => result = false
     }
+    result
   }
 }
