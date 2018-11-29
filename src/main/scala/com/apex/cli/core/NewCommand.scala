@@ -105,7 +105,7 @@ object NewCommand {
   }
 
   def checkHelpParam(params: List[String]):Boolean={
-    if(params.size>1)false
+    if(params.isEmpty || params.size>1 )false
     else if(!params(0).equals("-h")) false
     else true
   }

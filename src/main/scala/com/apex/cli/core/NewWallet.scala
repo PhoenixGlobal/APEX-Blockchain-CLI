@@ -53,6 +53,11 @@ object WalletCache{
     return walletCaches.get(n).get
   }
 
+  def isExist(n:String):Boolean={
+    if(get(n) == null) false
+    else true
+  }
+
   def remove(n:String){
     walletCaches.remove(n)
   }
@@ -214,34 +219,36 @@ class WalletLoadCommand extends NewCommand {
     val name = paramList.params(0).asInstanceOf[NicknameParameter].value
     val path = "D:\\chain\\whitney\\" + name + ".json"
 
+    // 获取钱包文件并判断是否存在
     val isexist = Files.exists(Paths.get(path))
     if (!isexist) {
       return NewSuccess("Wallet [" + name + "] does not exist")
     }
 
+    // 提示用户输入密码
     println("Please enter your pwd : ")
     val inputPwd = scala.io.StdIn.readLine()
 
+    // 获取文件内容
     val file = Source.fromFile(path)
     val walletContent = file.getLines.mkString
-
     file.close()
 
+    // 加密用户输入密码，并解密文件
     val key = Crypto.sha256(inputPwd.getBytes("UTF-8"))
-
     val iv : Array[Byte] = new Array(16)
     key.copyToArray(iv,0,16)
 
+    // 解密文件内容
     val dec = Crypto.AesDecrypt(base64decoder.decodeBuffer(walletContent), key, iv)
 
     // 将对象反序列化
     val wallet = NewWallet.fromBytes(dec)
 
-    WalletCache.newWalletCache(wallet)
-
     if(new String(wallet.p) == new String(key)){
+      WalletCache.newWalletCache(wallet)
       NewSuccess("wallet load success："+walletContent)
-    }else NewSuccess("\nInvalid password\n")
+    }else NewSuccess("Invalid password")
   }
 }
 
@@ -258,13 +265,10 @@ class WalletCloseCommand extends NewCommand {
 
     val name = paramList.params(0).asInstanceOf[NicknameParameter].value
 
-    val walletCache = WalletCache.get(name)
-    if(walletCache == null){
-      return NewSuccess("Wallet [" + name + "] does not exist")
-    }
+    if(!WalletCache.isExist(name))  return NewSuccess("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
 
     WalletCache.remove(name)
-    NewSuccess("\nInvalid password\n")
+    NewSuccess("wallet remove success")
   }
 }
 
@@ -281,7 +285,20 @@ class WalletActivateCommand extends NewCommand {
 
     val name = paramList.params(0).asInstanceOf[NicknameParameter].value
 
-    NewSuccess("\nInvalid password\n")
+    // 判断要激活的钱包是否存在
+    if(!WalletCache.isExist(name)) return NewSuccess("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
+
+    // 用户输入密码
+    println("Please enter your pwd : ")
+    val inputPwd = scala.io.StdIn.readLine()
+    val key = Crypto.sha256(inputPwd.getBytes("UTF-8"))
+
+    // 验证用户密码是否正确
+    if(new String(WalletCache.get(name).p) == new String(key)){
+      // 设置钱包的状态
+      WalletCache.setActivate(name)
+      NewSuccess("wallet activate success")
+    }else NewSuccess("Invalid password")
   }
 }
 
@@ -296,6 +313,12 @@ class WalletListCommand extends NewCommand {
 
   override def execute(params: List[String]): NewResult = {
 
-    NewSuccess("")
+    println("activityWallet："+WalletCache.activityWallet)
+
+    WalletCache.walletCaches.values.foreach{i =>
+      println(i.n +" -- " +i.activate)
+    }
+
+    NewSuccess("wallet list success")
   }
 }

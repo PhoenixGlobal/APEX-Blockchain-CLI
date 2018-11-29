@@ -304,7 +304,7 @@ class NewUnOrdered(params: Seq[NewParameter]) extends NewParameterList(params) {
   override protected def validate(list: List[String], i: Int): Boolean = {
 
     // 验证若是帮助参数，返回true
-    if(!list.isEmpty && NewCommand.checkHelpParam(list)) return true
+    if(NewCommand.checkHelpParam(list)) return true
 
     // 重新赋值克隆dic值
     track.cloneDic = track.dic
