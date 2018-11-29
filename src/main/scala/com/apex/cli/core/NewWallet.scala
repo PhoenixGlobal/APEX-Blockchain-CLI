@@ -69,12 +69,12 @@ object WalletCache{
   def checkTime(): Boolean ={
     val walletCache = get(WalletCache.activityWallet)
     val between = Calendar.getInstance().getTimeInMillis - walletCache.lastModify
-    val second = between / 1000
+    val minute = between / 1000 / 60
     /*val hour = between / 1000 / 3600
     val day = between / 1000 / 3600 / 24
     val year = between / 1000 / 3600 / 24 / 365*/
 
-    if(second < 11) return true
+    if(minute < 11) return true
 
     return false;
   }
@@ -87,10 +87,10 @@ object WalletCache{
 
       walletCaches.put(wallet.n, walletCache)
     }else {
-      walletCaches.put(wallet.n, new WalletCache(wallet.n, wallet.p))
+      walletCaches.put(wallet.n, new WalletCache(wallet.n, wallet.p, accounts = wallet.accounts))
     }
-
     setActivate(wallet.n)
+
     return walletCaches
   }
 
@@ -107,22 +107,23 @@ object WalletCache{
     }
   }
 
-  def addAccount(n:String): Account ={
-    val account = Account.newAccount(n)
+  def fileExist(name:String):Boolean={
+    val path = "D:\\chain\\whitney\\" + name + ".json"
 
-    val walletCache = walletCaches.get(activityWallet).get
-    val accounts = walletCache.accounts.+:(account)
-
-    walletCache.accounts = accounts
-    walletCache.implyAccount = n
-    walletCache.lastModify = Calendar.getInstance().getTimeInMillis
-
-    walletCaches.put(activityWallet, walletCache)
-
-    return account
+    return Files.exists(Paths.get(path))
   }
 
-  def writeWallet(path:String, name:String, key:Array[Byte], accounts:Seq[Account]): NewWallet ={
+  def readWallet(name:String):String={
+    val path = "D:\\chain\\whitney\\" + name + ".json"
+    val file = Source.fromFile(path)
+    val walletContent = file.getLines.mkString
+    file.close()
+    return walletContent
+  }
+
+  def writeWallet(name:String, key:Array[Byte], accounts:Seq[Account]): NewWallet ={
+
+    val path = "D:\\chain\\whitney\\" + name + ".json"
 
     val wallet = new NewWallet(name, key, accounts)
 
@@ -171,10 +172,8 @@ class WalletCreateCommand extends NewCommand {
   override def execute(params: List[String]): NewResult = {
     try {
       val name = paramList.params(0).asInstanceOf[NicknameParameter].value
-      val path = "D:\\chain\\whitney\\" + name + ".json"
 
-      val isexist = Files.exists(Paths.get(path))
-      if (isexist) {
+      if (WalletCache.fileExist(name)) {
         return NewSuccess("Wallet [" + name + "] already exists, please type a different name")
       }
 
@@ -195,7 +194,7 @@ class WalletCreateCommand extends NewCommand {
 
       val key = Crypto.sha256(password.getBytes("UTF-8"))
 
-      val wallet = WalletCache.writeWallet(path, name, key, Seq[Account](Account.Default))
+      val wallet = WalletCache.writeWallet(name, key, Seq[Account](Account.Default))
       WalletCache.newWalletCache(wallet)
       NewSuccess("wallet create success")
     } catch {
@@ -217,11 +216,8 @@ class WalletLoadCommand extends NewCommand {
   override def execute(params: List[String]): NewResult = {
 
     val name = paramList.params(0).asInstanceOf[NicknameParameter].value
-    val path = "D:\\chain\\whitney\\" + name + ".json"
 
-    // 获取钱包文件并判断是否存在
-    val isexist = Files.exists(Paths.get(path))
-    if (!isexist) {
+    if (!WalletCache.fileExist(name)) {
       return NewSuccess("Wallet [" + name + "] does not exist")
     }
 
@@ -230,9 +226,7 @@ class WalletLoadCommand extends NewCommand {
     val inputPwd = scala.io.StdIn.readLine()
 
     // 获取文件内容
-    val file = Source.fromFile(path)
-    val walletContent = file.getLines.mkString
-    file.close()
+    val walletContent = WalletCache.readWallet(name)
 
     // 加密用户输入密码，并解密文件
     val key = Crypto.sha256(inputPwd.getBytes("UTF-8"))
@@ -247,7 +241,7 @@ class WalletLoadCommand extends NewCommand {
 
     if(new String(wallet.p) == new String(key)){
       WalletCache.newWalletCache(wallet)
-      NewSuccess("wallet load success："+walletContent)
+      NewSuccess("wallet load success")
     }else NewSuccess("Invalid password")
   }
 }

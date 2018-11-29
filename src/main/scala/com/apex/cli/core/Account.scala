@@ -1,6 +1,9 @@
 package com.apex.cli.core
 
 import java.io.{ByteArrayInputStream, DataInputStream, DataOutputStream}
+import java.util.Calendar
+
+import com.apex.cli.core.WalletCache.{activityWallet, walletCaches}
 import com.apex.crypto.{Base58Check, BinaryData, Crypto}
 import com.apex.crypto.Ecdsa.PrivateKey
 
@@ -69,6 +72,63 @@ object Account {
       account.generateNewPrivKey()
       return account
   }
+
+  def checkWalletStatus: String = {
+    if (WalletCache.size() < 1) {
+      return "please load Wallet, type \"wallet list\" to see all loaded wallet."
+    } else if (WalletCache.activityWallet.isEmpty || !WalletCache.checkTime()) {
+      return "please active Wallet, use \"wallet activate\" command to activate it."
+    }
+    return ""
+  }
+
+
+  def addAccount(alias:String): Account ={
+    val account = Account.newAccount(alias)
+
+    val walletCache = walletCaches.get(activityWallet).get
+    val accounts = walletCache.accounts.+:(account)
+
+    walletCache.accounts = accounts
+    walletCache.implyAccount = alias
+    walletCache.lastModify = Calendar.getInstance().getTimeInMillis
+
+    walletCaches.put(activityWallet, walletCache)
+
+    return account
+  }
+
+  def delAccount(alias:String = "", address:String = ""){
+
+    val walletCache = walletCaches.get(activityWallet).get
+
+    // 判断采用根据什么参数删除
+    var accounts:Seq[Account] =  Seq[Account]()
+    if(!alias.isEmpty) accounts = walletCache.accounts.filter(!_.n.contains(alias))
+    else accounts = walletCache.accounts.filter(!_.address.contains(address))
+
+    // 修改缓存信息
+    walletCache.accounts = accounts
+    if(walletCache.implyAccount.equals(alias)) walletCache.implyAccount = ""
+    walletCache.lastModify = Calendar.getInstance().getTimeInMillis
+
+    // 重新写入文件账户信息值
+    WalletCache.writeWallet(walletCache.n, walletCache.p, walletCache.accounts)
+
+    // 重新设置缓存值
+    walletCaches.put(activityWallet, walletCache)
+  }
+
+
+  def getAccount(alias:String): Account ={
+
+    return walletCaches.get(activityWallet).get.accounts.groupBy(_.n).get(alias).get(0)
+  }
+
+  def modifyAccount(): Unit ={
+
+  }
+
 }
 
 class AccountCommand extends NewCompositeCommand {
@@ -101,50 +161,19 @@ class NewAccountCommand extends NewCommand {
 
     val name = paramList.params(0).asInstanceOf[NicknameParameter].value
 
-    if (WalletCache.size() < 1) {
-      return NewSuccess("please load wallet")
-    } else if (WalletCache.activityWallet.isEmpty || !WalletCache.checkTime()) {
-      return NewSuccess("please active Wallet, use \"wallet activate\" command to activate it.")
-    }
+    val checkResult = Account.checkWalletStatus
+    if(!checkResult.isEmpty) return NewSuccess(checkResult)
+
     val walletCache = WalletCache.get(WalletCache.activityWallet)
-    val path = "D:\\chain\\whitney\\" + walletCache.n + ".json"
-    val account = WalletCache.addAccount(name)
 
-    WalletCache.writeWallet(path, walletCache.n, walletCache.p, walletCache.accounts)
+    // 判断账户昵称是否存在
+    if(walletCache.accounts.groupBy(_.n).keySet.contains(name)) return NewSuccess("account [" + name + "] already exists, please type a different alias")
 
-    NewSuccess("address："+account.address)
-  }
-}
+    val account = Account.addAccount(name)
 
-class ImportCommand extends NewCommand {
+    WalletCache.writeWallet(walletCache.n, walletCache.p, walletCache.accounts)
 
-  override val cmd: String = "import"
-  override val description: String = "Import account to current wallet"
-
-  override val paramList: NewParameterList = NewParameterList.create(
-    new NewPrivKeyParameter("key", "key"),
-    new NicknameParameter("alias", "a")
-  )
-
-  override def execute(params: List[String]): NewResult = {
-
-    NewSuccess("import")
-  }
-}
-
-class ExportCommand extends NewCommand {
-
-  override val cmd: String = "export"
-  override val description: String = "Export one account within current wallet"
-
-  override val paramList: NewParameterList = NewParameterList.create(
-    new NicknameParameter("alias", "a"),
-    new NewStringParameter("file", "file")
-  )
-
-  override def execute(params: List[String]): NewResult = {
-
-    NewSuccess("export")
+    NewSuccess("success, address："+account.address)
   }
 }
 
@@ -160,7 +189,17 @@ class DeleteCommand extends NewCommand {
 
   override def execute(params: List[String]): NewResult = {
 
-    NewSuccess("delete")
+    val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
+    val address = paramList.params(1).asInstanceOf[NewAddressParameter].value
+
+    val checkResult = Account.checkWalletStatus
+    if(!checkResult.isEmpty) return NewSuccess(checkResult)
+
+    // 从缓存中获取
+    if(alias != null) Account.delAccount(alias = alias)
+    else Account.delAccount(address = address)
+
+    NewSuccess("delete success")
   }
 }
 
@@ -176,12 +215,22 @@ class RenameCommand extends NewCommand {
 
   override val paramList: NewParameterList = NewParameterList.create(
     new NicknameParameter("alias", "a"),
-    new NewAddressParameter("to", "to")
+    new NicknameParameter("to", "to")
   )
 
   override def execute(params: List[String]): NewResult = {
 
-    NewSuccess("rename")
+    val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
+    val to = paramList.params(1).asInstanceOf[NicknameParameter].value
+
+    val checkResult = Account.checkWalletStatus
+    if(!checkResult.isEmpty) return NewSuccess(checkResult)
+
+    // 获取账户信息
+    val account = Account.getAccount(alias)
+
+
+    NewSuccess("rename success")
   }
 }
 
@@ -224,6 +273,41 @@ class AccountListCommand extends NewCommand {
 
   override def execute(params: List[String]): NewResult = {
 
-    NewSuccess("list")
+    WalletCache.walletCaches.get(WalletCache.activityWallet).get.accounts.foreach{i =>
+      println(i.n +" -- " +i.address)
+    }
+    NewSuccess("account list")
+  }
+}
+
+class ImportCommand extends NewCommand {
+
+  override val cmd: String = "import"
+  override val description: String = "Import account to current wallet"
+
+  override val paramList: NewParameterList = NewParameterList.create(
+    new NewPrivKeyParameter("key", "key"),
+    new NicknameParameter("alias", "a")
+  )
+
+  override def execute(params: List[String]): NewResult = {
+
+    NewSuccess("import")
+  }
+}
+
+class ExportCommand extends NewCommand {
+
+  override val cmd: String = "export"
+  override val description: String = "Export one account within current wallet"
+
+  override val paramList: NewParameterList = NewParameterList.create(
+    new NicknameParameter("alias", "a"),
+    new NewStringParameter("file", "file")
+  )
+
+  override def execute(params: List[String]): NewResult = {
+
+    NewSuccess("export")
   }
 }
