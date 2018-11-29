@@ -154,8 +154,8 @@ class DeleteCommand extends NewCommand {
   override val description: String = "Delete one account from current wallet"
 
   override val paramList: NewParameterList = NewParameterList.create(
-    new NicknameParameter("alias", "a", true),
-    new NewAddressParameter("address", "address", true)
+    new NicknameParameter("alias", "a", true, true),
+    new NewAddressParameter("address", "address", true, true)
   )
 
   override def execute(params: List[String]): NewResult = {
@@ -191,8 +191,8 @@ class ShowCommand extends NewCommand {
   override val description: String = "Show the status of account"
 
   override val paramList: NewParameterList = NewParameterList.create(
-    new NicknameParameter("alias", "a", true),
-    new NewAddressParameter("address", "address", true)
+    new NicknameParameter("alias", "a", true, true),
+    new NewAddressParameter("address", "address", true, true)
   )
 
   override def execute(params: List[String]): NewResult = {
@@ -207,8 +207,8 @@ class ImplyCommand extends NewCommand {
   override val description: String = "Set account as default account in the wallet"
 
   override val paramList: NewParameterList = NewParameterList.create(
-    new NicknameParameter("alias", "a", true),
-    new NewAddressParameter("address", "address", true)
+    new NicknameParameter("alias", "a", true, true),
+    new NewAddressParameter("address", "address", true, true)
   )
 
   override def execute(params: List[String]): NewResult = {

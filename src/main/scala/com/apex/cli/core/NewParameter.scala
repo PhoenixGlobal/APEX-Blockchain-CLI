@@ -14,6 +14,7 @@ trait NewParameter {
   val name: String
   val shortName: String
   val halt : Boolean = false
+  val replaceable : Boolean = false
 
 
   def toJson(): JsValue
@@ -25,7 +26,8 @@ trait NewParameter {
   }
 }
 
-class NewIntParameter(override val name: String, override val shortName: String, override val halt: Boolean = false) extends NewParameter {
+class NewIntParameter(override val name: String, override val shortName: String,
+                      override val halt: Boolean = false, override val replaceable: Boolean = false) extends NewParameter {
   var value: Int = 0
 
   override def toJson: JsValue = JsNumber(value)
@@ -79,7 +81,8 @@ class NewIdParameter(override val name: String = "id", override val shortName: S
   }
 }
 
-class NewAddressParameter(override val name: String = "address", override val shortName: String = "address", override val halt: Boolean = false) extends NewParameter {
+class NewAddressParameter(override val name: String = "address", override val shortName: String = "address",
+                          override val halt: Boolean = false, override val replaceable: Boolean = false) extends NewParameter {
   var value: String = null
 
   override def toJson: JsValue = JsString(value)
@@ -112,7 +115,8 @@ class HelpParameter(override val name: String = "help", override val shortName: 
   }
 }
 
-class NicknameParameter(override val name: String, override val shortName: String, override val halt: Boolean = false) extends NewParameter {
+class NicknameParameter(override val name: String, override val shortName: String,
+                        override val halt: Boolean = false, override val replaceable: Boolean = false) extends NewParameter {
   var value: String = null
 
   private val regex = """^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{1,12}$""".r
@@ -300,7 +304,7 @@ class NewUnOrdered(params: Seq[NewParameter]) extends NewParameterList(params) {
   override protected def validate(list: List[String], i: Int): Boolean = {
 
     // 验证若是帮助参数，返回true
-    if(NewCommand.checkHelpParam(list)) return true
+    if(!list.isEmpty && NewCommand.checkHelpParam(list)) return true
 
     // 重新赋值克隆dic值
     track.cloneDic = track.dic
@@ -319,7 +323,10 @@ class NewUnOrdered(params: Seq[NewParameter]) extends NewParameterList(params) {
   private def validateParam(cloneDic: Map[String, TrackItem]) : Boolean = {
     // 循环剩余参数进行判断
     cloneDic.values.foreach{i =>
+      // 如果有不能终止的参数，返回false
       if(!i.parameter.halt)  return false
+      // 判断为可替代项也返回false
+      else if(!track.halt && i.parameter.replaceable) return false
     }
     true
   }

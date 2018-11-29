@@ -26,8 +26,8 @@ class BlockCommand extends NewCommand {
 
 
   override val paramList: NewParameterList = NewParameterList.create(
-    new NewIntParameter("height", "height", true),
-    new NewIntParameter("id", "id", true  )
+    new NewIntParameter("height", "height", true,true),
+    new NewIntParameter("id", "id", true,true)
   )
 
   override def execute(params: List[String]): NewResult = {null}
