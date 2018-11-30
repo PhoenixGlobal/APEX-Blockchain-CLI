@@ -3,7 +3,10 @@ package com.apex.cli.core
 import java.io._
 import java.nio.file.{Files, Paths}
 import java.util.Calendar
-import com.apex.crypto.{Crypto}
+
+import com.apex.cli.InvalidParams
+import com.apex.crypto.Crypto
+
 import scala.collection.mutable
 import scala.io.Source
 import scala.util.control.Breaks
@@ -53,6 +56,10 @@ object WalletCache{
     return walletCaches.get(n).get
   }
 
+  def getActivityWallet(): WalletCache = {
+    return get(activityWallet)
+  }
+
   def isExist(n:String):Boolean={
     if(get(n) == null) false
     else true
@@ -98,6 +105,7 @@ object WalletCache{
 
     for (key <- walletCaches.keys) {
       val walletCache = walletCaches.get(key).get
+      walletCache.implyAccount =  walletCache.accounts(0).n
       if(n.equals(key)){
         walletCache.activate = true
         activityWallet = key
@@ -174,7 +182,7 @@ class WalletCreateCommand extends NewCommand {
       val name = paramList.params(0).asInstanceOf[NicknameParameter].value
 
       if (WalletCache.fileExist(name)) {
-        return NewSuccess("Wallet [" + name + "] already exists, please type a different name")
+        return NewInvalidParams("Wallet [" + name + "] already exists, please type a different name")
       }
 
       var password, password2: String = ""
@@ -196,7 +204,7 @@ class WalletCreateCommand extends NewCommand {
 
       val wallet = WalletCache.writeWallet(name, key, Seq[Account](Account.Default))
       WalletCache.newWalletCache(wallet)
-      NewSuccess("wallet create success")
+      NewSuccess("wallet create success\n")
     } catch {
       case e: Throwable => NewError(e)
     }
@@ -218,7 +226,7 @@ class WalletLoadCommand extends NewCommand {
     val name = paramList.params(0).asInstanceOf[NicknameParameter].value
 
     if (!WalletCache.fileExist(name)) {
-      return NewSuccess("Wallet [" + name + "] does not exist")
+      return NewInvalidParams("Wallet [" + name + "] does not exist\n")
     }
 
     // 提示用户输入密码
@@ -241,8 +249,8 @@ class WalletLoadCommand extends NewCommand {
 
     if(new String(wallet.p) == new String(key)){
       WalletCache.newWalletCache(wallet)
-      NewSuccess("wallet load success")
-    }else NewSuccess("Invalid password")
+      NewSuccess("wallet load success\n")
+    }else NewInvalidParams("Invalid password\n")
   }
 }
 
@@ -259,10 +267,10 @@ class WalletCloseCommand extends NewCommand {
 
     val name = paramList.params(0).asInstanceOf[NicknameParameter].value
 
-    if(!WalletCache.isExist(name))  return NewSuccess("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
+    if(!WalletCache.isExist(name))  return NewInvalidParams("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
 
     WalletCache.remove(name)
-    NewSuccess("wallet remove success")
+    NewSuccess("wallet remove success\n")
   }
 }
 
@@ -280,7 +288,7 @@ class WalletActivateCommand extends NewCommand {
     val name = paramList.params(0).asInstanceOf[NicknameParameter].value
 
     // 判断要激活的钱包是否存在
-    if(!WalletCache.isExist(name)) return NewSuccess("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
+    if(!WalletCache.isExist(name)) return NewInvalidParams("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
 
     // 用户输入密码
     println("Please enter your pwd : ")
@@ -291,8 +299,8 @@ class WalletActivateCommand extends NewCommand {
     if(new String(WalletCache.get(name).p) == new String(key)){
       // 设置钱包的状态
       WalletCache.setActivate(name)
-      NewSuccess("wallet activate success")
-    }else NewSuccess("Invalid password")
+      NewSuccess("wallet activate success\n")
+    }else NewInvalidParams("Invalid password\n")
   }
 }
 
@@ -313,6 +321,6 @@ class WalletListCommand extends NewCommand {
       println(i.n +" -- " +i.activate)
     }
 
-    NewSuccess("wallet list success")
+    NewSuccess("wallet list successn\n")
   }
 }
