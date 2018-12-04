@@ -8,8 +8,14 @@
 
 package com.apex.cli.core
 
+import java.awt.event.{ActionEvent, KeyEvent}
+
 import com.apex.cli.{RPC, core}
+import javax.swing.JPasswordField
 import play.api.libs.json.Json
+
+import scala.tools.jline_embedded.console.ConsoleKeys
+import scala.util.control.Breaks
 
 trait NewResult
 
@@ -154,4 +160,3 @@ trait NewCompositeCommand extends NewCommand {
     result*/
   }
 }
-

@@ -8,7 +8,6 @@ import com.apex.cli.core.WalletCache.{activityWallet, walletCaches}
 import com.apex.crypto.{Base58Check, BinaryData, Crypto}
 import com.apex.crypto.Ecdsa.PrivateKey
 
-
 class Account(var n : String, var pri : String, var address: String) extends com.apex.common.Serializable{
   override def serialize(os: DataOutputStream): Unit = {
     import com.apex.common.Serializable._
@@ -83,7 +82,18 @@ object Account {
     return ""
   }
 
-  def checkAccountStatus(alias:String = "", address:String=""): String = {
+  def checkAccountNotExists(alias:String = "", address:String=""): String = {
+    val checkResult = checkWalletStatus
+    if(!checkResult.isEmpty) return checkResult
+    else if(alias != null && !WalletCache.getActivityWallet().accounts.groupBy(_.n).keySet.contains(alias))
+      return "account alias [" + alias + "] not exists, please type a different alias"
+    else if(address != null && !WalletCache.getActivityWallet().accounts.groupBy(_.address).keySet.contains(address))
+      return "account address [" + address + "] not exists, please type a different alias"
+
+    return ""
+  }
+
+  def checkAccountExists(alias:String = "", address:String=""): String = {
     val checkResult = checkWalletStatus
     if(!checkResult.isEmpty) return checkResult
     else if(!alias.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.n).keySet.contains(alias))
@@ -206,7 +216,7 @@ class NewAccountCommand extends NewCommand {
     val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
 
     // 账户校验
-    val checkResult = Account.checkAccountStatus(alias)
+    val checkResult = Account.checkAccountExists(alias)
     if(!checkResult.isEmpty) return NewInvalidParams(checkResult)
 
     val walletCache = WalletCache.getActivityWallet()
@@ -234,7 +244,7 @@ class DeleteCommand extends NewCommand {
     val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
     val address = paramList.params(1).asInstanceOf[NewAddressParameter].value
 
-    val checkResult = Account.checkAccountStatus(alias, address)
+    val checkResult = Account.checkAccountNotExists(alias, address)
     if(!checkResult.isEmpty) return NewInvalidParams(checkResult)
 
     // 从缓存中获取
@@ -265,7 +275,7 @@ class RenameCommand extends NewCommand {
     val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
     val to = paramList.params(1).asInstanceOf[NicknameParameter].value
 
-    val checkResult = Account.checkAccountStatus(to)
+    val checkResult = Account.checkAccountExists(to)
     if(!checkResult.isEmpty) return NewInvalidParams(checkResult)
 
     // 获取账户信息
@@ -330,9 +340,11 @@ class AccountListCommand extends NewCommand {
     println("implyAccount： "+WalletCache.getActivityWallet().implyAccount)
 
     WalletCache.getActivityWallet().accounts.foreach{i =>
-      println(i.n +" -- " +i.address)
+      print(i.n +" -- " +i.address +" -- 余额")
+      if(i.n.equals(WalletCache.getActivityWallet().implyAccount))  print(" +")
+      println("")
     }
-    NewSuccess("account list\n")
+    NewSuccess("account list success\n")
   }
 }
 
@@ -359,7 +371,7 @@ class ImportCommand extends NewCommand {
       Account.createAccountCache(account)
     } else InvalidParams("key error\n")
 
-    NewSuccess("import\n")
+    NewSuccess("import success\n")
   }
 }
 
@@ -370,13 +382,26 @@ class ExportCommand extends NewCommand {
 
   override val paramList: NewParameterList = NewParameterList.create(
     new NicknameParameter("alias", "a"),
-    new NewStringParameter("file", "file")
+    new NewStringParameter("file", "file", true)
   )
 
   override def execute(params: List[String]): NewResult = {
 
+    val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
+    val file = paramList.params(1).asInstanceOf[NewStringParameter].value
 
+    val checkResult = Account.checkWalletStatus
+    if(!checkResult.isEmpty) return NewInvalidParams(checkResult)
 
-    NewSuccess("export\n")
+    // 显示私钥
+    val account = Account.getAccount(alias)
+
+    if(file == null)
+      println("pri ==> "+account.pri)
+    else{
+      WalletCache.exportAccount(account.pri, file)
+    }
+
+    NewSuccess("export success\n")
   }
 }

@@ -6,9 +6,10 @@ import java.util.Calendar
 
 import com.apex.cli.InvalidParams
 import com.apex.crypto.Crypto
+import lc.kra.system.keyboard.GlobalKeyboardHook
 
 import scala.collection.mutable
-import scala.io.Source
+import scala.io.{Source, StdIn}
 import scala.util.control.Breaks
 
 class NewWallet(val n :String, val p : Array[Byte], val accounts: Seq[Account]) extends com.apex.common.Serializable {
@@ -105,7 +106,7 @@ object WalletCache{
 
     for (key <- walletCaches.keys) {
       val walletCache = walletCaches.get(key).get
-      walletCache.implyAccount =  walletCache.accounts(0).n
+      if(!walletCache.accounts.isEmpty) walletCache.implyAccount =  walletCache.accounts(0).n
       if(n.equals(key)){
         walletCache.activate = true
         activityWallet = key
@@ -115,14 +116,16 @@ object WalletCache{
     }
   }
 
+  val filePath = "D:\\chain\\whitney\\"
+
   def fileExist(name:String):Boolean={
-    val path = "D:\\chain\\whitney\\" + name + ".json"
+    val path =  filePath + name + ".json"
 
     return Files.exists(Paths.get(path))
   }
 
   def readWallet(name:String):String={
-    val path = "D:\\chain\\whitney\\" + name + ".json"
+    val path = filePath + name + ".json"
     val file = Source.fromFile(path)
     val walletContent = file.getLines.mkString
     file.close()
@@ -131,7 +134,7 @@ object WalletCache{
 
   def writeWallet(name:String, key:Array[Byte], accounts:Seq[Account]): NewWallet ={
 
-    val path = "D:\\chain\\whitney\\" + name + ".json"
+    val path = filePath + name + ".json"
 
     val wallet = new NewWallet(name, key, accounts)
 
@@ -150,7 +153,16 @@ object WalletCache{
     fw.write(base64encoder.encode(encrypted1))
     fw.close()
 
-    return wallet
+    wallet
+  }
+
+  def exportAccount(privkey: String, fileName : String): Unit ={
+    val path = filePath +"export\\" + fileName
+
+    val writer = new PrintWriter(new File(path ))
+
+    writer.write(privkey)
+    writer.close()
   }
 }
 
@@ -173,12 +185,16 @@ class WalletCreateCommand extends NewCommand {
   override val cmd: String = "create"
   override val description: String = "create a new wallet"
 
+  private val hook = new GlobalKeyboardHook
+
   override val paramList: NewParameterList = NewParameterList.create(
     new NicknameParameter("name", "n")
   )
 
   override def execute(params: List[String]): NewResult = {
+
     try {
+
       val name = paramList.params(0).asInstanceOf[NicknameParameter].value
 
       if (WalletCache.fileExist(name)) {
@@ -202,13 +218,14 @@ class WalletCreateCommand extends NewCommand {
 
       val key = Crypto.sha256(password.getBytes("UTF-8"))
 
-      val wallet = WalletCache.writeWallet(name, key, Seq[Account](Account.Default))
+      val wallet = WalletCache.writeWallet(name, key, Seq.empty)
       WalletCache.newWalletCache(wallet)
       NewSuccess("wallet create success\n")
     } catch {
       case e: Throwable => NewError(e)
     }
   }
+
 }
 
 class WalletLoadCommand extends NewCommand {
@@ -241,8 +258,13 @@ class WalletLoadCommand extends NewCommand {
     val iv : Array[Byte] = new Array(16)
     key.copyToArray(iv,0,16)
 
-    // 解密文件内容
-    val dec = Crypto.AesDecrypt(base64decoder.decodeBuffer(walletContent), key, iv)
+    var dec : Array[Byte] = new Array[Byte](1000)
+    try{
+      // 解密文件内容
+       dec = Crypto.AesDecrypt(base64decoder.decodeBuffer(walletContent), key, iv)
+    }catch {
+      case e: Throwable =>  NewInvalidParams("Invalid password\n")
+    }
 
     // 将对象反序列化
     val wallet = NewWallet.fromBytes(dec)
@@ -277,7 +299,7 @@ class WalletCloseCommand extends NewCommand {
 class WalletActivateCommand extends NewCommand {
 
   override val cmd: String = "activate"
-  override val description: String = "Activate a candidate wallet. Use this command to switch amount different wallets"
+  override val description: String = "Activate a candidate wallet. Use this command to switch amoung different wallets"
 
   override val paramList: NewParameterList = NewParameterList.create(
     new NicknameParameter("name", "n")
@@ -290,17 +312,9 @@ class WalletActivateCommand extends NewCommand {
     // 判断要激活的钱包是否存在
     if(!WalletCache.isExist(name)) return NewInvalidParams("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
 
-    // 用户输入密码
-    println("Please enter your pwd : ")
-    val inputPwd = scala.io.StdIn.readLine()
-    val key = Crypto.sha256(inputPwd.getBytes("UTF-8"))
-
-    // 验证用户密码是否正确
-    if(new String(WalletCache.get(name).p) == new String(key)){
-      // 设置钱包的状态
-      WalletCache.setActivate(name)
-      NewSuccess("wallet activate success\n")
-    }else NewInvalidParams("Invalid password\n")
+    // 设置钱包的状态
+    WalletCache.setActivate(name)
+    NewSuccess("wallet activate success\n")
   }
 }
 
@@ -315,10 +329,10 @@ class WalletListCommand extends NewCommand {
 
   override def execute(params: List[String]): NewResult = {
 
-    println("activityWallet："+WalletCache.activityWallet)
-
     WalletCache.walletCaches.values.foreach{i =>
-      println(i.n +" -- " +i.activate)
+      print(i.n)
+      if(i.activate) print(" +")
+      println("")
     }
 
     NewSuccess("wallet list successn\n")

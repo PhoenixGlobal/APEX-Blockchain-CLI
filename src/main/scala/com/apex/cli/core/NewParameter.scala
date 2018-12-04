@@ -46,7 +46,8 @@ class NewIntParameter(override val name: String, override val shortName: String,
   }
 }
 
-class NewStringParameter(override val name: String, override val shortName: String) extends NewParameter {
+class NewStringParameter(override val name: String, override val shortName: String,
+                         override val halt: Boolean = false, override val replaceable: Boolean = false) extends NewParameter {
   var value: String = null
 
   override def toJson: JsValue = JsString(value)
