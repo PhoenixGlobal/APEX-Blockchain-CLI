@@ -9,10 +9,13 @@
 package com.apex.cli
 
 import play.api.libs.json.{JsNumber, JsObject, JsString, JsValue}
+import util.control.Breaks._
 
 trait Parameter {
   val name: String
   val shortName: String
+  val halt : Boolean = false
+  val replaceable : Boolean = false
 
   def toJson(): JsValue
 
@@ -24,7 +27,8 @@ trait Parameter {
   }
 }
 
-class IntParameter(override val name: String, override val shortName: String) extends Parameter {
+class IntParameter(override val name: String, override val shortName: String,
+                   override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
   var value: Int = 0
 
   override def toJson: JsValue = JsNumber(value)
@@ -43,8 +47,9 @@ class IntParameter(override val name: String, override val shortName: String) ex
   }
 }
 
-class StringParameter(override val name: String, override val shortName: String) extends Parameter {
-  private var value: String = null
+class StringParameter(override val name: String, override val shortName: String,
+                      override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
+  var value: String = null
 
   override def toJson: JsValue = JsString(value)
 
@@ -85,7 +90,8 @@ class IdParameter(override val name: String = "id", override val shortName: Stri
   }
 }
 
-class AddressParameter(override val name: String = "address", override val shortName: String = "address") extends Parameter {
+class AddressParameter(override val name: String = "address", override val shortName: String = "address",
+                       override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
   var value: String = null
 
   override def toJson: JsValue = JsString(value)
@@ -101,6 +107,58 @@ class AddressParameter(override val name: String = "address", override val short
     } else {
       false
     }
+  }
+}
+
+class HelpParameter(override val name: String = "help", override val shortName: String = "h") extends Parameter {
+  var value: String = null
+
+  override def toJson: JsValue = JsString(value)
+
+  override def validate(n: String, v: String): Boolean = {
+    validateName(n) && setValue(v)
+  }
+
+  private def setValue(s: String): Boolean = {
+    false
+  }
+}
+
+class NicknameParameter(override val name: String, override val shortName: String,
+                        override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
+  var value: String = null
+
+  private val regex = """^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{1,12}$""".r
+
+  override def toJson: JsValue = JsString(value)
+
+  override def validate(n: String, v: String): Boolean = {
+    validateName(n) && setValue(v)
+  }
+
+  private def setValue(s: String): Boolean = {
+    if(regex.pattern.matcher(s).matches()){
+      value = s
+      true
+    }else false
+  }
+}
+
+class PasswordParameter(override val name: String = "password", override val shortName: String = "p") extends Parameter {
+  var value: String = null
+  private val regex = """^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{8,}$""".r
+
+  override def toJson: JsValue = JsString(value)
+
+  override def validate(n: String, v: String): Boolean = {
+    validateName(n) && setValue(v)
+  }
+
+  private def setValue(s: String): Boolean = {
+    if(regex.pattern.matcher(s).matches()){
+      value = s
+      true
+    }else false
   }
 }
 
@@ -222,6 +280,8 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
     val dic = params.map(p => p.shortName -> TrackItem(p, false)).toMap
     //val dic = params.flatMap(p => Seq(p.shortName -> p, p.name -> p)).map(p => p._1 -> TrackItem(p._2, false)).toMap
     val regex = """^-(.*)""".r
+    var halt = false
+    var cloneDic = dic
 
     def reset() = {
       dic.values.foreach(_.flag = false)
@@ -236,7 +296,18 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
     def validate(name: String, v: String): Boolean = {
       name match {
         case regex(n) => dic.get(n) match {
-          case Some(item) => item.markThenValidate(n, v)
+          case Some(item) =>
+            // 判断是否为可跳过参数
+            if(halt && item.parameter.halt) halt
+            else{
+              // 验证参数规则
+              val validate = item.markThenValidate(n, v)
+              // 定义可跳过参数值正确
+              if(validate && item.parameter.halt) halt = true
+              // 将克隆dic集合减少
+              cloneDic = cloneDic.-(n)
+              validate
+            }
           case None => false
         }
         case _ => false
@@ -247,7 +318,43 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
   private val track = new Track(params)
 
   override protected def validate(list: List[String], i: Int): Boolean = {
-    validateCore(list, track.reset)
+
+    // 验证若是帮助参数，返回true
+    if(Command.checkHelpParam(list)) true
+    else{
+      // 重新赋值克隆dic值
+      track.cloneDic = track.dic
+
+      // 验证 参数值 是否合规
+      val validateV = validateCore(list, track.reset)
+
+      // 验证无 参数 是否合规
+      val validateP = validateParam(track.cloneDic)
+
+      track.halt = false
+      if(validateV && validateP) true
+      else false
+    }
+
+  }
+
+  private def validateParam(cloneDic: Map[String, TrackItem]) : Boolean = {
+    var validate = true
+
+    // 循环剩余参数进行判断
+    breakable{cloneDic.values.foreach{i =>
+        // 如果有不能终止的参数，返回false
+        if(!i.parameter.halt){
+          validate = false
+          break()
+        }
+        // 判断为可替代项也返回false
+        else if(!track.halt && i.parameter.replaceable){
+          validate = false
+          break()
+        }
+      }}
+    validate
   }
 
   private def validateCore(list: List[String], track: Track): Boolean = {
