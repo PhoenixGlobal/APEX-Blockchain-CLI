@@ -4,7 +4,6 @@ import java.io._
 import java.nio.file.{Files, Paths}
 import java.util.Calendar
 import com.apex.crypto.Crypto
-import lc.kra.system.keyboard.GlobalKeyboardHook
 import scala.collection.mutable
 import scala.io.Source
 import scala.util.control.Breaks
@@ -188,8 +187,6 @@ class WalletCreateCommand extends Command {
 
   override val cmd: String = "create"
   override val description: String = "create a new wallet"
-
-  private val hook = new GlobalKeyboardHook
 
   override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("name", "n"),
