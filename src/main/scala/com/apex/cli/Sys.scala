@@ -1,8 +1,5 @@
 package com.apex.cli
 
-import com.apex.cli
-
-
 class SysCommand extends CompositeCommand {
   override val cmd: String = "sys"
   override val description: String = "Command Line Interface to the system, omit it and type the sub command directly is legal."
@@ -50,9 +47,30 @@ class ClearC extends Command {
   override val sys: Boolean = true
 
   override def execute(params: List[String]): Result = {
-    val r = Runtime.getRuntime();
-    r.exec("CLS");//调用系统CLS命令清屏
 
-    new Help("")
+    /*try {
+      val reader = new ConsoleReader()
+      val mask = '0';
+      val s =  reader.readLine("s>", mask)
+      println(s)
+    }catch{
+      case e: Exception => Error(e)
+    }*/
+
+    /* val reader = LineReaderBuilder.builder().build()
+     val prompt = "aaaa"
+     while (true) {
+       var line = ""
+       try {
+         line = reader.readLine(prompt, '*')
+         println(line)
+       } catch{
+         case e: UserInterruptException => Error(e)
+         case e: EndOfFileException => Error(e)
+
+       }
+     }*/
+
+    Success("clear success\n")
   }
 }

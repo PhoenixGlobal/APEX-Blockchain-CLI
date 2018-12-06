@@ -1,5 +1,7 @@
 package com.apex.cli
 
+import play.api.libs.json.Json
+
 class ChainCommand extends CompositeCommand {
   override val cmd: String = "chain"
   override val description: String = "Command Line Interface to the block chain, omit it and type the sub command directly is legal."
@@ -16,7 +18,10 @@ class StatusCommand extends Command {
   override val description = "Show the status of block chain"
   override val sys: Boolean = true
 
-  override def execute(params: List[String]): Result = {null}
+  override def execute(params: List[String]): Result = {
+    val result = RPC.post("getblockcount", paramList.toJson())
+    Success(Json prettyPrint result)
+  }
 }
 
 class BlockCommand extends Command {
@@ -28,9 +33,14 @@ class BlockCommand extends Command {
   override val paramList: ParameterList = ParameterList.create(
     new IntParameter("height", "height", true,true),
     new IntParameter("id", "id", true,true)
+
   )
 
-  override def execute(params: List[String]): Result = {null}
+  override def execute(params: List[String]): Result = {
+
+    val result = RPC.post("getblock", paramList.toJson)
+    Success(Json prettyPrint result)
+  }
 }
 
 class TransactionCommand extends Command {
@@ -41,5 +51,8 @@ class TransactionCommand extends Command {
     new IntParameter("id", "id")
   )
 
-  override def execute(params: List[String]): Result = {null}
+  override def execute(params: List[String]): Result = {
+    val result = RPC.post("gettx", paramList.toJson())
+    Success(Json prettyPrint result)
+  }
 }

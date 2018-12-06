@@ -70,6 +70,10 @@ object WalletCache{
     walletCaches.size
   }
 
+  def reActWallet: Unit ={
+    WalletCache.getActivityWallet().lastModify = Calendar.getInstance().getTimeInMillis
+  }
+
   def checkTime(): Boolean ={
     val walletCache = get(WalletCache.activityWallet)
     val between = Calendar.getInstance().getTimeInMillis - walletCache.lastModify
@@ -84,16 +88,8 @@ object WalletCache{
 
   def newWalletCache(wallet: Wallet): mutable.HashMap[String, WalletCache] ={
 
-    if(walletCaches.contains(wallet.n)){
-      val walletCache = walletCaches.get(wallet.n).get
-      walletCache.lastModify = Calendar.getInstance().getTimeInMillis
-
-      walletCaches.put(wallet.n, walletCache)
-    }else {
-      walletCaches.put(wallet.n, new WalletCache(wallet.n, wallet.p, accounts = wallet.accounts))
-    }
+    if(!walletCaches.contains(wallet.n)) walletCaches.put(wallet.n, new WalletCache(wallet.n, wallet.p, accounts = wallet.accounts))
     setActivate(wallet.n)
-
     walletCaches
   }
 
@@ -104,6 +100,7 @@ object WalletCache{
       if(!walletCache.accounts.isEmpty) walletCache.implyAccount =  walletCache.accounts(0).n
       if(n.equals(key)){
         walletCache.activate = true
+        walletCache.lastModify = Calendar.getInstance().getTimeInMillis
         WalletCache.activityWallet = key
       }else{
         walletCache.activate = false
@@ -125,6 +122,11 @@ object WalletCache{
     val walletContent = file.getLines.mkString
     file.close()
     walletContent
+  }
+
+  def writeActWallet: Unit ={
+    val walletCache = WalletCache.getActivityWallet()
+    WalletCache.writeWallet(walletCache.n, walletCache.p, walletCache.accounts)
   }
 
   def writeWallet(name:String, key:Array[Byte], accounts:Seq[Account]): Wallet ={
@@ -196,13 +198,11 @@ class WalletCreateCommand extends Command {
   override def execute(params: List[String]): Result = {
 
     try {
-
       val name = paramList.params(0).asInstanceOf[NicknameParameter].value
       val password = paramList.params(1).asInstanceOf[PasswordParameter].value
 
-      if (WalletCache.fileExist(name)) {
-        InvalidParams("Wallet [" + name + "] already exists, please type a different name")
-      }else{
+      if (WalletCache.fileExist(name))  InvalidParams("Wallet [" + name + "] already exists, please type a different name")
+      else{
         val key = Crypto.sha256(password.getBytes("UTF-8"))
 
         val wallet = WalletCache.writeWallet(name, key, Seq.empty)
@@ -232,10 +232,8 @@ class WalletLoadCommand extends Command {
     val name = paramList.params(0).asInstanceOf[NicknameParameter].value
     val inputPwd = paramList.params(1).asInstanceOf[PasswordParameter].value
 
-    if (!WalletCache.fileExist(name)) {
-      InvalidParams("Wallet [" + name + "] does not exist\n")
-    }else{
-
+    if (!WalletCache.fileExist(name)) InvalidParams("Wallet [" + name + "] does not exist\n")
+    else{
       // 获取文件内容
       val walletContent = WalletCache.readWallet(name)
 
@@ -244,18 +242,18 @@ class WalletLoadCommand extends Command {
       val iv : Array[Byte] = new Array(16)
       key.copyToArray(iv,0,16)
 
-      var dec : Array[Byte] = new Array[Byte](1000)
       try{
+        var dec : Array[Byte] = new Array[Byte](1000)
         // 解密文件内容
         dec = Crypto.AesDecrypt(base64decoder.decodeBuffer(walletContent), key, iv)
+        // 将对象反序列化
+        val wallet = Wallet.fromBytes(dec)
+
+        WalletCache.newWalletCache(wallet)
+        Success("wallet load success\n")
       }catch {
         case e: Throwable =>  InvalidParams("Invalid password\n")
       }
-      // 将对象反序列化
-      val wallet = Wallet.fromBytes(dec)
-
-      WalletCache.newWalletCache(wallet)
-      Success("wallet load success\n")
     }
   }
 }
@@ -319,7 +317,7 @@ class WalletListCommand extends Command {
       if(i.activate) print(" +")
       println("")
     }
-
+    WalletCache.reActWallet
     Success("wallet list successn\n")
   }
 }

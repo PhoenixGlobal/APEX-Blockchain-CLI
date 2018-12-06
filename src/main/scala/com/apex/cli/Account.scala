@@ -111,7 +111,6 @@ object Account {
 
   def addAccount(alias:String): Account ={
     val account = Account.newAccount(alias)
-
     createAccountCache(account)
     account
   }
@@ -121,13 +120,9 @@ object Account {
     // 获取活跃钱包
     val walletCache = WalletCache.getActivityWallet()
 
-    val accounts = walletCache.accounts.+:(account)
-
-    walletCache.accounts = accounts
+    walletCache.accounts.+:(account)
     walletCache.implyAccount = account.n
     walletCache.lastModify = Calendar.getInstance().getTimeInMillis
-
-    WalletCache.walletCaches.put(WalletCache.activityWallet, walletCache)
   }
 
   def delAccount(alias:String = "", address:String = ""){
@@ -135,20 +130,15 @@ object Account {
     val walletCache = WalletCache.getActivityWallet()
 
     // 判断根据什么参数删除
-    var accounts:Seq[Account] =  Seq[Account]()
-    if(!alias.isEmpty) accounts = walletCache.accounts.filter(!_.n.contains(alias))
-    else accounts = walletCache.accounts.filter(!_.address.contains(address))
+    if(!alias.isEmpty) walletCache.accounts = walletCache.accounts.filter(!_.n.contains(alias))
+    else walletCache.accounts = walletCache.accounts.filter(!_.address.contains(address))
 
     // 修改缓存信息
-    walletCache.accounts = accounts
     if(walletCache.implyAccount.equals(alias)) walletCache.implyAccount = ""
     walletCache.lastModify = Calendar.getInstance().getTimeInMillis
 
-    // 写入文件账户信息值
-    WalletCache.writeWallet(walletCache.n, walletCache.p, walletCache.accounts)
-
-    // 写入缓存值
-    WalletCache.walletCaches.put(WalletCache.activityWallet, walletCache)
+    // 将缓存写入文件
+    WalletCache.writeActWallet
   }
 
   def getAccount(alias:String = "", address:String = ""): Account ={
@@ -166,18 +156,12 @@ object Account {
 
     // 获取缓存中账户的信息
     val walletCache = WalletCache.getActivityWallet()
-    var accounts = walletCache.accounts.filter(!_.n.contains(alias))
-
     // 设置账户信息
-    walletCache.accounts = accounts.+:(account)
     walletCache.implyAccount = to
     walletCache.lastModify = Calendar.getInstance().getTimeInMillis
 
     // 写入文件账户信息值
-    WalletCache.writeWallet(walletCache.n, walletCache.p, walletCache.accounts)
-
-    // 写入缓存
-    WalletCache.walletCaches.put(WalletCache.activityWallet, walletCache)
+    WalletCache.writeActWallet
   }
 
   def implyAccount(account:Account): Unit ={
@@ -185,9 +169,7 @@ object Account {
     val walletCache = WalletCache.getActivityWallet()
     walletCache.implyAccount = account.n
     walletCache.lastModify = Calendar.getInstance().getTimeInMillis
-    WalletCache.walletCaches.put(WalletCache.activityWallet, walletCache)
   }
-
 }
 
 class AccountCommand extends CompositeCommand {
@@ -225,11 +207,9 @@ class createAccountCommand extends Command {
     if(!checkResult.isEmpty) InvalidParams(checkResult)
     else{
 
-      val walletCache = WalletCache.getActivityWallet()
-
       val account = Account.addAccount(alias)
 
-      WalletCache.writeWallet(walletCache.n, walletCache.p, walletCache.accounts)
+      WalletCache.writeActWallet
 
       Success("success, address："+account.address+"\n")
     }
@@ -255,10 +235,7 @@ class DeleteCommand extends Command {
     if(!checkResult.isEmpty) InvalidParams(checkResult)
     else{
 
-      // 从缓存中获取
-      if(alias != null) Account.delAccount(alias = alias)
-      else Account.delAccount(address = address)
-
+      Account.delAccount(alias, address)
       Success("delete success\n")
     }
   }
@@ -284,10 +261,15 @@ class RenameCommand extends Command {
     val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
     val to = paramList.params(1).asInstanceOf[NicknameParameter].value
 
-    val checkResult = Account.checkAccountExists(to)
-    if(!checkResult.isEmpty) InvalidParams(checkResult)
-    else{
 
+    // 校验钱包不存在
+    val aliasCheckResult = Account.checkAccountNotExists(alias)
+    // 校验钱包存在
+    val toCheckResult = Account.checkAccountExists(to)
+
+    if(!aliasCheckResult.isEmpty) InvalidParams(aliasCheckResult)
+    if(!toCheckResult.isEmpty) InvalidParams(toCheckResult)
+    else{
       // 获取账户信息
       val account = Account.modifyAccount(alias, to)
 
@@ -311,10 +293,15 @@ class ShowCommand extends Command {
     val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
     val address = paramList.params(1).asInstanceOf[AddressParameter].value
 
-    val account = Account.getAccount(alias, address)
+    // 校验钱包不存在
+    val checkResult = Account.checkAccountNotExists(alias)
+    if(!checkResult.isEmpty) InvalidParams(checkResult)
+    else{
 
-    println(account.n + "--"+account.pri)
-    Success("show success\n")
+      val account = Account.getAccount(alias, address)
+      println(account.n + "--"+account.pri)
+      Success("show success\n")
+    }
   }
 }
 
@@ -332,12 +319,14 @@ class ImplyCommand extends Command {
 
     val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
     val address = paramList.params(1).asInstanceOf[AddressParameter].value
+    // 校验钱包不存在
+    val checkResult = Account.checkAccountNotExists(alias)
+    if(!checkResult.isEmpty) InvalidParams(checkResult)
+    else{
+      Account.implyAccount(Account.getAccount(alias, address))
+      Success("imply success\n")
+    }
 
-    val account = Account.getAccount(alias, address)
-
-    if(account != null) Account.implyAccount(account)
-
-    Success("imply success\n")
   }
 }
 
@@ -347,8 +336,6 @@ class AccountListCommand extends Command {
   override val description: String = "List all accounts of current wallet"
 
   override def execute(params: List[String]): Result = {
-
-    println("implyAccount： "+WalletCache.getActivityWallet().implyAccount)
 
     WalletCache.getActivityWallet().accounts.foreach{i =>
       print(i.n +" -- " +i.address +" -- 余额")
@@ -384,15 +371,19 @@ class ImportCommand extends Command {
         val importAddress = account.getPrivKey().publicKey.address
 
         // 根据地址查询
-        if(Account.getAccount(address = importAddress) == null){
+        if(!Account.checkAccountStatus(address = importAddress)){
 
+          // 设置缓存
           account.address = importAddress
           Account.createAccountCache(account)
+
+          // 写入到文件中
+          WalletCache.writeActWallet
+
+          Success("\nimport success\n")
         }else InvalidParams("account key [" + key + "] already exists, please type a different key\n")
 
       } else InvalidParams("key error\n")
-
-      Success("import success\n")
     }
   }
 }
