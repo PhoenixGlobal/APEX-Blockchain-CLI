@@ -81,6 +81,12 @@ object Account {
     checkResult
   }
 
+  def checkAccountStatus(alias:String = "", address:String = ""): Boolean = {
+    if(!alias.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.n).contains(alias)) true
+    else if(!address.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.address).contains(address)) true
+    else false
+  }
+
   def checkAccountNotExists(alias:String = "", address:String=""): String = {
     var checkResult = checkWalletStatus
     if(!checkResult.isEmpty) checkResult

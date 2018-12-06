@@ -104,7 +104,7 @@ object WalletCache{
       if(!walletCache.accounts.isEmpty) walletCache.implyAccount =  walletCache.accounts(0).n
       if(n.equals(key)){
         walletCache.activate = true
-        activityWallet = key
+        WalletCache.activityWallet = key
       }else{
         walletCache.activate = false
       }
@@ -314,7 +314,6 @@ class WalletListCommand extends Command {
   override val description: String = "List all candidate wallet"
 
   override def execute(params: List[String]): Result = {
-
     WalletCache.walletCaches.values.foreach{i =>
       print(i.n)
       if(i.activate) print(" +")

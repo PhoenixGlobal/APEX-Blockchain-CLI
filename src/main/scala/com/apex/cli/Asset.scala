@@ -51,18 +51,17 @@ class SendCommand extends Command {
       if(this.cmd.equals("circulate")) {
         var to = paramList.params(1).asInstanceOf[NicknameParameter].value
         // 获取用户地址
-        val toAccount = Account.getAccount(to)
-        if (toAccount != null) toAdress = Account.getAccount(to).address
+      if (Account.checkAccountStatus(to)) toAdress = Account.getAccount(to).address
       }else toAdress = paramList.params(1).asInstanceOf[AddressParameter].value
 
-
-      if(Account.getAccount(from) == null) InvalidParams("from account not exists, please type a different one")
+      if(!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
       else if(toAdress.isEmpty) InvalidParams("to account not exists, please type a different one")
+      else if(Account.getAccount(from).address.equals(toAdress)) InvalidParams("same address, please type a different one")
       else{
         val amount = paramList.params(2).asInstanceOf[AmountParameter].value
         val privKey = Account.getAccount(from).getPrivKey()
 
-        /*val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
+        val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
 
         var nextNonce: Long = 0
         if (account != JsNull) {
@@ -85,8 +84,7 @@ class SendCommand extends Command {
         val rawTx: String = "{\"rawTx\":\""  + txRawData.toString  + "\"}"
         val result = RPC.post("sendrawtransaction", rawTx)
 
-        Success(Json prettyPrint result)*/
-        Success("send")
+        Success(Json prettyPrint result)
       }
     }
   }
