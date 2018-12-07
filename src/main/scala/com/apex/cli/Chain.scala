@@ -20,6 +20,7 @@ class StatusCommand extends Command {
 
   override def execute(params: List[String]): Result = {
     val result = RPC.post("getblockcount", paramList.toJson())
+    WalletCache.reActWallet
     Success(Json prettyPrint result)
   }
 }
@@ -53,6 +54,7 @@ class TransactionCommand extends Command {
 
   override def execute(params: List[String]): Result = {
     val result = RPC.post("gettx", paramList.toJson())
+    WalletCache.reActWallet
     Success(Json prettyPrint result)
   }
 }
