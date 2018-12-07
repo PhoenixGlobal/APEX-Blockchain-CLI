@@ -172,17 +172,19 @@ object WalletCache{
 }
 
 class WalletCommand extends CompositeCommand {
-  override val subCommands: Seq[Command] = Seq(
-    new WalletCreateCommand,
-    new WalletLoadCommand,
-    new WalletCloseCommand,
-    new WalletActivateCommand,
-    new WalletActCommand,
-    new WalletListCommand
-  )
 
   override val cmd: String = "wallet"
   override val description: String = "Operate a wallet, user accounts must add to one wallet before using it"
+  override val composite: Boolean = true
+
+  override val subCommands: Seq[Command] = Seq(
+  new WalletCreateCommand,
+  new WalletLoadCommand,
+  new WalletCloseCommand,
+  new WalletActivateCommand,
+  new WalletActCommand,
+  new WalletListCommand
+  )
 }
 
 class WalletCreateCommand extends Command {
@@ -191,8 +193,8 @@ class WalletCreateCommand extends Command {
   override val description: String = "create a new wallet"
 
   override val paramList: ParameterList = ParameterList.create(
-      new NicknameParameter("name", "n"),
-      new PasswordParameter("password", "p")
+      new NicknameParameter("name", "n","Wallet's name."),
+      new PasswordParameter("password", "p","Wallet's password.")
   )
 
   override def execute(params: List[String]): Result = {
@@ -223,8 +225,8 @@ class WalletLoadCommand extends Command {
   val base64decoder = new sun.misc.BASE64Decoder
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("name", "n"),
-    new PasswordParameter("password", "p")
+    new NicknameParameter("name", "n","Wallet's name."),
+    new PasswordParameter("password", "p","Wallet's password.")
   )
 
   override def execute(params: List[String]): Result = {
@@ -264,7 +266,7 @@ class WalletCloseCommand extends Command {
   override val description: String = "Close a loaded wallet"
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("name", "n")
+    new NicknameParameter("name", "n","Wallet's name.")
   )
 
   override def execute(params: List[String]): Result = {
@@ -285,7 +287,7 @@ class WalletActivateCommand extends Command {
   override val description: String = "Activate a candidate wallet. Use this command to switch amoung different wallets"
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("name", "n")
+    new NicknameParameter("name", "n","Wallet's name.")
   )
 
   override def execute(params: List[String]): Result = {

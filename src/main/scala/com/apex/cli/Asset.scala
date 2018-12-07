@@ -7,6 +7,7 @@ import play.api.libs.json.{JsNull, Json}
 class AssetCommand extends CompositeCommand {
   override val cmd: String = "asset"
   override val description: String = "Interface to operate your funds,  omit it and type the sub command directly is legal."
+  override val composite: Boolean = true
 
   override val subCommands: Seq[Command] = Seq(
     new CirculateCommand,
@@ -19,21 +20,24 @@ class CirculateCommand extends SendCommand {
   override val description = "Transfer tokens between accounts within current wallet. "
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("from", "from", true),
-    new NicknameParameter("to", "to"),
-    new AmountParameter("amount", "amount")
+    new NicknameParameter("from", "from",
+      "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.",
+      true),
+    new NicknameParameter("to", "to","The account where the asset come to"),
+    new AmountParameter("amount", "amount","The amount of the asset to be transfer.")
   )
 }
 
 class SendCommand extends Command {
   override val cmd = "send"
   override val description = "Transfer tokens."
-  override val sys: Boolean = true
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("from", "from", true),
-    new AddressParameter("to", "to"),
-    new AmountParameter("amount", "amount")
+    new NicknameParameter("from", "from",
+      "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.",
+      true),
+    new AddressParameter("to", "to","The account where the asset come to"),
+    new AmountParameter("amount", "amount","The amount of the asset to be transfer.")
   )
 
   override def execute(params: List[String]): Result = {

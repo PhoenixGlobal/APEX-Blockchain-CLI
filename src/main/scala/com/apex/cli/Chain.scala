@@ -5,6 +5,7 @@ import play.api.libs.json.Json
 class ChainCommand extends CompositeCommand {
   override val cmd: String = "chain"
   override val description: String = "Command Line Interface to the block chain, omit it and type the sub command directly is legal."
+  override val composite: Boolean = true
 
   override val subCommands: Seq[Command] = Seq(
     new StatusCommand,
@@ -16,7 +17,6 @@ class ChainCommand extends CompositeCommand {
 class StatusCommand extends Command {
   override val cmd = "status"
   override val description = "Show the status of block chain"
-  override val sys: Boolean = true
 
   override def execute(params: List[String]): Result = {
     val result = RPC.post("getblockcount", paramList.toJson())
@@ -27,12 +27,12 @@ class StatusCommand extends Command {
 class BlockCommand extends Command {
   override val cmd = "block"
   override val description = "Show data of the block"
-  override val sys: Boolean = true
-
 
   override val paramList: ParameterList = ParameterList.create(
-    new IntParameter("height", "height", true,true),
-    new IntParameter("id", "id", true,true)
+    new IntParameter("height", "height",
+      "The height of block. Use either this param or \"id\", If both give, the front one make sense.", true,true),
+    new IntParameter("id", "id",
+      "The id of block. Use either this param or \"id\", If both give, the front one make sense.",true,true)
 
   )
 
@@ -48,7 +48,7 @@ class TransactionCommand extends Command {
   override val description = "how data of the transaction"
 
   override val paramList: ParameterList = ParameterList.create(
-    new IntParameter("id", "id")
+    new IntParameter("id", "id","The id of transaction.")
   )
 
   override def execute(params: List[String]): Result = {

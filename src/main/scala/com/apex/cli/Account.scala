@@ -173,20 +173,21 @@ object Account {
 }
 
 class AccountCommand extends CompositeCommand {
-  override val subCommands: Seq[Command] = Seq(
-    new createAccountCommand,
-    new ImportCommand,
-    new ExportCommand,
-    new DeleteCommand,
-    new RemoveCommand,
-    new RenameCommand,
-    new ShowCommand,
-    new ImplyCommand,
-    new AccountListCommand
-  )
-
   override val cmd: String = "account"
   override val description: String = "Operate accounts of current wallet"
+  override val composite: Boolean = true
+
+  override val subCommands: Seq[Command] = Seq(
+  new createAccountCommand,
+  new ImportCommand,
+  new ExportCommand,
+  new DeleteCommand,
+  new RemoveCommand,
+  new RenameCommand,
+  new ShowCommand,
+  new ImplyCommand,
+  new AccountListCommand
+  )
 }
 
 class createAccountCommand extends Command {
@@ -195,7 +196,7 @@ class createAccountCommand extends Command {
   override val description: String = "Add new account to current wallet"
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("alias", "a")
+    new NicknameParameter("alias", "a","alias of account")
   )
 
   override def execute(params: List[String]): Result = {
@@ -222,8 +223,10 @@ class DeleteCommand extends Command {
   override val description: String = "Delete one account from current wallet"
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("alias", "a", true, true),
-    new AddressParameter("address", "address", true, true)
+    new NicknameParameter("alias", "a",
+      "The alias of account. Use either this param or \"address\", If both give, the front one make sense.", true, true),
+    new AddressParameter("address", "address",
+      "The address of account. Use either this param or \"a\", If both give, the front one make sense.", true, true)
   )
 
   override def execute(params: List[String]): Result = {
@@ -252,8 +255,8 @@ class RenameCommand extends Command {
   override val description: String = "Change the alias of one account within current wallet"
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("alias", "a"),
-    new NicknameParameter("to", "to")
+    new NicknameParameter("alias", "a","The alias of account."),
+    new NicknameParameter("to", "to","The new alias of account.")
   )
 
   override def execute(params: List[String]): Result = {
@@ -284,8 +287,10 @@ class ShowCommand extends Command {
   override val description: String = "Show the status of account"
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("alias", "a", true, true),
-    new AddressParameter("address", "address", true, true)
+    new NicknameParameter("alias", "a",
+      "The alias of account. Use either this param or \"address\", If both give, the front one make sense.", true, true),
+    new AddressParameter("address", "address",
+      "The address of account. Use either this param or \"a\", If both give, the front one make sense.", true, true)
   )
 
   override def execute(params: List[String]): Result = {
@@ -311,8 +316,10 @@ class ImplyCommand extends Command {
   override val description: String = "Set account as default account in the wallet"
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("alias", "a", true, true),
-    new AddressParameter("address", "address", true, true)
+    new NicknameParameter("alias", "a",
+      "The alias of account. Use either this param or \"address\", If both give, the front one make sense.", true, true),
+    new AddressParameter("address", "address",
+      "The address of account. Use either this param or \"a\", If both give, the front one make sense.", true, true)
   )
 
   override def execute(params: List[String]): Result = {
@@ -352,8 +359,8 @@ class ImportCommand extends Command {
   override val description: String = "Import account to current wallet"
 
   override val paramList: ParameterList = ParameterList.create(
-    new StringParameter("key", "key"),
-    new NicknameParameter("alias", "a")
+    new StringParameter("key", "key","Pivate key"),
+    new NicknameParameter("alias", "a","alias of account")
   )
 
   override def execute(params: List[String]): Result = {
@@ -394,8 +401,9 @@ class ExportCommand extends Command {
   override val description: String = "Export one account within current wallet"
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("alias", "a"),
-    new StringParameter("file", "file", true)
+    new NicknameParameter("alias", "a","alias of account"),
+    new StringParameter("file", "file",
+      "The file which the private key is wrote to.Omit it if you want to print the private key on the screen.", true)
   )
 
   override def execute(params: List[String]): Result = {

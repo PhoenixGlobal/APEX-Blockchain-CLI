@@ -14,6 +14,7 @@ import util.control.Breaks._
 trait Parameter {
   val name: String
   val shortName: String
+  val description: String
   val halt : Boolean = false
   val replaceable : Boolean = false
 
@@ -27,7 +28,7 @@ trait Parameter {
   }
 }
 
-class IntParameter(override val name: String, override val shortName: String,
+class IntParameter(override val name: String, override val shortName: String, override val description: String="",
                    override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
   var value: Int = 0
 
@@ -47,7 +48,7 @@ class IntParameter(override val name: String, override val shortName: String,
   }
 }
 
-class StringParameter(override val name: String, override val shortName: String,
+class StringParameter(override val name: String, override val shortName: String, override val description: String="",
                       override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
   var value: String = null
 
@@ -63,7 +64,7 @@ class StringParameter(override val name: String, override val shortName: String,
   }
 }
 
-class IdParameter(override val name: String = "id", override val shortName: String = "id") extends Parameter {
+class IdParameter(override val name: String = "id", override val shortName: String = "id", override val description: String ="") extends Parameter {
   var value: String = null
   //  private val regex = """[0-9a-fA-F]32""".r
 
@@ -90,7 +91,7 @@ class IdParameter(override val name: String = "id", override val shortName: Stri
   }
 }
 
-class AddressParameter(override val name: String = "address", override val shortName: String = "address",
+class AddressParameter(override val name: String = "address", override val shortName: String = "address", override val description: String ="",
                        override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
   var value: String = null
 
@@ -110,7 +111,7 @@ class AddressParameter(override val name: String = "address", override val short
   }
 }
 
-class HelpParameter(override val name: String = "help", override val shortName: String = "h") extends Parameter {
+class HelpParameter(override val name: String = "help", override val shortName: String = "h", override val description: String ="") extends Parameter {
   var value: String = null
 
   override def toJson: JsValue = JsString(value)
@@ -124,7 +125,7 @@ class HelpParameter(override val name: String = "help", override val shortName: 
   }
 }
 
-class NicknameParameter(override val name: String, override val shortName: String,
+class NicknameParameter(override val name: String, override val shortName: String, override val description: String="",
                         override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
   var value: String = null
 
@@ -144,7 +145,7 @@ class NicknameParameter(override val name: String, override val shortName: Strin
   }
 }
 
-class PasswordParameter(override val name: String = "password", override val shortName: String = "p") extends Parameter {
+class PasswordParameter(override val name: String = "password", override val shortName: String = "p", override val description: String="") extends Parameter {
   var value: String = null
   private val regex = """^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{8,}$""".r
 
@@ -162,7 +163,7 @@ class PasswordParameter(override val name: String = "password", override val sho
   }
 }
 
-class PrivKeyParameter(override val name: String = "privkey", override val shortName: String = "privkey") extends Parameter {
+class PrivKeyParameter(override val name: String = "privkey", override val shortName: String = "privkey", override val description: String="") extends Parameter {
   var value: String = null
 
   override def toJson: JsValue = JsString(value)
@@ -182,7 +183,7 @@ class PrivKeyParameter(override val name: String = "privkey", override val short
 }
 
 
-class AmountParameter(override val name: String = "amount", override val shortName: String = "amount") extends Parameter {
+class AmountParameter(override val name: String = "amount", override val shortName: String = "amount", override val description: String="") extends Parameter {
   var value: BigDecimal = null
 
   override def toJson: JsValue = JsString(value.toString)
