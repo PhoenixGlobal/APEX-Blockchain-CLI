@@ -349,6 +349,7 @@ class AccountListCommand extends Command {
       if(i.n.equals(WalletCache.getActivityWallet().implyAccount))  print(" +")
       println("")
     }
+    WalletCache.reActWallet
     Success("account list success\n")
   }
 }
@@ -422,6 +423,7 @@ class ExportCommand extends Command {
       else{
         WalletCache.exportAccount(account.pri, file)
       }
+      WalletCache.reActWallet
 
       Success("export success\n")
     }

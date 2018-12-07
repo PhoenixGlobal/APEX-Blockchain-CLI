@@ -319,7 +319,6 @@ class WalletListCommand extends Command {
       if(i.activate) print(" +")
       println("")
     }
-    WalletCache.reActWallet
     Success("wallet list successn\n")
   }
 }
