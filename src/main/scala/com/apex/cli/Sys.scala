@@ -8,13 +8,18 @@ class SysCommand extends CompositeCommand {
   override val composite: Boolean = true
 
   override val subCommands: Seq[Command] = Seq(
-    new VersionC
+    new VersionC,
+    new HelpC,
+    new VerC,
+    new ExitC,
+    new ClearC
   )
 }
 
 class HelpC extends Command {
   override val cmd: String = "help"
   override val description: String = "help"
+  override val sys: Boolean = true
 
   override def execute(params: List[String]): Result = {
 
@@ -30,11 +35,13 @@ class VersionC  extends Command {
 
 class VerC extends VersionC {
   override val cmd = "ver"
+  override val sys: Boolean = true
 }
 
 class ExitC extends Command {
   override val cmd = "exit"
   override val description = "exit"
+  override val sys: Boolean = true
 
   override def execute(params: List[String]): Result = new Quit
 }
@@ -42,6 +49,7 @@ class ExitC extends Command {
 class ClearC extends Command {
   override val cmd = "clear"
   override val description = "Clear characters on screen"
+  override val sys: Boolean = true
 
   override def execute(params: List[String]): Result = {
 

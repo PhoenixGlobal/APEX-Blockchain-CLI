@@ -82,17 +82,17 @@ object Account {
   }
 
   def checkAccountStatus(alias:String = "", address:String = ""): Boolean = {
-    if(!alias.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.n).contains(alias)) true
-    else if(!address.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.address).contains(address)) true
+    if(alias  != null && !alias.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.n).contains(alias)) true
+    else if(address  != null && !address.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.address).contains(address)) true
     else false
   }
 
   def checkAccountNotExists(alias:String = "", address:String=""): String = {
     var checkResult = checkWalletStatus
     if(!checkResult.isEmpty) checkResult
-    else if(alias != null && !WalletCache.getActivityWallet().accounts.groupBy(_.n).keySet.contains(alias))
+    else if(alias != null && !alias.isEmpty && !WalletCache.getActivityWallet().accounts.groupBy(_.n).keySet.contains(alias))
       checkResult = "account alias [" + alias + "] not exists, please type a different alias"
-    else if(address != null && !WalletCache.getActivityWallet().accounts.groupBy(_.address).keySet.contains(address))
+    else if(address  != null && !address.isEmpty && !WalletCache.getActivityWallet().accounts.groupBy(_.address).keySet.contains(address))
       checkResult = "account address [" + address + "] not exists, please type a different address"
 
     checkResult
@@ -101,9 +101,9 @@ object Account {
   def checkAccountExists(alias:String = "", address:String=""): String = {
     var checkResult = checkWalletStatus
     if(!checkResult.isEmpty) checkResult
-    else if(!alias.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.n).keySet.contains(alias))
+    else if(alias != null && !alias.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.n).keySet.contains(alias))
       checkResult = "account alias [" + alias + "] already exists, please type a different alias"
-    else if(!address.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.address).keySet.contains(address))
+    else if(address != null && !address.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.address).keySet.contains(address))
       checkResult = "account address [" + address + "] already exists, please type a different address"
 
     checkResult
@@ -120,9 +120,11 @@ object Account {
     // 获取活跃钱包
     val walletCache = WalletCache.getActivityWallet()
 
-    walletCache.accounts.+:(account)
+    walletCache.accounts = walletCache.accounts.+:(account)
     walletCache.implyAccount = account.n
     walletCache.lastModify = Calendar.getInstance().getTimeInMillis
+    // 写入缓存值
+//    WalletCache.walletCaches.put(WalletCache.activityWallet, walletCache)
   }
 
   def delAccount(alias:String = "", address:String = ""){
@@ -344,12 +346,16 @@ class AccountListCommand extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    WalletCache.getActivityWallet().accounts.foreach{i =>
-      print(i.n +" -- " +i.address +" -- 余额")
-      if(i.n.equals(WalletCache.getActivityWallet().implyAccount))  print(" +")
-      println("")
+    if(WalletCache.getActivityWallet() != null){
+      val a = WalletCache.getActivityWallet().accounts
+      WalletCache.getActivityWallet().accounts.foreach{i =>
+        print(i.n +" -- " +i.address +" -- 余额")
+        if(i.n.equals(WalletCache.getActivityWallet().implyAccount))  print(" +")
+        println("")
+      }
+      WalletCache.reActWallet
     }
-    WalletCache.reActWallet
+
     Success("account list success\n")
   }
 }

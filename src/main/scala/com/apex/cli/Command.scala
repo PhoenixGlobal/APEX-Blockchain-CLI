@@ -31,6 +31,7 @@ trait Command {
   val cmd: String
   val description: String
   val paramList: ParameterList = ParameterList.empty
+  val sys: Boolean = false
   val composite: Boolean = false
 
   def validate(params: List[String]): Boolean = {
@@ -68,6 +69,9 @@ object Command {
         all(cmd).find(_.validate(tail)) match {
           case Some(command) =>
             if(checkHelpParam(tail) && !command.composite) Help(helpPMessage(command))
+            else if(!command.composite && tail.size >0 &&
+              (command.paramList.params.isEmpty || command.paramList.params == null))
+                InvalidParams(tail.mkString(" "))
             else command.execute(tail)
           case None =>
             InvalidParams(tail.mkString(" "))
@@ -145,8 +149,10 @@ object Command {
     new ExitC,
     new VersionC,
     new ClearC,
+
     new StatusCommand,
     new BlockCommand,
+
     new SendCommand,
     new CirculateCommand
   ).groupBy(_.cmd)
@@ -160,7 +166,7 @@ trait CompositeCommand extends Command {
     if(params.isEmpty || Command.checkHelpParam(params)){
       Help(Command.helpMessage(description, subCommands.groupBy(_.cmd)))
     }else{
-      Command.execCommand(params, subCommands.groupBy(_.cmd))
+      Command.execCommand(params, subCommands.filterNot(_.sys).groupBy(_.cmd))
     }
 
     /*val test = subCommands.groupBy(_.cmd)

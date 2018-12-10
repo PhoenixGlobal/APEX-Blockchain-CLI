@@ -50,20 +50,23 @@ object WalletCache{
   var activityWallet:String = ""
 
   def get(n:String): WalletCache ={
-    walletCaches.get(n).get
+    if(walletCaches.contains(n))
+      walletCaches.get(n).get
+    else null
   }
 
   def getActivityWallet(): WalletCache = {
-    get(activityWallet)
+      get(activityWallet)
   }
 
   def isExist(n:String):Boolean={
-    if(get(n) == null) false
-    else true
+    if(walletCaches.contains(n)) true
+    else false
   }
 
   def remove(n:String){
     walletCaches.remove(n)
+    if(activityWallet.equals(n)) activityWallet = ""
   }
 
   def size():Int={
@@ -71,7 +74,8 @@ object WalletCache{
   }
 
   def reActWallet: Unit ={
-    WalletCache.getActivityWallet().lastModify = Calendar.getInstance().getTimeInMillis
+    if(WalletCache.getActivityWallet() != null)
+      WalletCache.getActivityWallet().lastModify = Calendar.getInstance().getTimeInMillis
   }
 
   def checkTime(): Boolean ={

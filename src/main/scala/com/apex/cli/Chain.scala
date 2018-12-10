@@ -19,7 +19,7 @@ class StatusCommand extends Command {
   override val description = "Show the status of block chain"
 
   override def execute(params: List[String]): Result = {
-    val result = RPC.post("getblockcount", paramList.toJson())
+    val result = RPC.post("getblockheight", paramList.toJson())
     WalletCache.reActWallet
     Success(Json prettyPrint result)
   }

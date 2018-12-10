@@ -18,6 +18,7 @@ class AssetCommand extends CompositeCommand {
 class CirculateCommand extends SendCommand {
   override val cmd = "circulate"
   override val description = "Transfer tokens between accounts within current wallet. "
+  override val sys: Boolean = true
 
   override val paramList: ParameterList = ParameterList.create(
     new NicknameParameter("from", "from",
@@ -31,6 +32,7 @@ class CirculateCommand extends SendCommand {
 class SendCommand extends Command {
   override val cmd = "send"
   override val description = "Transfer tokens."
+  override val sys: Boolean = true
 
   override val paramList: ParameterList = ParameterList.create(
     new NicknameParameter("from", "from",
