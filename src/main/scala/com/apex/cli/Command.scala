@@ -222,7 +222,9 @@ class NewAddrCmd extends Command {
     try {
       val privKey = new PrivateKey(BinaryData(Crypto.randomBytes(32)))
       println(s"Address: ${privKey.publicKey.address}")
-      println(s"Private key: ${privKey.toWIF}")
+      println(s"Private key (WIF): ${privKey.toWIF}")
+      println(s"Private key (raw): ${privKey.toString}")
+      println(s"Public key: ${privKey.publicKey.toString}")
       Success("")
     } catch {
       case e: Throwable => Error(e)
