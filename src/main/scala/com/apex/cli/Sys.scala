@@ -53,7 +53,10 @@ class ClearC extends Command {
 
     try{
       if (System.getProperty("os.name").contains("Windows")) new ProcessBuilder("cmd", "/c", "cls").inheritIO.start.waitFor
-      else Runtime.getRuntime.exec("clear") //System.out.print("\033\143")
+      else {
+        println(System.getProperty("os.name"))
+        System.out.print("\033\143")  // Runtime.getRuntime.exec("clear")
+      }
       Help("Welcome to CLI, type \"help\" for command list:")
     }catch {
       case e: Throwable => Error(e)
