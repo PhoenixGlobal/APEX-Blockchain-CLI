@@ -1,7 +1,5 @@
 package com.apex.cli
 
-import java.io.{BufferedReader, InputStreamReader}
-
 class SysCommand extends CompositeCommand {
   override val cmd: String = "sys"
   override val description: String = "Command Line Interface to the system, omit it and type the sub command directly is legal."
@@ -53,52 +51,12 @@ class ClearC extends Command {
 
   override def execute(params: List[String]): Result = {
 
-
-/*
-    val console=System.console();
-
-    if(console!=null)
-    {
-      System.out.println("input data");
-      var pwds=console.readPassword();
-      System.out.println("pwds="+pwds);
-
-      pwds=console.readPassword("hello password %s", "test");
-      System.out.println(pwds);
-
-      console.writer().println("finish");
-      console.flush();
-
-
-    }else {
-      System.out.println("console==null");
+    try{
+      if (System.getProperty("os.name").contains("Windows")) new ProcessBuilder("cmd", "/c", "cls").inheritIO.start.waitFor
+      else Runtime.getRuntime.exec("clear") //System.out.print("\033\143")
+      Help("Welcome to CLI, type \"help\" for command list:")
+    }catch {
+      case e: Throwable => Error(e)
     }
-*/
-
-
-    /*try {
-      val reader = new ConsoleReader()
-      val mask = '0';
-      val s =  reader.readLine("s>", mask)
-      println(s)
-    }catch{
-      case e: Exception => Error(e)
-    }*/
-
-    /* val reader = LineReaderBuilder.builder().build()
-     val prompt = "aaaa"
-     while (true) {
-       var line = ""
-       try {
-         line = reader.readLine(prompt, '*')
-         println(line)
-       } catch{
-         case e: UserInterruptException => Error(e)
-         case e: EndOfFileException => Error(e)
-
-       }
-     }*/
-
-    Success("clear success\n")
   }
 }
