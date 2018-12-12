@@ -3,10 +3,12 @@ package com.apex.cli
 import java.io._
 import java.nio.file.{Files, Paths}
 import java.util.Calendar
+
 import com.apex.crypto.Crypto
+import org.apache.commons.net.util.Base64
+
 import scala.collection.mutable
 import scala.io.Source
-import scala.util.control.Breaks
 
 class Wallet(val n :String, val p : Array[Byte], val accounts: Seq[Account]) extends com.apex.common.Serializable {
 
@@ -46,7 +48,6 @@ class WalletCache(val n:String, val p : Array[Byte],
 object WalletCache{
 
   val walletCaches : mutable.HashMap[String, WalletCache] = new mutable.HashMap[String,WalletCache]()
-  val base64encoder = new sun.misc.BASE64Encoder
   var activityWallet:String = ""
 
   def get(n:String): WalletCache ={
@@ -159,7 +160,8 @@ object WalletCache{
     val encrypted1 = Crypto.AesEncrypt(bs.toByteArray, key, iv)
 
     val fw = new FileWriter(path)
-    fw.write(base64encoder.encode(encrypted1))
+    val encodeBase64 = Base64.encodeBase64(encrypted1);
+    fw.write(new String(encodeBase64))
     fw.close()
 
     wallet
@@ -226,7 +228,6 @@ class WalletLoadCommand extends Command {
 
   override val cmd: String = "load"
   override val description: String = "load an existed wallet"
-  val base64decoder = new sun.misc.BASE64Decoder
 
   override val paramList: ParameterList = ParameterList.create(
     new NicknameParameter("name", "n","Wallet's name."),
@@ -251,7 +252,8 @@ class WalletLoadCommand extends Command {
       try{
         var dec : Array[Byte] = new Array[Byte](1000)
         // 解密文件内容
-        dec = Crypto.AesDecrypt(base64decoder.decodeBuffer(walletContent), key, iv)
+        val base64decoder = Base64.decodeBase64(walletContent)
+        dec = Crypto.AesDecrypt(base64decoder, key, iv)
         // 将对象反序列化
         val wallet = Wallet.fromBytes(dec)
 
