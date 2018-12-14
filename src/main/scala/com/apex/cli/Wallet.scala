@@ -3,10 +3,8 @@ package com.apex.cli
 import java.io._
 import java.nio.file.{Files, Paths}
 import java.util.Calendar
-
 import com.apex.crypto.Crypto
 import org.apache.commons.net.util.Base64
-
 import scala.collection.mutable
 import scala.io.Source
 
@@ -199,14 +197,14 @@ class WalletCreateCommand extends Command {
   override val description: String = "create a new wallet"
 
   override val paramList: ParameterList = ParameterList.create(
-      new NicknameParameter("name", "n","Wallet's name."),
+      new StringParameter("name", "n","Wallet's name."),
       new PasswordParameter("password", "p","Wallet's password.")
   )
 
   override def execute(params: List[String]): Result = {
 
     try {
-      val name = paramList.params(0).asInstanceOf[NicknameParameter].value
+      val name = paramList.params(0).asInstanceOf[StringParameter].value
       val password = paramList.params(1).asInstanceOf[PasswordParameter].value
 
       if (WalletCache.fileExist(name))  InvalidParams("Wallet [" + name + "] already exists, please type a different name")
@@ -230,13 +228,13 @@ class WalletLoadCommand extends Command {
   override val description: String = "load an existed wallet"
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("name", "n","Wallet's name."),
+    new StringParameter("name", "n","Wallet's name."),
     new PasswordParameter("password", "p","Wallet's password.")
   )
 
   override def execute(params: List[String]): Result = {
 
-    val name = paramList.params(0).asInstanceOf[NicknameParameter].value
+    val name = paramList.params(0).asInstanceOf[StringParameter].value
     val inputPwd = paramList.params(1).asInstanceOf[PasswordParameter].value
 
     if (!WalletCache.fileExist(name)) InvalidParams("Wallet [" + name + "] does not exist\n")
@@ -272,12 +270,12 @@ class WalletCloseCommand extends Command {
   override val description: String = "Close a loaded wallet"
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("name", "n","Wallet's name.")
+    new StringParameter("name", "n","Wallet's name.")
   )
 
   override def execute(params: List[String]): Result = {
 
-    val name = paramList.params(0).asInstanceOf[NicknameParameter].value
+    val name = paramList.params(0).asInstanceOf[StringParameter].value
 
     if(!WalletCache.isExist(name))  InvalidParams("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
     else{
@@ -293,12 +291,12 @@ class WalletActivateCommand extends Command {
   override val description: String = "Activate a candidate wallet. Use this command to switch amoung different wallets"
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("name", "n","Wallet's name.")
+    new StringParameter("name", "n","Wallet's name.")
   )
 
   override def execute(params: List[String]): Result = {
 
-    val name = paramList.params(0).asInstanceOf[NicknameParameter].value
+    val name = paramList.params(0).asInstanceOf[StringParameter].value
 
     // 判断要激活的钱包是否存在
     if(!WalletCache.isExist(name)) InvalidParams("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
