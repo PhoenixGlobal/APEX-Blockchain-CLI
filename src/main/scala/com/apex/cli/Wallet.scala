@@ -3,8 +3,11 @@ package com.apex.cli
 import java.io._
 import java.nio.file.{Files, Paths}
 import java.util.Calendar
+
+import com.apex.cli.Account.checkWalletStatus
 import com.apex.crypto.Crypto
 import org.apache.commons.net.util.Base64
+
 import scala.collection.mutable
 import scala.io.Source
 
@@ -332,14 +335,19 @@ class WalletListCommand extends Command {
   override val description: String = "List all candidate wallet"
 
   override def execute(params: List[String]): Result = {
+
     try{
-      WalletCache.walletCaches.values.foreach{i =>
-        print(i.n)
-        if(i.activate) print(" +")
-        println("")
+      var checkResult = checkWalletStatus
+      if(!checkResult.isEmpty) InvalidParams(checkResult)
+      else{
+        WalletCache.walletCaches.values.foreach{i =>
+          print(i.n)
+          if(i.activate) print(" +")
+          println("")
+        }
+        WalletCache.reActWallet
+        Success("wallet list success\n")
       }
-      WalletCache.reActWallet
-      Success("wallet list success\n")
     } catch {
       case e: Throwable => Error(e)
     }

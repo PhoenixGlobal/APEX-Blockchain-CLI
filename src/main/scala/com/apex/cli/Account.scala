@@ -82,7 +82,7 @@ object Account {
   }
 
   def checkAccountStatus(alias:String = "", address:String = ""): Boolean = {
-    if(alias  != null && !alias.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.n).contains(alias)) true
+    if(alias != null && !alias.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.n).contains(alias)) true
     else if(address  != null && !address.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.address).contains(address)) true
     else false
   }
@@ -132,7 +132,7 @@ object Account {
     val walletCache = WalletCache.getActivityWallet()
 
     // 判断根据什么参数删除
-    if(!alias.isEmpty) walletCache.accounts = walletCache.accounts.filter(!_.n.contains(alias))
+    if(alias!=null && !alias.isEmpty) walletCache.accounts = walletCache.accounts.filter(!_.n.contains(alias))
     else walletCache.accounts = walletCache.accounts.filter(!_.address.contains(address))
 
     // 修改缓存信息
@@ -145,7 +145,7 @@ object Account {
 
   def getAccount(alias:String = "", address:String = ""): Account ={
 
-    if(!alias.isEmpty) WalletCache.getActivityWallet().accounts.groupBy(_.n).get(alias).get(0)
+    if(alias!=null && !alias.isEmpty) WalletCache.getActivityWallet().accounts.groupBy(_.n).get(alias).get(0)
     else WalletCache.getActivityWallet().accounts.groupBy(_.address).get(address).get(0)
   }
 
