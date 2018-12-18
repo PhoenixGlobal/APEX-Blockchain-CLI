@@ -19,9 +19,13 @@ class StatusCommand extends Command {
   override val description = "Show the status of block chain"
 
   override def execute(params: List[String]): Result = {
-    val result = RPC.post("getblockheight", paramList.toJson())
-    WalletCache.reActWallet
-    Success(Json prettyPrint result)
+    try{
+      val result = RPC.post("getblockheight", paramList.toJson())
+      WalletCache.reActWallet
+      Success(Json prettyPrint result)
+    } catch {
+      case e: Throwable => Error(e)
+    }
   }
 }
 
@@ -39,8 +43,12 @@ class BlockCommand extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    val result = RPC.post("getblock", paramList.toJson)
-    Success(Json prettyPrint result)
+    try{
+      val result = RPC.post("getblock", paramList.toJson)
+      Success(Json prettyPrint result)
+    } catch {
+      case e: Throwable => Error(e)
+    }
   }
 }
 
@@ -53,8 +61,12 @@ class TransactionCommand extends Command {
   )
 
   override def execute(params: List[String]): Result = {
-    val result = RPC.post("gettx", paramList.toJson())
-    WalletCache.reActWallet
-    Success(Json prettyPrint result)
+    try{
+      val result = RPC.post("gettx", paramList.toJson())
+      WalletCache.reActWallet
+      Success(Json prettyPrint result)
+    } catch {
+      case e: Throwable => Error(e)
+    }
   }
 }

@@ -43,55 +43,58 @@ class SendCommand extends Command {
   )
 
   override def execute(params: List[String]): Result = {
+    try{
+      val checkResult = Account.checkWalletStatus
+      if(!checkResult.isEmpty) InvalidParams(checkResult)
+      else {
+        // 赋值from昵称
+        var from = WalletCache.getActivityWallet().implyAccount
+        // 根据昵称获取转账地址
+        if(params.size/2 == paramList.params.size)  from = paramList.params(0).asInstanceOf[NicknameParameter].value
 
-    val checkResult = Account.checkWalletStatus
-    if(!checkResult.isEmpty) InvalidParams(checkResult)
-    else {
-      // 赋值from昵称
-      var from = WalletCache.getActivityWallet().implyAccount
-      // 根据昵称获取转账地址
-      if(params.size/2 == paramList.params.size)  from = paramList.params(0).asInstanceOf[NicknameParameter].value
+        // 赋值to收账地址
+        var toAdress = ""
+        if(this.cmd.equals("circulate")) {
+          var to = paramList.params(1).asInstanceOf[NicknameParameter].value
+          // 获取用户地址
+          if (Account.checkAccountStatus(to)) toAdress = Account.getAccount(to).address
+        }else toAdress = paramList.params(1).asInstanceOf[AddressParameter].value
 
-      // 赋值to收账地址
-      var toAdress = ""
-      if(this.cmd.equals("circulate")) {
-        var to = paramList.params(1).asInstanceOf[NicknameParameter].value
-        // 获取用户地址
-      if (Account.checkAccountStatus(to)) toAdress = Account.getAccount(to).address
-      }else toAdress = paramList.params(1).asInstanceOf[AddressParameter].value
+        if(!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
+        else if(toAdress.isEmpty) InvalidParams("to account not exists, please type a different one")
+        else if(Account.getAccount(from).address.equals(toAdress)) InvalidParams("same address, please type a different one")
+        else{
+          val amount = paramList.params(2).asInstanceOf[AmountParameter].value
+          val privKey = Account.getAccount(from).getPrivKey()
 
-      if(!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
-      else if(toAdress.isEmpty) InvalidParams("to account not exists, please type a different one")
-      else if(Account.getAccount(from).address.equals(toAdress)) InvalidParams("same address, please type a different one")
-      else{
-        val amount = paramList.params(2).asInstanceOf[AmountParameter].value
-        val privKey = Account.getAccount(from).getPrivKey()
+          val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
 
-        val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
+          var nextNonce: Long = 0
+          if (account != JsNull) {
+            nextNonce = (account \ "nextNonce").as[Long]
+          }
 
-        var nextNonce: Long = 0
-        if (account != JsNull) {
-          nextNonce = (account \ "nextNonce").as[Long]
+          val tx = new Transaction(TransactionType.Transfer,
+            privKey.publicKey,
+            Ecdsa.PublicKeyHash.fromAddress(toAdress).get,
+            "",
+            Fixed8.fromDecimal(amount),
+            UInt256.Zero,
+            nextNonce,
+            BinaryData.empty,
+            BinaryData.empty)
+
+          tx.sign(privKey)
+
+          val txRawData = BinaryData(tx.toBytes)
+          val rawTx: String = "{\"rawTx\":\""  + txRawData.toString  + "\"}"
+          val result = RPC.post("sendrawtransaction", rawTx)
+          WalletCache.reActWallet
+          Success(Json prettyPrint result)
         }
-
-        val tx = new Transaction(TransactionType.Transfer,
-          privKey.publicKey,
-          Ecdsa.PublicKeyHash.fromAddress(toAdress).get,
-          "",
-          Fixed8.fromDecimal(amount),
-          UInt256.Zero,
-          nextNonce,
-          BinaryData.empty,
-          BinaryData.empty)
-
-        tx.sign(privKey)
-
-        val txRawData = BinaryData(tx.toBytes)
-        val rawTx: String = "{\"rawTx\":\""  + txRawData.toString  + "\"}"
-        val result = RPC.post("sendrawtransaction", rawTx)
-        WalletCache.reActWallet
-        Success(Json prettyPrint result)
       }
+    } catch {
+      case e: Throwable => Error(e)
     }
   }
 }

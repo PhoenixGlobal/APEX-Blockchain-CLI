@@ -203,18 +203,23 @@ class createAccountCommand extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
+    try{
 
-    // 账户校验
-    val checkResult = Account.checkAccountExists(alias)
-    if(!checkResult.isEmpty) InvalidParams(checkResult)
-    else{
+      val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
 
-      val account = Account.addAccount(alias)
+      // 账户校验
+      val checkResult = Account.checkAccountExists(alias)
+      if(!checkResult.isEmpty) InvalidParams(checkResult)
+      else{
 
-      WalletCache.writeActWallet
+        val account = Account.addAccount(alias)
 
-      Success("success, address："+account.address+"\n")
+        WalletCache.writeActWallet
+
+        Success("success, address："+account.address+"\n")
+      }
+    } catch {
+      case e: Throwable => Error(e)
     }
   }
 }
@@ -232,16 +237,20 @@ class DeleteCommand extends Command {
   )
 
   override def execute(params: List[String]): Result = {
+    try{
 
-    val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
-    val address = paramList.params(1).asInstanceOf[AddressParameter].value
+      val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
+      val address = paramList.params(1).asInstanceOf[AddressParameter].value
 
-    val checkResult = Account.checkAccountNotExists(alias, address)
-    if(!checkResult.isEmpty) InvalidParams(checkResult)
-    else{
+      val checkResult = Account.checkAccountNotExists(alias, address)
+      if(!checkResult.isEmpty) InvalidParams(checkResult)
+      else{
 
-      Account.delAccount(alias, address)
-      Success("delete success\n")
+        Account.delAccount(alias, address)
+        Success("delete success\n")
+      }
+    } catch {
+      case e: Throwable => Error(e)
     }
   }
 }
@@ -263,23 +272,28 @@ class RenameCommand extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
-    val to = paramList.params(1).asInstanceOf[NicknameParameter].value
+    try{
+      val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
+      val to = paramList.params(1).asInstanceOf[NicknameParameter].value
 
 
-    // 校验钱包不存在
-    val aliasCheckResult = Account.checkAccountNotExists(alias)
-    // 校验钱包存在
-    val toCheckResult = Account.checkAccountExists(to)
+      // 校验钱包不存在
+      val aliasCheckResult = Account.checkAccountNotExists(alias)
+      // 校验钱包存在
+      val toCheckResult = Account.checkAccountExists(to)
 
-    if(!aliasCheckResult.isEmpty) InvalidParams(aliasCheckResult)
-    if(!toCheckResult.isEmpty) InvalidParams(toCheckResult)
-    else{
-      // 获取账户信息
-      val account = Account.modifyAccount(alias, to)
+      if(!aliasCheckResult.isEmpty) InvalidParams(aliasCheckResult)
+      if(!toCheckResult.isEmpty) InvalidParams(toCheckResult)
+      else{
+        // 获取账户信息
+        val account = Account.modifyAccount(alias, to)
 
-      Success("rename success\n")
+        Success("rename success\n")
+      }
+    } catch {
+      case e: Throwable => Error(e)
     }
+
   }
 }
 
@@ -297,17 +311,22 @@ class ShowCommand extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
-    val address = paramList.params(1).asInstanceOf[AddressParameter].value
+    try{
 
-    // 校验钱包不存在
-    val checkResult = Account.checkAccountNotExists(alias)
-    if(!checkResult.isEmpty) InvalidParams(checkResult)
-    else{
+      val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
+      val address = paramList.params(1).asInstanceOf[AddressParameter].value
 
-      val account = Account.getAccount(alias, address)
-      println(account.n + "--"+account.pri)
-      Success("show success\n")
+      // 校验钱包不存在
+      val checkResult = Account.checkAccountNotExists(alias)
+      if(!checkResult.isEmpty) InvalidParams(checkResult)
+      else{
+
+        val account = Account.getAccount(alias, address)
+        println(account.n + "--"+account.pri)
+        Success("show success\n")
+      }
+    } catch {
+      case e: Throwable => Error(e)
     }
   }
 }
@@ -326,16 +345,19 @@ class ImplyCommand extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
-    val address = paramList.params(1).asInstanceOf[AddressParameter].value
-    // 校验钱包不存在
-    val checkResult = Account.checkAccountNotExists(alias)
-    if(!checkResult.isEmpty) InvalidParams(checkResult)
-    else{
-      Account.implyAccount(Account.getAccount(alias, address))
-      Success("imply success\n")
+    try{
+      val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
+      val address = paramList.params(1).asInstanceOf[AddressParameter].value
+      // 校验钱包不存在
+      val checkResult = Account.checkAccountNotExists(alias)
+      if(!checkResult.isEmpty) InvalidParams(checkResult)
+      else{
+        Account.implyAccount(Account.getAccount(alias, address))
+        Success("imply success\n")
+      }
+    } catch {
+      case e: Throwable => Error(e)
     }
-
   }
 }
 
@@ -346,17 +368,21 @@ class AccountListCommand extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    if(WalletCache.getActivityWallet() != null){
-      val a = WalletCache.getActivityWallet().accounts
-      WalletCache.getActivityWallet().accounts.foreach{i =>
-        print(i.n +" -- " +i.address +" -- 余额")
-        if(i.n.equals(WalletCache.getActivityWallet().implyAccount))  print(" +")
-        println("")
+    try{
+      if(WalletCache.getActivityWallet() != null){
+        val a = WalletCache.getActivityWallet().accounts
+        WalletCache.getActivityWallet().accounts.foreach{i =>
+          print(i.n +" -- " +i.address +" -- 余额")
+          if(i.n.equals(WalletCache.getActivityWallet().implyAccount))  print(" +")
+          println("")
+        }
+        WalletCache.reActWallet
       }
-      WalletCache.reActWallet
-    }
 
-    Success("account list success\n")
+      Success("account list success\n")
+    } catch {
+      case e: Throwable => Error(e)
+    }
   }
 }
 
@@ -372,32 +398,37 @@ class ImportCommand extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    val key = paramList.params(0).asInstanceOf[StringParameter].value
-    val alias = paramList.params(1).asInstanceOf[NicknameParameter].value
+    try{
 
-    // 判断用户名是否存在
-    val checkResult = Account.checkAccountExists(alias)
-    if(!checkResult.isEmpty) InvalidParams(checkResult)
-    else{
-      val account = Account.Default
-      if (account.importPrivKeyFromWIF(key)) {
-        account.n = alias
-        val importAddress = account.getPrivKey().publicKey.address
+      val key = paramList.params(0).asInstanceOf[StringParameter].value
+      val alias = paramList.params(1).asInstanceOf[NicknameParameter].value
 
-        // 根据地址查询
-        if(!Account.checkAccountStatus(address = importAddress)){
+      // 判断用户名是否存在
+      val checkResult = Account.checkAccountExists(alias)
+      if(!checkResult.isEmpty) InvalidParams(checkResult)
+      else{
+        val account = Account.Default
+        if (account.importPrivKeyFromWIF(key)) {
+          account.n = alias
+          val importAddress = account.getPrivKey().publicKey.address
 
-          // 设置缓存
-          account.address = importAddress
-          Account.createAccountCache(account)
+          // 根据地址查询
+          if(!Account.checkAccountStatus(address = importAddress)){
 
-          // 写入到文件中
-          WalletCache.writeActWallet
+            // 设置缓存
+            account.address = importAddress
+            Account.createAccountCache(account)
 
-          Success("\nimport success\n")
-        }else InvalidParams("account key [" + key + "] already exists, please type a different key\n")
+            // 写入到文件中
+            WalletCache.writeActWallet
 
-      } else InvalidParams("key error\n")
+            Success("\nimport success\n")
+          }else InvalidParams("account key [" + key + "] already exists, please type a different key\n")
+
+        } else InvalidParams("key error\n")
+      }
+    } catch {
+      case e: Throwable => Error(e)
     }
   }
 }
@@ -415,23 +446,27 @@ class ExportCommand extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
-    val file = paramList.params(1).asInstanceOf[StringParameter].value
+    try{
+      val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
+      val file = paramList.params(1).asInstanceOf[StringParameter].value
 
-    val checkResult = Account.checkWalletStatus
-    if(!checkResult.isEmpty) InvalidParams(checkResult)
-    else{
-      // 显示私钥
-      val account = Account.getAccount(alias)
-
-      if(file == null)
-        println("pri ==> "+account.pri)
+      val checkResult = Account.checkWalletStatus
+      if(!checkResult.isEmpty) InvalidParams(checkResult)
       else{
-        WalletCache.exportAccount(account.pri, file)
-      }
-      WalletCache.reActWallet
+        // 显示私钥
+        val account = Account.getAccount(alias)
 
-      Success("export success\n")
+        if(file == null)
+          println("pri ==> "+account.pri)
+        else{
+          WalletCache.exportAccount(account.pri, file)
+        }
+        WalletCache.reActWallet
+
+        Success("export success\n")
+      }
+    } catch {
+      case e: Throwable => Error(e)
     }
   }
 }

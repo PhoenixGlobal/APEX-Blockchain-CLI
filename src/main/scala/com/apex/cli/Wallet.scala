@@ -234,32 +234,38 @@ class WalletLoadCommand extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    val name = paramList.params(0).asInstanceOf[StringParameter].value
-    val inputPwd = paramList.params(1).asInstanceOf[PasswordParameter].value
+    try{
+      val name = paramList.params(0).asInstanceOf[StringParameter].value
+      val inputPwd = paramList.params(1).asInstanceOf[PasswordParameter].value
 
-    if (!WalletCache.fileExist(name)) InvalidParams("Wallet [" + name + "] does not exist\n")
-    else{
-      // 获取文件内容
-      val walletContent = WalletCache.readWallet(name)
+      if (!WalletCache.fileExist(name)) InvalidParams("Wallet [" + name + "] does not exist\n")
+      else if(WalletCache.get(name) != null){
+        InvalidParams("Wallet [" + name + "] already exists, please type a different name")
+      }else{
+        // 获取文件内容
+        val walletContent = WalletCache.readWallet(name)
 
-      // 加密用户输入密码，并解密文件
-      val key = Crypto.sha256(inputPwd.getBytes("UTF-8"))
-      val iv : Array[Byte] = new Array(16)
-      key.copyToArray(iv,0,16)
+        // 加密用户输入密码，并解密文件
+        val key = Crypto.sha256(inputPwd.getBytes("UTF-8"))
+        val iv : Array[Byte] = new Array(16)
+        key.copyToArray(iv,0,16)
 
-      try{
-        var dec : Array[Byte] = new Array[Byte](1000)
-        // 解密文件内容
-        val base64decoder = Base64.decodeBase64(walletContent)
-        dec = Crypto.AesDecrypt(base64decoder, key, iv)
-        // 将对象反序列化
-        val wallet = Wallet.fromBytes(dec)
+        try{
+          var dec : Array[Byte] = new Array[Byte](1000)
+          // 解密文件内容
+          val base64decoder = Base64.decodeBase64(walletContent)
+          dec = Crypto.AesDecrypt(base64decoder, key, iv)
+          // 将对象反序列化
+          val wallet = Wallet.fromBytes(dec)
 
-        WalletCache.newWalletCache(wallet)
-        Success("wallet load success\n")
-      }catch {
-        case e: Throwable =>  InvalidParams("Invalid password\n")
+          WalletCache.newWalletCache(wallet)
+          Success("wallet load success\n")
+        }catch {
+          case e: Throwable =>  InvalidParams("Invalid password\n")
+        }
       }
+    } catch {
+      case e: Throwable => Error(e)
     }
   }
 }
@@ -275,12 +281,16 @@ class WalletCloseCommand extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    val name = paramList.params(0).asInstanceOf[StringParameter].value
+    try{
+      val name = paramList.params(0).asInstanceOf[StringParameter].value
 
-    if(!WalletCache.isExist(name))  InvalidParams("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
-    else{
-      WalletCache.remove(name)
-      Success("wallet remove success\n")
+      if(!WalletCache.isExist(name))  InvalidParams("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
+      else{
+        WalletCache.remove(name)
+        Success("wallet remove success\n")
+      }
+    } catch {
+      case e: Throwable => Error(e)
     }
   }
 }
@@ -296,14 +306,18 @@ class WalletActivateCommand extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    val name = paramList.params(0).asInstanceOf[StringParameter].value
+    try{
+      val name = paramList.params(0).asInstanceOf[StringParameter].value
 
-    // 判断要激活的钱包是否存在
-    if(!WalletCache.isExist(name)) InvalidParams("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
-    else{
-      // 设置钱包的状态
-      WalletCache.setActivate(name)
-      Success("wallet activate success\n")
+      // 判断要激活的钱包是否存在
+      if(!WalletCache.isExist(name)) InvalidParams("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
+      else{
+        // 设置钱包的状态
+        WalletCache.setActivate(name)
+        Success("wallet activate success\n")
+      }
+    } catch {
+      case e: Throwable => Error(e)
     }
   }
 }
@@ -318,12 +332,16 @@ class WalletListCommand extends Command {
   override val description: String = "List all candidate wallet"
 
   override def execute(params: List[String]): Result = {
-    WalletCache.walletCaches.values.foreach{i =>
-      print(i.n)
-      if(i.activate) print(" +")
-      println("")
+    try{
+      WalletCache.walletCaches.values.foreach{i =>
+        print(i.n)
+        if(i.activate) print(" +")
+        println("")
+      }
+      WalletCache.reActWallet
+      Success("wallet list success\n")
+    } catch {
+      case e: Throwable => Error(e)
     }
-    WalletCache.reActWallet
-    Success("wallet list successn\n")
   }
 }
