@@ -337,17 +337,14 @@ class WalletListCommand extends Command {
   override def execute(params: List[String]): Result = {
 
     try{
-      var checkResult = checkWalletStatus
-      if(!checkResult.isEmpty) InvalidParams(checkResult)
-      else{
-        WalletCache.walletCaches.values.foreach{i =>
-          print(i.n)
-          if(i.activate) print(" +")
-          println("")
-        }
-        WalletCache.reActWallet
-        Success("wallet list success\n")
+      WalletCache.walletCaches.values.foreach{i =>
+        print(i.n)
+        if(i.activate && checkWalletStatus.isEmpty) print(" +")
+        println("")
       }
+      if(checkWalletStatus.isEmpty)
+        WalletCache.reActWallet
+      Success("wallet list success\n")
     } catch {
       case e: Throwable => Error(e)
     }

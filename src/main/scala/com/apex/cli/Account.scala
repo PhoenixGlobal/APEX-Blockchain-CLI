@@ -74,7 +74,7 @@ object Account {
   def checkWalletStatus: String = {
     var checkResult = ""
     if (WalletCache.size() < 1) {
-      checkResult = "please load Wallet, type \"wallet list\" to see all loaded wallet."
+      checkResult = "please load Wallet." // , type "wallet list" to see all loaded wallet
     } else if (WalletCache.activityWallet.isEmpty || !WalletCache.checkTime()) {
       checkResult = "please active Wallet, use \"wallet activate\" command to activate it."
     }
