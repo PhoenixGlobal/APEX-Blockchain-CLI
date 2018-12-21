@@ -1,6 +1,7 @@
 package com.apex.cli
 
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
+import scala.collection.mutable
 
 class ChainCommand extends CompositeCommand {
   override val cmd: String = "chain"
@@ -36,7 +37,7 @@ class BlockCommand extends Command {
   override val paramList: ParameterList = ParameterList.create(
     new IntParameter("height", "height",
       "The height of block. Use either this param or \"id\", If both give, the front one make sense.", true,true),
-    new IntParameter("id", "id",
+    new StringParameter("id", "id",
       "The id of block. Use either this param or \"id\", If both give, the front one make sense.",true,true)
 
   )
@@ -44,7 +45,17 @@ class BlockCommand extends Command {
   override def execute(params: List[String]): Result = {
 
     try{
-      val result = RPC.post("getblock", paramList.toJson)
+      var height = paramList.params(0).asInstanceOf[IntParameter].value
+
+      var data:String =""
+      if(height != null)
+        data = JsObject(
+          mutable.HashMap(paramList.params(0). asInstanceOf[IntParameter].name.toString -> paramList.params(0).asInstanceOf[IntParameter].toJson)).toString()
+      else
+      data = JsObject(
+        mutable.HashMap(paramList.params(1).asInstanceOf[StringParameter].name.toString -> paramList.params(1).asInstanceOf[StringParameter].toJson)).toString()
+
+      val result = RPC.post("getblock", data)
       Success(Json prettyPrint result)
     } catch {
       case e: Throwable => Error(e)

@@ -15,12 +15,15 @@ trait Parameter {
   val name: String
   val shortName: String
   val description: String
+  // 是否可以跳过判断
   val halt : Boolean = false
+  // 是否有可替代属性
   val replaceable : Boolean = false
+
 
   def toJson(): JsValue
 
-  def validate(n: String, v: String): Boolean
+  def validate(n: String, v: String, setEmpty : Boolean = false): Boolean
 
   protected def validateName(s: String): Boolean = {
 //    s.equals(s"-$shortName") || s.equals(s"-$name")
@@ -30,12 +33,16 @@ trait Parameter {
 
 class IntParameter(override val name: String, override val shortName: String, override val description: String="",
                    override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
-  var value: Int = 0
+  var value: Integer = 0
 
-  override def toJson: JsValue = JsNumber(value)
+  override def toJson: JsValue = JsNumber(value.toInt)
 
-  override def validate(n: String, v: String): Boolean = {
-    validateName(n) && setValue(v)
+  override def validate(n: String, v: String, setEmpty : Boolean = false): Boolean = {
+    if(setEmpty){
+      value = null
+      true
+    } else
+      validateName(n) && setValue(v)
   }
 
   private def setValue(s: String): Boolean = {
@@ -54,8 +61,12 @@ class StringParameter(override val name: String, override val shortName: String,
 
   override def toJson: JsValue = JsString(value)
 
-  override def validate(n: String, v: String): Boolean = {
-    validateName(n) && setValue(v)
+  override def validate(n: String, v: String, setEmpty : Boolean = false): Boolean = {
+    if(setEmpty){
+      value = null
+      true
+    } else
+      validateName(n) && setValue(v)
   }
 
   private def setValue(s: String): Boolean = {
@@ -70,8 +81,12 @@ class IdParameter(override val name: String = "id", override val shortName: Stri
 
   override def toJson: JsValue = JsString(value)
 
-  override def validate(n: String, v: String): Boolean = {
-    validateName(n) && setValue(v)
+  override def validate(n: String, v: String, setEmpty : Boolean = false): Boolean = {
+    if(setEmpty){
+      value = null
+      true
+    } else
+      validateName(n) && setValue(v)
   }
 
   private def setValue(s: String): Boolean = {
@@ -97,8 +112,12 @@ class AddressParameter(override val name: String = "address", override val short
 
   override def toJson: JsValue = JsString(value)
 
-  override def validate(n: String, v: String): Boolean = {
-    validateName(n) && setValue(v)
+  override def validate(n: String, v: String, setEmpty : Boolean = false): Boolean = {
+    if(setEmpty){
+      value = null
+      true
+    } else
+      validateName(n) && setValue(v)
   }
 
   private def setValue(s: String): Boolean = {
@@ -116,8 +135,12 @@ class HelpParameter(override val name: String = "help", override val shortName: 
 
   override def toJson: JsValue = JsString(value)
 
-  override def validate(n: String, v: String): Boolean = {
-    validateName(n) && setValue(v)
+  override def validate(n: String, v: String, setEmpty : Boolean = false): Boolean = {
+    if(setEmpty){
+      value = null
+      true
+    } else
+      validateName(n) && setValue(v)
   }
 
   private def setValue(s: String): Boolean = {
@@ -133,8 +156,12 @@ class NicknameParameter(override val name: String, override val shortName: Strin
 
   override def toJson: JsValue = JsString(value)
 
-  override def validate(n: String, v: String): Boolean = {
-    validateName(n) && setValue(v)
+  override def validate(n: String, v: String, setEmpty : Boolean = false): Boolean = {
+    if(setEmpty){
+      value = null
+      true
+    } else
+      validateName(n) && setValue(v)
   }
 
   private def setValue(s: String): Boolean = {
@@ -151,8 +178,12 @@ class PasswordParameter(override val name: String = "password", override val sho
 
   override def toJson: JsValue = JsString(value)
 
-  override def validate(n: String, v: String): Boolean = {
-    validateName(n) && setValue(v)
+  override def validate(n: String, v: String, setEmpty : Boolean = false): Boolean = {
+    if(setEmpty){
+      value = null
+      true
+    } else
+      validateName(n) && setValue(v)
   }
 
   private def setValue(s: String): Boolean = {
@@ -168,8 +199,12 @@ class PrivKeyParameter(override val name: String = "privkey", override val short
 
   override def toJson: JsValue = JsString(value)
 
-  override def validate(n: String, v: String): Boolean = {
-    validateName(n) && setValue(v)
+  override def validate(n: String, v: String, setEmpty : Boolean = false): Boolean = {
+    if(setEmpty){
+      value = null
+      true
+    } else
+      validateName(n) && setValue(v)
   }
 
   private def setValue(s: String): Boolean = {
@@ -188,8 +223,12 @@ class AmountParameter(override val name: String = "amount", override val shortNa
 
   override def toJson: JsValue = JsString(value.toString)
 
-  override def validate(n: String, v: String): Boolean = {
-    validateName(n) && setValue(v)
+  override def validate(n: String, v: String, setEmpty : Boolean = false): Boolean = {
+    if(setEmpty){
+      value = null
+      true
+    } else
+      validateName(n) && setValue(v)
   }
 
   private def setValue(s: String): Boolean = {
@@ -306,7 +345,7 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
               // 定义可跳过参数值正确
               if(validate && item.parameter.halt) halt = true
               // 将克隆dic集合减少
-              cloneDic = cloneDic.-(n)
+                cloneDic = cloneDic.-(n)
               validate
             }
           case None => false
@@ -323,6 +362,7 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
     // 验证若是帮助参数，返回true
     if(Command.checkHelpParam(list)) true
     else{
+
       // 重新赋值克隆dic值
       track.cloneDic = track.dic
 
@@ -344,6 +384,9 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
 
     // 循环剩余参数进行判断
     breakable{cloneDic.values.foreach{i =>
+
+      // 设置参数值为空
+      i.parameter.validate("","",true)
         // 如果有不能终止的参数，返回false
         if(!i.parameter.halt){
           validate = false

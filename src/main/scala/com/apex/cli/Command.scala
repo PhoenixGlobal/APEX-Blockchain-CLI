@@ -105,7 +105,7 @@ object Command {
       message = s"$title\n$column\n$content"
     }
 
-    message;
+    message
   }
 
 

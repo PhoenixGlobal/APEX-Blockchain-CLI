@@ -312,7 +312,6 @@ class ShowCommand extends Command {
   override def execute(params: List[String]): Result = {
 
     try{
-
       val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
       val address = paramList.params(1).asInstanceOf[AddressParameter].value
 
