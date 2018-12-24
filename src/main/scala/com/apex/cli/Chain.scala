@@ -37,7 +37,7 @@ class BlockCommand extends Command {
   override val paramList: ParameterList = ParameterList.create(
     new IntParameter("height", "height",
       "The height of block. Use either this param or \"id\", If both give, the front one make sense.", true,true),
-    new StringParameter("id", "id",
+    new PrivKeyParameter("id", "id",
       "The id of block. Use either this param or \"id\", If both give, the front one make sense.",true,true)
 
   )
@@ -53,7 +53,7 @@ class BlockCommand extends Command {
           mutable.HashMap(paramList.params(0). asInstanceOf[IntParameter].name.toString -> paramList.params(0).asInstanceOf[IntParameter].toJson)).toString()
       else
       data = JsObject(
-        mutable.HashMap(paramList.params(1).asInstanceOf[StringParameter].name.toString -> paramList.params(1).asInstanceOf[StringParameter].toJson)).toString()
+        mutable.HashMap(paramList.params(1).asInstanceOf[PrivKeyParameter].name.toString -> paramList.params(1).asInstanceOf[PrivKeyParameter].toJson)).toString()
 
       val result = RPC.post("getblock", data)
       Success(Json prettyPrint result)

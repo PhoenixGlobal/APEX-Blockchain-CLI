@@ -194,7 +194,8 @@ class PasswordParameter(override val name: String = "password", override val sho
   }
 }
 
-class PrivKeyParameter(override val name: String = "privkey", override val shortName: String = "privkey", override val description: String="") extends Parameter {
+class PrivKeyParameter(override val name: String = "privkey", override val shortName: String = "privkey", override val description: String="",
+                       override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
   var value: String = null
 
   override def toJson: JsValue = JsString(value)

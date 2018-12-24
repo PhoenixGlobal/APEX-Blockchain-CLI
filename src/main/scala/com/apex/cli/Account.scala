@@ -1,10 +1,12 @@
 package com.apex.cli
 
-
-import java.io.{ByteArrayInputStream, DataInputStream, DataOutputStream}
+import java.io._
 import java.util.Calendar
+import com.apex.cli.Account.checkWalletStatus
 import com.apex.crypto.Ecdsa.PrivateKey
-import com.apex.crypto.{Base58Check, BinaryData, Crypto}
+import com.apex.crypto.{Base58Check, BinaryData, Crypto, Fixed8, UInt256}
+import play.api.libs.json.JsValue
+import scala.util.parsing.json._
 
 class Account(var n : String, var pri : String, var address: String) extends com.apex.common.Serializable{
   override def serialize(os: DataOutputStream): Unit = {
@@ -172,6 +174,33 @@ object Account {
     walletCache.implyAccount = account.n
     walletCache.lastModify = Calendar.getInstance().getTimeInMillis
   }
+
+  def getbalance(address :String) = {
+    // 调用查询余额
+    val rpcResult = RPC.post("showaccount", s"""{"address":"${address}"}""")
+    // 转换查询结果
+    val showaccount = JSON.parseFull(rpcResult.toString())
+    // 申明余额变量
+    var balance: String = Fixed8.Zero.toString()
+    if (showaccount != None && !(rpcResult \ "balances").isEmpty) balance = regJson(regJson(showaccount).get("balances")).get(UInt256.Zero.toString()).get.toString
+    balance
+  }
+
+  def getResultBalance(rpcResult :JsValue) = {
+    // 转换查询结果
+    val showaccount = JSON.parseFull(rpcResult.toString())
+    // 申明余额变量
+    var balance: String = Fixed8.Zero.toString()
+    if (showaccount != None && !(rpcResult \ "balances").isEmpty) balance = regJson(regJson(showaccount).get("balances")).get(UInt256.Zero.toString()).get.toString
+    balance
+  }
+
+
+  private def regJson(json: Option[Any]) = json match {
+    case Some(map: Map[String, Any]) => map
+    //      case None => "erro"
+    //      case other => "Unknow data structure : " + other
+  }
 }
 
 class AccountCommand extends CompositeCommand {
@@ -321,7 +350,7 @@ class ShowCommand extends Command {
       else{
 
         val account = Account.getAccount(alias, address)
-        println(account.n + "--"+account.pri)
+        println(account.n + " -- " + account.address + " -- " + Account.getbalance(account.address))
         Success("show success\n")
       }
     } catch {
@@ -367,12 +396,14 @@ class AccountListCommand extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    try{
-      if(WalletCache.getActivityWallet() != null){
-        val a = WalletCache.getActivityWallet().accounts
-        WalletCache.getActivityWallet().accounts.foreach{i =>
-          print(i.n +" -- " +i.address +" -- 余额")
-          if(i.n.equals(WalletCache.getActivityWallet().implyAccount))  print(" +")
+    try {
+      if (checkWalletStatus.isEmpty && WalletCache.getActivityWallet() != null) {
+        WalletCache.getActivityWallet().accounts.foreach { i =>
+          // 申明余额变量
+          var balance: String = Account.getbalance(i.address)
+
+          print(i.n + " -- " + i.address + " -- " + balance)
+          if (i.n.equals(WalletCache.getActivityWallet().implyAccount)) print(" +")
           println("")
         }
         WalletCache.reActWallet

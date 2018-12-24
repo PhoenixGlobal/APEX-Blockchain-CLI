@@ -73,24 +73,30 @@ class SendCommand extends Command {
           if (account != JsNull) {
             nextNonce = (account \ "nextNonce").as[Long]
           }
+          // 获取账户余额
+          var balance = Account.getResultBalance(account)
+          // 判断账户余额是否充足
+          if(BigDecimal.apply(balance) < amount) InvalidParams("insufficient account balance")
+          else{
+            val tx = new Transaction(TransactionType.Transfer,
+              privKey.publicKey,
+              Ecdsa.PublicKeyHash.fromAddress(toAdress).get,
+              "",
+              Fixed8.fromDecimal(amount),
+              UInt256.Zero,
+              nextNonce,
+              BinaryData.empty,
+              BinaryData.empty)
 
-          val tx = new Transaction(TransactionType.Transfer,
-            privKey.publicKey,
-            Ecdsa.PublicKeyHash.fromAddress(toAdress).get,
-            "",
-            Fixed8.fromDecimal(amount),
-            UInt256.Zero,
-            nextNonce,
-            BinaryData.empty,
-            BinaryData.empty)
+            tx.sign(privKey)
 
-          tx.sign(privKey)
+            val txRawData = BinaryData(tx.toBytes)
+            val rawTx: String = "{\"rawTx\":\""  + txRawData.toString  + "\"}"
+            val result = RPC.post("sendrawtransaction", rawTx)
+            WalletCache.reActWallet
+            Success(Json prettyPrint result)
+          }
 
-          val txRawData = BinaryData(tx.toBytes)
-          val rawTx: String = "{\"rawTx\":\""  + txRawData.toString  + "\"}"
-          val result = RPC.post("sendrawtransaction", rawTx)
-          WalletCache.reActWallet
-          Success(Json prettyPrint result)
         }
       }
     } catch {
