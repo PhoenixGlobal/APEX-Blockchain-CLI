@@ -63,6 +63,7 @@ class SendCommand extends Command {
         if(!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
         else if(toAdress.isEmpty) InvalidParams("to account not exists, please type a different one")
         else if(Account.getAccount(from).address.equals(toAdress)) InvalidParams("same address, please type a different one")
+        else if(Ecdsa.PublicKeyHash.fromAddress(toAdress) == None) InvalidParams("error to address, please type a different one")
         else{
           val amount = paramList.params(2).asInstanceOf[AmountParameter].value
           val privKey = Account.getAccount(from).getPrivKey()
