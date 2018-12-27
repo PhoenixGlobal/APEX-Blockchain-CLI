@@ -31,7 +31,7 @@ trait Command {
   val cmd: String
   val description: String
   val paramList: ParameterList = ParameterList.empty
-  val sys: Boolean = false
+/*  val sys: Boolean = false*/
   val composite: Boolean = false
 
   def validate(params: List[String]): Boolean = {
@@ -143,6 +143,7 @@ object Command {
     new SysCommand,
     new ChainCommand,
     new AssetCommand,
+    new ContractCommand,
 
     new HelpC,
     new VerC,
@@ -166,16 +167,9 @@ trait CompositeCommand extends Command {
     if(params.isEmpty || Command.checkHelpParam(params)){
       Help(Command.helpMessage(description, subCommands.groupBy(_.cmd)))
     }else{
-      Command.execCommand(params, subCommands.filterNot(_.sys).groupBy(_.cmd))
+      Command.execCommand(params, subCommands.groupBy(_.cmd))
+      // 排除类似 sys clear 二级命令
+      /*Command.execCommand(params, subCommands.filterNot(_.sys).groupBy(_.cmd))*/
     }
-
-    /*val test = subCommands.groupBy(_.cmd)
-    println(test)
-    val result = Command.execCommand(params, test)
-    result match {
-      case NoInput() => println(subCommands.map(_.cmd).mkString("\n"))
-        case _ =>
-    }
-    result*/
   }
 }
