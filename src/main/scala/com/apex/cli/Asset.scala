@@ -85,6 +85,8 @@ class SendCommand extends Command {
               UInt256.Zero,
               nextNonce,
               BinaryData.empty,
+              BinaryData.empty,
+              BinaryData.empty,
               BinaryData.empty)
 
             tx.sign(privKey)
