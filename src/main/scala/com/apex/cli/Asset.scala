@@ -1,7 +1,7 @@
 package com.apex.cli
 
 import com.apex.core.{Transaction, TransactionType}
-import com.apex.crypto.{BinaryData, Ecdsa, Fixed8, UInt256}
+import com.apex.crypto.{BinaryData, Ecdsa, FixedNumber, UInt256}
 import play.api.libs.json.{JsNull, Json}
 
 class AssetCommand extends CompositeCommand {
@@ -81,12 +81,11 @@ class SendCommand extends Command {
               privKey.publicKey,
               Ecdsa.PublicKeyHash.fromAddress(toAdress).get,
               "",
-              Fixed8.fromDecimal(amount),
-              UInt256.Zero,
+              FixedNumber.fromDecimal(amount),
               nextNonce,
               BinaryData.empty,
-              BinaryData.empty,
-              BinaryData.empty,
+              FixedNumber.Zero,
+              0,
               BinaryData.empty)
 
             tx.sign(privKey)

@@ -4,7 +4,7 @@ import java.io._
 import java.util.Calendar
 import com.apex.cli.Account.checkWalletStatus
 import com.apex.crypto.Ecdsa.PrivateKey
-import com.apex.crypto.{Base58Check, BinaryData, Crypto, Fixed8, UInt256}
+import com.apex.crypto.{Base58Check, BinaryData, Crypto, FixedNumber, UInt256}
 import play.api.libs.json.JsValue
 import scala.util.parsing.json._
 
@@ -181,8 +181,8 @@ object Account {
     // 转换查询结果
     val showaccount = JSON.parseFull(rpcResult.toString())
     // 申明余额变量
-    var balance: String = Fixed8.Zero.toString()
-    if (showaccount != None && !(rpcResult \ "balances").isEmpty) balance = regJson(regJson(showaccount).get("balances")).get(UInt256.Zero.toString()).get.toString
+    var balance: String = FixedNumber.Zero.toString()
+    if (showaccount != None && !(rpcResult \ "balance").isEmpty) balance = regJson(showaccount).get("balance").get.toString
     balance
   }
 
@@ -190,11 +190,10 @@ object Account {
     // 转换查询结果
     val showaccount = JSON.parseFull(rpcResult.toString())
     // 申明余额变量
-    var balance: String = Fixed8.Zero.toString()
-    if (showaccount != None && !(rpcResult \ "balances").isEmpty) balance = regJson(regJson(showaccount).get("balances")).get(UInt256.Zero.toString()).get.toString
+    var balance: String = FixedNumber.Zero.toString()
+    if (showaccount != None && !(rpcResult \ "balances").isEmpty) balance = regJson(showaccount).get("balance").get.toString
     balance
   }
-
 
   private def regJson(json: Option[Any]) = json match {
     case Some(map: Map[String, Any]) => map

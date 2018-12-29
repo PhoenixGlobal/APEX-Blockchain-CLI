@@ -3,11 +3,9 @@ package com.apex.cli
 import java.io._
 import java.nio.file.{Files, Paths}
 import java.util.Calendar
-
 import com.apex.cli.Account.checkWalletStatus
 import com.apex.crypto.Crypto
 import org.apache.commons.net.util.Base64
-
 import scala.collection.mutable
 import scala.io.Source
 
