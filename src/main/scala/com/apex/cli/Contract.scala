@@ -4,10 +4,13 @@ import java.io.{ByteArrayOutputStream, DataOutputStream}
 import java.nio.file.{Files, Paths}
 
 import spray.json.JsNull
-import com.apex.core.{ContractCompile, Transaction, TransactionType}
+import com.apex.core.{Transaction, TransactionType}
 import com.apex.crypto.{BinaryData, FixedNumber, UInt160}
 import com.apex.solidity.Abi
-import play.api.libs.json.Json
+import com.apex.solidity.compiler.{CompilationResult, SolidityCompiler}
+import com.apex.solidity.compiler.SolidityCompiler.Options.{ABI, BIN, INTERFACE, METADATA}
+import org.junit.Assert
+import play.api.libs.json.{Json}
 
 import scala.io.Source
 
@@ -40,28 +43,26 @@ class ContractCommand extends CompositeCommand {
           val name = paramList.params(0).asInstanceOf[StringParameter].value
           val source = paramList.params(1).asInstanceOf[StringParameter].value
           // 获取需要编译的合约文件
-          val compileContent =  readFile(source)
+          val compileContent = readFile(source)
           if (compileContent.isEmpty) InvalidParams("compile content is empty, please type a different one")
-          else{
+          else {
 
-            val bs = new ByteArrayOutputStream()
-            val os = new DataOutputStream(bs)
-            val contractCompile = new ContractCompile(name, compileContent)
-            contractCompile.serialize(os)
-
-            val txRawData = BinaryData(contractCompile.toBytes)
-            val rawTx: String = "{\"contract\":\""  + txRawData.toString()  + "\"}"
-            val result = RPC.post("compileContract",  rawTx)
-
+            val res = SolidityCompiler.compile(compileContent.getBytes, true, Seq(ABI, BIN, INTERFACE, METADATA))
+            val result = CompilationResult.parse(res.output)
             WalletCache.reActWallet
-            Success(Json prettyPrint result)
+
+            if (result.getContract(name) != null) {
+              Success(result.getContract(name).bin)
+            } else {
+              Assert.fail()
+              Success("false")
+            }
           }
         }
       } catch {
         case e: Throwable => Error(e)
       }
-    }
-  }
+  }}
 
   class DeployCommand extends Command {
     override val cmd = "deploy"
@@ -88,33 +89,14 @@ class ContractCommand extends CompositeCommand {
 
           if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
           else {
-            val privKey = Account.getAccount(from).getPrivKey()
 
-            val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
 
-            var nextNonce: Long = 0
-            if (account != JsNull) {
-              nextNonce = (account \ "nextNonce").as[Long]
-            }
+            val tx = buildTx(TransactionType.Deploy, from, UInt160.Zero,BinaryData(data))
+            val result = sendTx(tx)
 
-            val tx = new Transaction(
-              TransactionType.Deploy,
-              privKey.publicKey,
-              UInt160.Zero,
-              "",
-              FixedNumber.Zero,
-              nextNonce,
-              BinaryData(data),
-              FixedNumber.Zero,
-              Long.MaxValue,
-              BinaryData.empty)
-            tx.sign(privKey)
-
-            val txRawData = BinaryData(tx.toBytes)
-            val rawTx: String = "{\"rawTx\":\"" + txRawData.toString + "\"}"
-            val result = RPC.post("sendrawtransaction", rawTx)
             WalletCache.reActWallet
-            Success(Json prettyPrint result)
+            if(result.toString().toBoolean) Success("contractAdd:"+tx.getContractAddress().get)
+            else Success("false")
           }
         }
       } catch {
@@ -158,30 +140,10 @@ class ContractCommand extends CompositeCommand {
           else {
             // 获取abi对象
             val abiJson = Abi.fromJson(abiContent)
-            val privKey = Account.getAccount(from).getPrivKey()
 
-            val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
+            val tx = buildTx(TransactionType.Call, from, UInt160.fromBytes(BinaryData(to)), abiJson.encode(abiContent))
+            val result = sendTx(tx)
 
-            var nextNonce: Long = 0
-            if (account != JsNull) {
-              nextNonce = (account \ "nextNonce").as[Long]
-            }
-
-            val tx = new Transaction(TransactionType.Call,
-              privKey.publicKey,
-              UInt160.fromBytes(BinaryData(to)),
-              "",
-              FixedNumber.Zero,
-              nextNonce,
-              abiJson.encode(abiContent),
-              FixedNumber.Zero,
-              Long.MaxValue,
-              BinaryData.empty)
-            tx.sign(privKey)
-
-            val txRawData = BinaryData(tx.toBytes)
-            val rawTx: String = "{\"rawTx\":\"" + txRawData.toString + "\"}"
-            val result = RPC.post("sendrawtransaction", rawTx)
             WalletCache.reActWallet
             Success(Json prettyPrint result)
           }
@@ -192,6 +154,39 @@ class ContractCommand extends CompositeCommand {
     }
   }
 
+
+  def buildTx(txType:TransactionType.Value, from:String, to:UInt160, data:Array[Byte]) = {
+
+    val privKey = Account.getAccount(from).getPrivKey()
+
+    val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
+
+    var nextNonce: Long = 0
+    if (account != JsNull) {
+      nextNonce = (account \ "nextNonce").as[Long]
+    }
+    val tx = new Transaction(txType,
+      privKey.publicKey,
+      to,
+      "",
+      FixedNumber.Zero,
+      nextNonce,
+      data,
+      FixedNumber.Zero,
+      Long.MaxValue,
+      BinaryData.empty)
+    tx.sign(privKey)
+
+    tx
+  }
+
+  def sendTx(tx:Transaction) = {
+
+    val txRawData = BinaryData(tx.toBytes)
+    val rawTx: String = "{\"rawTx\":\"" + txRawData.toString + "\"}"
+    val result = RPC.post("sendrawtransaction", rawTx)
+    result
+  }
 
   private def readFile(fileName: String): String = {
     var content = ""
