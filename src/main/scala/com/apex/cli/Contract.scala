@@ -1,10 +1,11 @@
 package com.apex.cli
 
+import java.io.{ByteArrayOutputStream, DataOutputStream}
 import java.nio.file.{Files, Paths}
 
 import spray.json.JsNull
-import com.apex.core.{Transaction, TransactionType}
-import com.apex.crypto.{BinaryData, Ecdsa, FixedNumber, UInt160, UInt256}
+import com.apex.core.{ContractCompile, Transaction, TransactionType}
+import com.apex.crypto.{BinaryData, FixedNumber, UInt160}
 import com.apex.solidity.Abi
 import play.api.libs.json.Json
 
@@ -23,11 +24,12 @@ class ContractCommand extends CompositeCommand {
   )
 
   class CompileCommand extends Command {
-    override val cmd = "compile"
+      override val cmd = "compile"
     override val description = "Compiler smart contract"
 
     override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("source", "s", "Source code file name of smart contract.")
+      new StringParameter("contractName", "n", "name of smart contract."),
+    new StringParameter("source", "s", "Source code file name of smart contract.")
     )
 
     override def execute(params: List[String]): Result = {
@@ -35,14 +37,20 @@ class ContractCommand extends CompositeCommand {
         val checkResult = Account.checkWalletStatus
         if (!checkResult.isEmpty) InvalidParams(checkResult)
         else {
-          var source = paramList.params(0).asInstanceOf[NicknameParameter].value
+          val name = paramList.params(0).asInstanceOf[StringParameter].value
+          val source = paramList.params(1).asInstanceOf[StringParameter].value
           // 获取需要编译的合约文件
           val compileContent =  readFile(source)
           if (compileContent.isEmpty) InvalidParams("compile content is empty, please type a different one")
           else{
 
-            val txRawData = BinaryData(compileContent)
-            val rawTx: String = "{\"contract\":\""  + txRawData.toString  + "\"}"
+            val bs = new ByteArrayOutputStream()
+            val os = new DataOutputStream(bs)
+            val contractCompile = new ContractCompile(name, compileContent)
+            contractCompile.serialize(os)
+
+            val txRawData = BinaryData(contractCompile.toBytes)
+            val rawTx: String = "{\"contract\":\""  + txRawData.toString()  + "\"}"
             val result = RPC.post("compileContract",  rawTx)
 
             WalletCache.reActWallet
