@@ -52,7 +52,7 @@ class ContractCommand extends CompositeCommand {
             WalletCache.reActWallet
 
             if (result.getContract(name) != null) {
-              Success(result.getContract(name).bin)
+              Success("bin"+result.getContract(name).bin+"-- abi："+result.getContract(name).abi)
             } else {
               Assert.fail()
               Success("false")
@@ -111,11 +111,10 @@ class ContractCommand extends CompositeCommand {
     override val description = "Call special function of smart contract"
 
     override val paramList: ParameterList = ParameterList.create(
-      new NicknameParameter("from", "from",
-        "", true),
-      new StringParameter("to", "to",
-        "Address of smart contract."),
+      new NicknameParameter("from", "from", "", true),
+      new StringParameter("to", "to", "Address of smart contract."),
       new StringParameter("abi", "abi", "Name of abi file"),
+      new StringParameter("method", "m", "Method name and params of smart contract")
     )
 
     override def execute(params: List[String]): Result = {
@@ -132,6 +131,8 @@ class ContractCommand extends CompositeCommand {
           val to = paramList.params(1).asInstanceOf[StringParameter].value
           // abi文件路径
           val abiFilePath = paramList.params(2).asInstanceOf[StringParameter].value
+          // 调用智能合约的方法名及参数
+          val method = paramList.params(3).asInstanceOf[StringParameter].value
 
           // 根据abi获取文件内容
           val abiContent = readFile(abiFilePath)
@@ -141,7 +142,7 @@ class ContractCommand extends CompositeCommand {
             // 获取abi对象
             val abiJson = Abi.fromJson(abiContent)
 
-            val tx = buildTx(TransactionType.Call, from, UInt160.fromBytes(BinaryData(to)), abiJson.encode(abiContent))
+            val tx = buildTx(TransactionType.Call, from, UInt160.fromBytes(BinaryData(to)), abiJson.encode(method))
             val result = sendTx(tx)
 
             WalletCache.reActWallet
