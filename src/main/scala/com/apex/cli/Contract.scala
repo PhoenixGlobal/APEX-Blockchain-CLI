@@ -52,7 +52,7 @@ class ContractCommand extends CompositeCommand {
             WalletCache.reActWallet
 
             if (result.getContract(name) != null) {
-              Success("bin"+result.getContract(name).bin+"-- abi："+result.getContract(name).abi)
+              Success("bin:"+result.getContract(name).bin+" -- abi："+result.getContract(name).abi)
             } else {
               Assert.fail()
               Success("false")
@@ -141,12 +141,19 @@ class ContractCommand extends CompositeCommand {
           else {
             // 获取abi对象
             val abiJson = Abi.fromJson(abiContent)
+            val data = Abi.fromJson(abiContent).encode(method)
 
-            val tx = buildTx(TransactionType.Call, from, UInt160.fromBytes(BinaryData(to)), abiJson.encode(method))
-            val result = sendTx(tx)
+            val tx = buildTx(TransactionType.Call, from, UInt160.fromBytes(BinaryData(to)), data)
+            val txResult = sendTx(tx)
 
             WalletCache.reActWallet
-            Success(Json prettyPrint result)
+
+            if(txResult.toString().toBoolean == true){
+
+              val result = RPC.post("getContract", s"""{"id":"${tx.id()}"}""")
+              Success(Json prettyPrint result)
+
+            }else Success("false")
           }
         }
       } catch {
