@@ -5,10 +5,8 @@ package com.apex.cli
  *
  * FileName: Command.scala
  *
- * @author: ruixiao.xiao@chinapex.com: 18-8-10 下午1:55@version: 1.0
+ * @author: whitney.wei@chinapex.com: 18-11-10 @version: 1.0
  */
-
-
 import play.api.libs.json.Json
 
 trait Result

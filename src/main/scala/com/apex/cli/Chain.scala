@@ -3,6 +3,13 @@ package com.apex.cli
 import play.api.libs.json.{JsObject, Json}
 import scala.collection.mutable
 
+/*
+ * Copyright  2018 APEX Technologies.Co.Ltd. All rights reserved.
+ *
+ * FileName: Asset.scala
+ *
+ * @author: whitney.wei@chinapex.com: 18-11-10 @version: 1.0
+ */
 class ChainCommand extends CompositeCommand {
   override val cmd: String = "chain"
   override val description: String = "Command Line Interface to the block chain, omit it and type the sub command directly is legal."
@@ -77,6 +84,39 @@ class TransactionCommand extends Command {
       WalletCache.reActWallet
       Success(Json prettyPrint result)
     } catch {
+      case e: Throwable => Error(e)
+    }
+  }
+}
+
+class ResetGasLimitCommand  extends Command {
+  override val cmd = "resetGasLimit"
+  override val description = ""
+
+  override val paramList: ParameterList = ParameterList.create(
+    new IntParameter("gasLimit", "gasLimit","The value of tx accept gasLimit.")
+  )
+
+  override def execute(params: List[String]): Result = {
+    try{
+      var gasLimit = paramList.params(0).asInstanceOf[IntParameter].value
+      val result = RPC.post("setGasLimit", s"""{"gasLimit":"${gasLimit}"}""", RPC.secretRpcUrl)
+      Success(Json prettyPrint result)
+    }catch {
+      case e: Throwable => Error(e)
+    }
+  }
+}
+
+class GasLimitCommand  extends Command {
+  override val cmd = "gasLimit"
+  override val description = ""
+  override def execute(params: List[String]): Result = {
+
+    try{
+      val result1 = RPC.post("getGasLimit", paramList.toJson(), RPC.secretRpcUrl)
+      Success(Json prettyPrint result1)
+    }catch {
       case e: Throwable => Error(e)
     }
   }

@@ -1,5 +1,12 @@
 package com.apex.cli
 
+/*
+ * Copyright  2018 APEX Technologies.Co.Ltd. All rights reserved.
+ *
+ * FileName: Sys.scala
+ *
+ * @author: whitney.wei@chinapex.com: 18-12-10 @version: 1.0
+ */
 class SysCommand extends CompositeCommand {
   override val cmd: String = "sys"
   override val description: String = "Command Line Interface to the system, omit it and type the sub command directly is legal."

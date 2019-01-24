@@ -15,7 +15,7 @@ trait Parameter {
   val name: String
   val shortName: String
   val description: String
-  // 是否可以跳过判断
+  // 是否可以跳过验证
   val halt : Boolean = false
   // 是否有可替代属性
   val replaceable : Boolean = false

@@ -9,6 +9,13 @@ import org.apache.commons.net.util.Base64
 import scala.collection.mutable
 import scala.io.Source
 
+/*
+ * Copyright  2018 APEX Technologies.Co.Ltd. All rights reserved.
+ *
+ * FileName: Contract.scala
+ *
+ * @author: whitney.wei@chinapex.com: 18-12-20 @version: 1.0
+ */
 class Wallet(val n :String, val p : Array[Byte], val accounts: Seq[Account]) extends com.apex.common.Serializable {
 
     def serialize(os: DataOutputStream) = {
@@ -159,7 +166,7 @@ object WalletCache{
     val encrypted1 = Crypto.AesEncrypt(bs.toByteArray, key, iv)
 
     val fw = new FileWriter(path)
-    val encodeBase64 = Base64.encodeBase64(encrypted1);
+    val encodeBase64 = Base64.encodeBase64(encrypted1)
     fw.write(new String(encodeBase64))
     fw.close()
 

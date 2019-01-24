@@ -8,6 +8,13 @@ import com.apex.crypto.{Base58Check, BinaryData, Crypto, FixedNumber, UInt256}
 import play.api.libs.json.JsValue
 import scala.util.parsing.json._
 
+/*
+ * Copyright  2018 APEX Technologies.Co.Ltd. All rights reserved.
+ *
+ * FileName: Account.scala
+ *
+ * @author: whitney.wei@chinapex.com: 18-12-10 @version: 1.0
+ */
 class Account(var n : String, var pri : String, var address: String) extends com.apex.common.Serializable{
   override def serialize(os: DataOutputStream): Unit = {
     import com.apex.common.Serializable._

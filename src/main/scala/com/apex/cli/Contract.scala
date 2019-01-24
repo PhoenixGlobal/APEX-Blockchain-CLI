@@ -1,8 +1,6 @@
 package com.apex.cli
 
-import java.io.{ByteArrayOutputStream, DataOutputStream}
 import java.nio.file.{Files, Paths}
-
 import spray.json.JsNull
 import com.apex.core.{Transaction, TransactionType}
 import com.apex.crypto.{BinaryData, FixedNumber, UInt160}
@@ -11,9 +9,15 @@ import com.apex.solidity.compiler.{CompilationResult, SolidityCompiler}
 import com.apex.solidity.compiler.SolidityCompiler.Options.{ABI, BIN, INTERFACE, METADATA}
 import org.junit.Assert
 import play.api.libs.json.{Json}
-
 import scala.io.Source
 
+/*
+ * Copyright  2018 APEX Technologies.Co.Ltd. All rights reserved.
+ *
+ * FileName: Contract.scala
+ *
+ * @author: whitney.wei@chinapex.com: 19-01-10 @version: 1.0
+ */
 class ContractCommand extends CompositeCommand {
 
   override val cmd: String = "contract"
@@ -41,13 +45,14 @@ class ContractCommand extends CompositeCommand {
         if (!checkResult.isEmpty) InvalidParams(checkResult)
         else {
           val name = paramList.params(0).asInstanceOf[StringParameter].value
-          val source = paramList.params(1).asInstanceOf[StringParameter].value
+          val sourceFile = paramList.params(1).asInstanceOf[StringParameter].value
           // 获取需要编译的合约文件
-          val compileContent = readFile(source)
+          val compileContent = readFile(sourceFile)
           if (compileContent.isEmpty) InvalidParams("compile content is empty, please type a different one")
           else {
 
-            val res = SolidityCompiler.compile(compileContent.getBytes, true, Seq(ABI, BIN, INTERFACE, METADATA))
+            val source = Paths.get(sourceFile)
+            val res: SolidityCompiler.Result = SolidityCompiler.compile(source.toFile, true, Seq(ABI, BIN, INTERFACE, METADATA))
             val result = CompilationResult.parse(res.output)
             WalletCache.reActWallet
 
@@ -174,7 +179,7 @@ class ContractCommand extends CompositeCommand {
       nextNonce = (account \ "nextNonce").as[Long]
     }
     val tx = new Transaction(txType,
-      privKey.publicKey,
+      privKey.publicKey.pubKeyHash,
       to,
       "",
       FixedNumber.Zero,

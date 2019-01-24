@@ -4,6 +4,13 @@ import com.apex.core.{Transaction, TransactionType}
 import com.apex.crypto.{BinaryData, Ecdsa, FixedNumber, UInt256}
 import play.api.libs.json.{JsNull, Json}
 
+/*
+ * Copyright  2018 APEX Technologies.Co.Ltd. All rights reserved.
+ *
+ * FileName: Asset.scala
+ *
+ * @author: whitney.wei@chinapex.com: 19-01-10 @version: 1.0
+ */
 class AssetCommand extends CompositeCommand {
   override val cmd: String = "asset"
   override val description: String = "Interface to operate your funds,  omit it and type the sub command directly is legal."
@@ -78,7 +85,7 @@ class SendCommand extends Command {
           if(BigDecimal.apply(balance) < amount) InvalidParams("insufficient account balance")
           else{
             val tx = new Transaction(TransactionType.Transfer,
-              privKey.publicKey,
+              privKey.publicKey.pubKeyHash,
               Ecdsa.PublicKeyHash.fromAddress(toAdress).get,
               "",
               FixedNumber.fromDecimal(amount),
