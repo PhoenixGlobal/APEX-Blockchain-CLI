@@ -191,7 +191,7 @@ class ProduceCommand extends CompositeCommand  {
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from", "", true),
       new StringParameter("candidate", "candidate", ""),
-      new AmountParameter()("count", "count", "")
+      new AmountParameter("count", "count", "")
     )
 
     override def execute(params: List[String]): Result = {
