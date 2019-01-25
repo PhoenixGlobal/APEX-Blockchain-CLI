@@ -257,8 +257,8 @@ class ProduceCommand extends CompositeCommand  {
   }
 
   class GetProducesCommand extends Command {
-    override val cmd = "getProduces"
-    override val description = "list of produce"
+    override val cmd = "getProducers"
+    override val description = "list of producer"
 
     override val paramList: ParameterList = ParameterList.create(
       new StringParameter("type", "type", "")
@@ -267,7 +267,7 @@ class ProduceCommand extends CompositeCommand  {
     override def execute(params: List[String]): Result = {
       try {
         val listType = paramList.params(0).asInstanceOf[StringParameter].value
-        val result = RPC.post("getProduces", s"""{"listType":"${listType}"}""")
+        val result = RPC.post("getProducers", s"""{"listType":"${listType}"}""")
         Success(Json prettyPrint result)
       } catch {
         case e: Throwable => Error(e)
