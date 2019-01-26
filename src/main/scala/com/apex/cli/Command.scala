@@ -142,6 +142,7 @@ object Command {
     new ChainCommand,
     new AssetCommand,
     new ContractCommand,
+    new ProducerCommand,
 
     new HelpC,
     new VerC,
