@@ -186,7 +186,7 @@ class ContractCommand extends CompositeCommand {
       nextNonce,
       data,
       FixedNumber.Zero,
-      Long.MaxValue,
+      7000000L,
       BinaryData.empty)
     tx.sign(privKey)
 

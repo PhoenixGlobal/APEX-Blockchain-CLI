@@ -2,10 +2,10 @@ package com.apex.cli
 
 import com.apex.consensus.{RegisterData, VoteData, WitnessInfo}
 import com.apex.core.{OperationType, Transaction, TransactionType}
+import com.apex.crypto.Ecdsa.PublicKeyHash
 import com.apex.crypto.{BinaryData, FixedNumber, UInt160}
 import com.apex.vm.DataWord
-import play.api.libs.json.Json
-import spray.json.JsNull
+import play.api.libs.json.{JsNull, Json}
 
 /*
  * Copyright  2018 APEX Technologies.Co.Ltd. All rights reserved.
@@ -38,7 +38,7 @@ class ProducerCommand extends CompositeCommand {
     val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
 
     var nextNonce: Long = 0
-    if (account != JsNull) {
+      if (account != JsNull) {
       nextNonce = (account \ "nextNonce").as[Long]
     }
     val tx = new Transaction(txType,
@@ -49,7 +49,7 @@ class ProducerCommand extends CompositeCommand {
       nextNonce,
       data,
       FixedNumber.Zero,
-      Long.MaxValue,
+      7000000L,
       BinaryData.empty)
     tx.sign(privKey)
 
@@ -99,8 +99,7 @@ class ProducerCommand extends CompositeCommand {
 
             val witnessInfo = new WitnessInfo(name = from, addr = fromHash, url = url, country = country, address = address, longitude = longitude, latitude = latitude);
             val registerData = new RegisterData(fromHash, witnessInfo, OperationType.register)
-
-            val tx = buildTx(TransactionType.Call, from, UInt160.fromBytes(registerNodeAddr.data), registerData.toBytes)
+            val tx = buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, registerData.toBytes)
             val txResult = sendTx(tx)
             Success(Json prettyPrint txResult)
           }
@@ -136,7 +135,7 @@ class ProducerCommand extends CompositeCommand {
             val witnessInfo = new WitnessInfo(name = from, addr = fromHash)
             val registerData = new RegisterData(fromHash, witnessInfo, OperationType.resisterCancel)
 
-            val tx = buildTx(TransactionType.Call, from, UInt160.fromBytes(registerNodeAddr.data), registerData.toBytes)
+            val tx = buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, registerData.toBytes)
             val txResult = sendTx(tx)
             Success(Json prettyPrint txResult)
           }
@@ -153,7 +152,7 @@ class ProducerCommand extends CompositeCommand {
 
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from", "", true),
-      new StringParameter("candidate", "candidate", ""),
+      new AddressParameter("candidate", "candidate", ""),
       new AmountParameter("count", "count", "")
     )
 
@@ -170,10 +169,10 @@ class ProducerCommand extends CompositeCommand {
           if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
           else {
             val fromHash = Account.getAccount(from).getPrivKey().publicKey.pubKeyHash
-            val candidate = paramList.params(1).asInstanceOf[StringParameter].value
+            val candidate = paramList.params(1).asInstanceOf[AddressParameter].value
             val count = paramList.params(2).asInstanceOf[AmountParameter].value
 
-            val voteData = new VoteData(UInt160.fromBytes(candidate.getBytes), FixedNumber.fromDecimal(count), OperationType.register)
+            val voteData = new VoteData(PublicKeyHash.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.register)
 
             val tx = buildTx(TransactionType.Call, from, UInt160.fromBytes(voteAddr.data), voteData.toBytes)
             val txResult = sendTx(tx)
@@ -192,7 +191,7 @@ class ProducerCommand extends CompositeCommand {
 
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from", "", true),
-      new StringParameter("candidate", "candidate", ""),
+      new AddressParameter("candidate", "candidate", ""),
       new AmountParameter("count", "count", "")
     )
 
@@ -209,10 +208,10 @@ class ProducerCommand extends CompositeCommand {
           if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
           else {
             val fromHash = Account.getAccount(from).getPrivKey().publicKey.pubKeyHash
-            val candidate = paramList.params(1).asInstanceOf[StringParameter].value
+            val candidate = paramList.params(1).asInstanceOf[AddressParameter].value
             val count = paramList.params(2).asInstanceOf[AmountParameter].value
 
-            val voteData = new VoteData(UInt160.fromBytes(candidate.getBytes), FixedNumber.fromDecimal(count), OperationType.register)
+            val voteData = new VoteData(PublicKeyHash.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.register)
 
             val tx = buildTx(TransactionType.Call, from, UInt160.fromBytes(voteAddr.data), voteData.toBytes)
             val txResult = sendTx(tx)
@@ -235,6 +234,11 @@ class ProducerCommand extends CompositeCommand {
     override def execute(params: List[String]): Result = {
       try {
         val listType = paramList.params(0).asInstanceOf[StringParameter].value
+
+        if(listType != "all" || listType != "active" || listType != "pending"){
+          InvalidParams("type not exists, please type a different one")
+        }
+
         val result = RPC.post("getProducers", s"""{"listType":"${listType}"}""")
         Success(Json prettyPrint result)
       } catch {
@@ -253,7 +257,7 @@ class ProducerCommand extends CompositeCommand {
     override def execute(params: List[String]): Result = {
       try {
         val address = paramList.params(0).asInstanceOf[StringParameter].value
-        val result = RPC.post("getVoteByAddr", s"""{"address":"${address}"}""")
+        val result = RPC.post("getProducer", s"""{"address":"${address}"}""")
         Success(Json prettyPrint result)
       } catch {
         case e: Throwable => Error(e)
