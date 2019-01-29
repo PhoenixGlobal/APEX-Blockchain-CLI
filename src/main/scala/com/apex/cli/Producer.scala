@@ -235,7 +235,7 @@ class ProducerCommand extends CompositeCommand {
       try {
         val listType = paramList.params(0).asInstanceOf[StringParameter].value
 
-        if(listType != "all" || listType != "active" || listType != "pending"){
+        if(listType != "all" || listType != "active" || listType != "pending" || listType != "previous"){
           InvalidParams("type not exists, please type a different one")
         }
 
