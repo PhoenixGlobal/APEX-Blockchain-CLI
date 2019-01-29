@@ -35,7 +35,7 @@ class ContractCommand extends CompositeCommand {
     override val description = "Compiler smart contract"
 
     override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("contractName", "n", "name of smart contract."),
+      new StringParameter("contractName", "n", "The contract name."),
     new StringParameter("source", "s", "Source code file name of smart contract.")
     )
 
@@ -75,8 +75,8 @@ class ContractCommand extends CompositeCommand {
 
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from",
-        "", true),
-      new StringParameter("data", "data", "")
+        "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
+      new StringParameter("data", "data", "Bin data of compiled smart contract")
     )
 
     // 测试 data 6080604052348015600f57600080fd5b50603580601d6000396000f3006080604052600080fd00a165627a7a723058200b864e4f01cfb799a414a6ebdb9b63ce9225b82a293a346c33b42e691cdec0300029
@@ -96,7 +96,7 @@ class ContractCommand extends CompositeCommand {
           else {
 
 
-            val tx = buildTx(TransactionType.Deploy, from, UInt160.Zero,BinaryData(data))
+            val tx = buildTx(TransactionType.Deploy, from, UInt160.Zero, BinaryData(data))
             val result = sendTx(tx)
 
             WalletCache.reActWallet
@@ -116,10 +116,10 @@ class ContractCommand extends CompositeCommand {
     override val description = "Call special function of smart contract"
 
     override val paramList: ParameterList = ParameterList.create(
-      new NicknameParameter("from", "from", "", true),
-      new StringParameter("to", "to", "Address of smart contract."),
-      new StringParameter("abi", "abi", "Name of abi file"),
-      new StringParameter("method", "m", "Method name and params of smart contract")
+      new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
+      new StringParameter("to", "to", "The target contract address."),
+      new StringParameter("abi", "abi", "Path of the ABI file corresponding to the smart contract"),
+      new StringParameter("method", "m", "The method in the smart contract")
     )
 
     override def execute(params: List[String]): Result = {

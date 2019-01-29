@@ -67,15 +67,15 @@ class ProducerCommand extends CompositeCommand {
 
   class RegisterCommand extends Command {
     override val cmd = "reg"
-    override val description = "Register produce"
+    override val description = "Register as an alternative production node"
 
     override val paramList: ParameterList = ParameterList.create(
-      new NicknameParameter("from", "from", "", true),
-      new StringParameter("url", "url", ""),
-      new StringParameter("country", "country", ""),
-      new StringParameter("address", "address", ""),
-      new IntParameter("longitude", "longitude", ""),
-      new IntParameter("latitude", "latitude", "")
+      new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
+      new StringParameter("url", "url", "The node official website"),
+      new StringParameter("country", "country", "Country where the node is located"),
+      new StringParameter("address", "address", "Contact address"),
+      new IntParameter("longitude", "longitude", "The longitude of the node"),
+      new IntParameter("latitude", "latitude", "The latitude of the node")
     )
 
     override def execute(params: List[String]): Result = {
@@ -112,10 +112,10 @@ class ProducerCommand extends CompositeCommand {
 
   class ResisterCancelCommand extends Command {
     override val cmd = "cancelReg"
-    override val description = "Cancel register produce"
+    override val description = "Logout candidate/production node qualification"
 
     override val paramList: ParameterList = ParameterList.create(
-      new NicknameParameter("from", "from", "", true)
+      new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true)
     )
 
     override def execute(params: List[String]): Result = {
@@ -148,12 +148,12 @@ class ProducerCommand extends CompositeCommand {
 
   class VoteCommand extends Command {
     override val cmd = "vote"
-    override val description = "Vote for produce"
+    override val description = "Vote for supported nodes"
 
     override val paramList: ParameterList = ParameterList.create(
-      new NicknameParameter("from", "from", "", true),
-      new AddressParameter("candidate", "candidate", ""),
-      new AmountParameter("count", "count", "")
+      new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
+      new AddressParameter("address", "address", "The address of the voted node"),
+      new AmountParameter("count", "count", "The number of votes")
     )
 
     override def execute(params: List[String]): Result = {
@@ -190,9 +190,9 @@ class ProducerCommand extends CompositeCommand {
     override val description = "Cancel vote"
 
     override val paramList: ParameterList = ParameterList.create(
-      new NicknameParameter("from", "from", "", true),
-      new AddressParameter("candidate", "candidate", ""),
-      new AmountParameter("count", "count", "")
+      new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
+      new AddressParameter("address", "address", "The node address that canceled vote "),
+      new AmountParameter("count", "count", "The number of votes canceled")
     )
 
     override def execute(params: List[String]): Result = {
@@ -225,10 +225,10 @@ class ProducerCommand extends CompositeCommand {
 
   class ListCommand extends Command {
     override val cmd = "list"
-    override val description = "list of producer"
+    override val description = "Query node information"
 
     override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("type", "type", "")
+      new StringParameter("type", "type", "Query node information in different states")
     )
 
     override def execute(params: List[String]): Result = {
@@ -248,10 +248,10 @@ class ProducerCommand extends CompositeCommand {
 
   class GetByAddrCommand extends Command {
     override val cmd = "getByAddr"
-    override val description = "Get producer by address"
+    override val description = "Query node information by node address"
 
     override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("address", "address", "")
+      new StringParameter("address", "address", "The node address to be queried")
     )
 
     override def execute(params: List[String]): Result = {

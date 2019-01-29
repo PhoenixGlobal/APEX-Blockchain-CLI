@@ -18,7 +18,9 @@ class ChainCommand extends CompositeCommand {
   override val subCommands: Seq[Command] = Seq(
     new StatusCommand,
     new BlockCommand,
-    new TransactionCommand
+    new TransactionCommand,
+    new ResetGasLimitCommand,
+    new GasLimitCommand
   )
 }
 
@@ -91,10 +93,10 @@ class TransactionCommand extends Command {
 
 class ResetGasLimitCommand  extends Command {
   override val cmd = "resetGasLimit"
-  override val description = ""
+  override val description = "Modify the gas limit of the production node"
 
   override val paramList: ParameterList = ParameterList.create(
-    new IntParameter("gasLimit", "gasLimit","The value of tx accept gasLimit.")
+    new IntParameter("gasLimit", "gasLimit","gasLimit")
   )
 
   override def execute(params: List[String]): Result = {
@@ -110,7 +112,7 @@ class ResetGasLimitCommand  extends Command {
 
 class GasLimitCommand  extends Command {
   override val cmd = "gasLimit"
-  override val description = ""
+  override val description = "Query the gas limit of the production node"
   override def execute(params: List[String]): Result = {
 
     try{
