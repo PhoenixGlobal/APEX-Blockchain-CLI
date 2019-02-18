@@ -8,16 +8,21 @@
 
 package com.apex.cli
 
+import com.apex.cli.RPC.rpcUrl
 import okhttp3.{MediaType, OkHttpClient, Request, RequestBody}
 import play.api.libs.json.Json
 
 object RPC {
   val client = new OkHttpClient
 
+  var rpcUrl = "http://40.73.116.98:9089/"
+  //  val rpcUrl = "http://127.0.0.1:8080/"
+
+
   val mediaType = MediaType.parse("application/json; charset=utf-8")
 
-  def post(path: String, data: String) = {
-    val url = s"http://localhost:8080/$path"
+  def post(path: String, data: String, callUrl: String = rpcUrl) = {
+    val url = callUrl+s"$path"
     val body = RequestBody.create(mediaType, data)
     val req = new Request.Builder()
       .url(url)
