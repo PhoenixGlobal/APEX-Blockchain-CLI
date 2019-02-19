@@ -92,7 +92,7 @@ class SendCommand extends Command {
               nextNonce,
               BinaryData.empty,
               FixedNumber.Zero,
-              0,
+              7000000L,
               BinaryData.empty)
 
             tx.sign(privKey)

@@ -57,7 +57,7 @@ class ContractCommand extends CompositeCommand {
             WalletCache.reActWallet
 
             if (result.getContract(name) != null) {
-              Success("bin:"+result.getContract(name).bin+" -- abi："+result.getContract(name).abi)
+              Success("bin:"+result.getContract(name).bin+" \n abi："+result.getContract(name).abi)
             } else {
               Assert.fail()
               Success("false")

@@ -198,7 +198,7 @@ object Account {
     val showaccount = JSON.parseFull(rpcResult.toString())
     // 申明余额变量
     var balance: String = FixedNumber.Zero.toString()
-    if (showaccount != None && !(rpcResult \ "balances").isEmpty) balance = regJson(showaccount).get("balance").get.toString
+    if (showaccount != None && !(rpcResult \ "balance").isEmpty) balance = regJson(showaccount).get("balance").get.toString
     balance
   }
 
@@ -443,9 +443,8 @@ class ImportCommand extends Command {
       val checkResult = Account.checkAccountExists(alias)
       if(!checkResult.isEmpty) InvalidParams(checkResult)
       else{
-        val account = Account.Default
+        val account = new Account(alias,"", "")
         if (account.importPrivKeyFromWIF(key)) {
-          account.n = alias
           val importAddress = account.getPrivKey().publicKey.address
 
           // 根据地址查询
