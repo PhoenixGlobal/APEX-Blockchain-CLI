@@ -27,7 +27,8 @@ class ContractCommand extends CompositeCommand {
   override val subCommands: Seq[Command] = Seq(
     new CompileCommand,
     new DeployCommand,
-    new CallCommand
+    new CallCommand,
+    new GetContractCommand
   )
 
   class CompileCommand extends Command {
@@ -155,8 +156,12 @@ class ContractCommand extends CompositeCommand {
 
             if(txResult.toString().toBoolean == true){
 
+              Thread.sleep(1000)
+
               val result = RPC.post("getContract", s"""{"id":"${tx.id()}"}""")
-              Success(Json prettyPrint result)
+              if(result.toString.equals("null")){
+                Success("no result, txId is "+tx.id()+", type \"contract getContract\" to see contract status later.")
+              }else Success(Json prettyPrint result)
 
             }else Success("false")
           }
@@ -166,6 +171,32 @@ class ContractCommand extends CompositeCommand {
       }
     }
   }
+
+
+  class GetContractCommand
+    extends Command {
+    override val cmd = "getContract"
+    override val description = "Get contract by transaction id"
+
+    override val paramList: ParameterList = ParameterList.create(
+      new StringParameter("id", "id", "The contract transaction id."),
+    )
+
+    override def execute(params: List[String]): Result = {
+      try {
+        val checkResult = Account.checkWalletStatus
+        if (!checkResult.isEmpty) InvalidParams(checkResult)
+        else {
+          val id = paramList.params(0).asInstanceOf[StringParameter].value
+          val result = RPC.post("getContract", s"""{"id":"${id}"}""")
+          if(result.toString.equals("null")){
+            Success("no result.")
+          }else Success(Json prettyPrint result)
+        }
+      } catch {
+        case e: Throwable => Error(e)
+      }
+    }}
 
 
   def buildTx(txType:TransactionType.Value, from:String, to:UInt160, data:Array[Byte]) = {
