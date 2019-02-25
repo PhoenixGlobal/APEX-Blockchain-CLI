@@ -54,7 +54,7 @@ class BlockCommand extends Command {
   override def execute(params: List[String]): Result = {
 
     try{
-      var height = paramList.params(0).asInstanceOf[IntParameter].value
+      val height = paramList.params(0).asInstanceOf[IntParameter].value
 
       var data:String =""
       if(height != null)

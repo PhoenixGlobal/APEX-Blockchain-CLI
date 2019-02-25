@@ -179,7 +179,7 @@ class ContractCommand extends CompositeCommand {
     override val description = "Get contract by transaction id"
 
     override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("id", "id", "The contract transaction id."),
+      new StringParameter("id", "id", "The transaction id of contract."),
     )
 
     override def execute(params: List[String]): Result = {
@@ -206,7 +206,7 @@ class ContractCommand extends CompositeCommand {
     val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
 
     var nextNonce: Long = 0
-    if (account != JsNull) {
+    if (account != JsNull && account.toString() != "null") {
       nextNonce = (account \ "nextNonce").as[Long]
     }
     val tx = new Transaction(txType,
@@ -217,7 +217,7 @@ class ContractCommand extends CompositeCommand {
       nextNonce,
       data,
       FixedNumber.Zero,
-      7000000L,
+      7000000,
       BinaryData.empty)
     tx.sign(privKey)
 
