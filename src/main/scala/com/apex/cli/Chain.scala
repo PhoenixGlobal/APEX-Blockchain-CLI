@@ -77,7 +77,7 @@ class TransactionCommand extends Command {
   override val description = "how data of the transaction"
 
   override val paramList: ParameterList = ParameterList.create(
-    new IntParameter("id", "id","The id of transaction.")
+    new StringParameter("id", "id","The id of transaction.")
   )
 
   override def execute(params: List[String]): Result = {
