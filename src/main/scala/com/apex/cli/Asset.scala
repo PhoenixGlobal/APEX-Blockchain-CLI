@@ -100,6 +100,7 @@ class SendCommand extends Command {
             val rawTx: String = "{\"rawTx\":\""  + txRawData.toString  + "\"}"
             val result = RPC.post("sendrawtransaction", rawTx)
             WalletCache.reActWallet
+            Success("txId is "+tx.id())
             Success(Json prettyPrint result)
           }
 

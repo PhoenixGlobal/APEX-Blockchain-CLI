@@ -33,7 +33,7 @@ class ContractCommand extends CompositeCommand {
 
   class CompileCommand extends Command {
       override val cmd = "compile"
-    override val description = "Compiler smart contract"
+    override val description = "Compile smart contract"
 
     override val paramList: ParameterList = ParameterList.create(
       new StringParameter("contractName", "n", "The contract name."),
@@ -77,7 +77,7 @@ class ContractCommand extends CompositeCommand {
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from",
         "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
-      new StringParameter("data", "data", "Bin data of compiled smart contract")
+      new StringParameter("data", "data", "Bin data file name of deploy smart contract.")
     )
 
     // 测试 data 6080604052348015600f57600080fd5b50603580601d6000396000f3006080604052600080fd00a165627a7a723058200b864e4f01cfb799a414a6ebdb9b63ce9225b82a293a346c33b42e691cdec0300029
@@ -91,13 +91,13 @@ class ContractCommand extends CompositeCommand {
           // 根据昵称获取转账地址
           if (params.size / 2 == paramList.params.size) from = paramList.params(0).asInstanceOf[NicknameParameter].value
 
-          val data = paramList.params(1).asInstanceOf[StringParameter].value
+          val dataSource = paramList.params(1).asInstanceOf[StringParameter].value
+          val dataContent = readFile(dataSource)
 
           if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
+          else if(dataContent.isEmpty) InvalidParams("data is empty, please type a different one")
           else {
-
-
-            val tx = buildTx(TransactionType.Deploy, from, UInt160.Zero, BinaryData(data))
+            val tx = buildTx(TransactionType.Deploy, from, UInt160.Zero, BinaryData(dataContent))
             val result = sendTx(tx)
 
             WalletCache.reActWallet
@@ -175,7 +175,7 @@ class ContractCommand extends CompositeCommand {
 
   class GetContractCommand
     extends Command {
-    override val cmd = "getContract"
+    override val cmd = "get"
     override val description = "Get contract by transaction id"
 
     override val paramList: ParameterList = ParameterList.create(

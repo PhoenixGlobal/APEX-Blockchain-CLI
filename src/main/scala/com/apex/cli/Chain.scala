@@ -18,7 +18,7 @@ class ChainCommand extends CompositeCommand {
   override val subCommands: Seq[Command] = Seq(
     new StatusCommand,
     new BlockCommand,
-    new TransactionCommand,
+    /*new TransactionCommand,*/
     new ResetGasLimitCommand,
     new GasLimitCommand
   )
@@ -72,12 +72,12 @@ class BlockCommand extends Command {
   }
 }
 
-class TransactionCommand extends Command {
+/*class TransactionCommand extends Command {
   override val cmd = "transaction"
   override val description = "how data of the transaction"
 
   override val paramList: ParameterList = ParameterList.create(
-    new StringParameter("id", "id","The id of transaction.")
+    new IntParameter("id", "id","The id of transaction.")
   )
 
   override def execute(params: List[String]): Result = {
@@ -89,7 +89,7 @@ class TransactionCommand extends Command {
       case e: Throwable => Error(e)
     }
   }
-}
+}*/
 
 class ResetGasLimitCommand  extends Command {
   override val cmd = "resetGasLimit"
