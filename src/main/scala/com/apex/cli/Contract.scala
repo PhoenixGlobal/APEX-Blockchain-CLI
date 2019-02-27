@@ -212,7 +212,6 @@ class ContractCommand extends CompositeCommand {
     val tx = new Transaction(txType,
       privKey.publicKey.pubKeyHash,
       to,
-      "",
       FixedNumber.Zero,
       nextNonce,
       data,

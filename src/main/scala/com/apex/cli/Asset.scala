@@ -87,7 +87,6 @@ class SendCommand extends Command {
             val tx = new Transaction(TransactionType.Transfer,
               privKey.publicKey.pubKeyHash,
               Ecdsa.PublicKeyHash.fromAddress(toAdress).get,
-              "",
               FixedNumber.fromDecimal(amount),
               nextNonce,
               BinaryData.empty,
