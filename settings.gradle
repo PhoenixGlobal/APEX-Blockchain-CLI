@@ -1,0 +1,2 @@
+include ':APEX-Blockchain-Core'
+project(':APEX-Blockchain-Core').projectDir = new File(settingsDir, '../APEX-Blockchain-Core')

@@ -23,10 +23,15 @@ configurations {
 repositories{
     mavenCentral()
     mavenLocal()
+
+
+    maven { url "https://oss.jfrog.org/libs-snapshot/" }
+    maven { url "https://dl.bintray.com/ethereum/maven/" }
+    maven { url "https://repo.spring.io/libs-snapshot" }
 }
 
 dependencies{
-    compile files('libs/APEX-Blockchain-Core-1.0-SNAPSHOT.jar')
+    compile project('APEX-Blockchain-Core')
     compile "org.scala-lang:scala-library:2.12.3"
     compile "org.scala-lang:scala-compiler:2.12.3"
     compile "org.scala-lang:scala-reflect:2.12.3"
