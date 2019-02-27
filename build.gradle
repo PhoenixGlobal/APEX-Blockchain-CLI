@@ -5,6 +5,29 @@ version '1.0-SNAPSHOT'
 apply plugin: 'idea'
 apply plugin: 'scala'
 
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        jcenter()
+    }
+
+    dependencies {
+        classpath "com.github.jengelman.gradle.plugins:shadow:2.0.1"
+    }
+}
+
+apply plugin: 'com.github.johnrengelman.shadow'
+
+shadowJar {
+    baseName = 'APEX-Blockchain-CLI'
+    classifier = null
+    version = '1.0'
+    transform(com.github.jengelman.gradle.plugins.shadow.transformers.AppendingTransformer) {
+        resource = 'reference.conf'
+    }
+}
+
 task "createDirs" << {
     sourceSets*.scala.srcDirs*.each { it.mkdirs() }
     sourceSets*.resources.srcDirs*.each { it.mkdirs() }
