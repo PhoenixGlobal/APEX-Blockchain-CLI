@@ -1,7 +1,7 @@
 package com.apex.cli
 
 import com.apex.core.{Transaction, TransactionType}
-import com.apex.crypto.{BinaryData, Ecdsa, FixedNumber, UInt256}
+import com.apex.crypto.{BinaryData, Ecdsa, FixedNumber, UInt160, UInt256}
 import play.api.libs.json.{JsNull, Json}
 
 /*
@@ -60,7 +60,7 @@ class SendCommand extends Command {
         // 赋值to收账地址
         var toAdress = ""
         if(this.cmd.equals("circulate")) {
-          var to = paramList.params(1).asInstanceOf[NicknameParameter].value
+          val to = paramList.params(1).asInstanceOf[NicknameParameter].value
           // 获取用户地址
           if (Account.checkAccountStatus(to)) toAdress = Account.getAccount(to).address
         }else toAdress = paramList.params(1).asInstanceOf[AddressParameter].value
@@ -71,8 +71,8 @@ class SendCommand extends Command {
         else if(Ecdsa.PublicKeyHash.fromAddress(toAdress) == None) InvalidParams("error to address, please type a different one")
         else{
           val amount = paramList.params(2).asInstanceOf[AmountParameter].value
-          val privKey = Account.getAccount(from).getPrivKey()
 
+          val privKey = Account.getAccount(from).getPrivKey()
           val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
 
           var nextNonce: Long = 0
@@ -84,21 +84,11 @@ class SendCommand extends Command {
           // 判断账户余额是否充足
           if(BigDecimal.apply(balance) < amount) InvalidParams("insufficient account balance")
           else{
-            val tx = new Transaction(TransactionType.Transfer,
-              privKey.publicKey.pubKeyHash,
-              Ecdsa.PublicKeyHash.fromAddress(toAdress).get,
-              FixedNumber.fromDecimal(amount),
-              nextNonce,
-              BinaryData.empty,
-              FixedNumber.Zero,
-              7000000,
-              BinaryData.empty)
 
-            tx.sign(privKey)
+            val tx = AssetCommand.buildTx(TransactionType.Transfer, from, Ecdsa.PublicKeyHash.fromAddress(toAdress).get,
+              BinaryData.empty, true, nextNonce)
+            val result = AssetCommand.sendTx(tx)
 
-            val txRawData = BinaryData(tx.toBytes)
-            val rawTx: String = "{\"rawTx\":\""  + txRawData.toString  + "\"}"
-            val result = RPC.post("sendrawtransaction", rawTx)
             WalletCache.reActWallet
             Success("txId is "+tx.id())
             Success(Json prettyPrint result)
@@ -109,6 +99,44 @@ class SendCommand extends Command {
     } catch {
       case e: Throwable => Error(e)
     }
+  }
+}
+
+object AssetCommand{
+
+  def buildTx(txType:TransactionType.Value, from:String, to:UInt160,
+              data:Array[Byte], checkedAccount:Boolean = false,  nonce:Long = 0) = {
+
+    val privKey = Account.getAccount(from).getPrivKey()
+    var nextNonce: Long = nonce
+
+    if(!checkedAccount){
+      val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
+      if (account != JsNull && account.toString() != "null") {
+        nextNonce = (account \ "nextNonce").as[Long]
+      }
+    }
+
+    val tx = new Transaction(txType,
+      privKey.publicKey.pubKeyHash,
+      to,
+      FixedNumber.Zero,
+      nextNonce,
+      data,
+      FixedNumber.Zero,
+      BigInt(7000000),
+      BinaryData.empty)
+    tx.sign(privKey)
+
+    tx
+  }
+
+  def sendTx(tx:Transaction) = {
+
+    val txRawData = BinaryData(tx.toBytes)
+    val rawTx: String = "{\"rawTx\":\"" + txRawData.toString + "\"}"
+    val result = RPC.post("sendrawtransaction", rawTx)
+    result
   }
 }
 

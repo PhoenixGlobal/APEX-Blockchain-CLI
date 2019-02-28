@@ -97,8 +97,8 @@ class ContractCommand extends CompositeCommand {
           if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
           else if(dataContent.isEmpty) InvalidParams("data is empty, please type a different one")
           else {
-            val tx = buildTx(TransactionType.Deploy, from, UInt160.Zero, BinaryData(dataContent))
-            val result = sendTx(tx)
+            val tx = AssetCommand.buildTx(TransactionType.Deploy, from, UInt160.Zero, BinaryData(dataContent))
+            val result = AssetCommand.sendTx(tx)
 
             WalletCache.reActWallet
             if(result.toString().toBoolean) Success("contractAdd:"+tx.getContractAddress().get)
@@ -149,8 +149,8 @@ class ContractCommand extends CompositeCommand {
             val abiJson = Abi.fromJson(abiContent)
             val data = Abi.fromJson(abiContent).encode(method)
 
-            val tx = buildTx(TransactionType.Call, from, UInt160.fromBytes(BinaryData(to)), data)
-            val txResult = sendTx(tx)
+            val tx = AssetCommand.buildTx(TransactionType.Call, from, UInt160.fromBytes(BinaryData(to)), data)
+            val txResult = AssetCommand.sendTx(tx)
 
             WalletCache.reActWallet
 
@@ -198,38 +198,6 @@ class ContractCommand extends CompositeCommand {
       }
     }}
 
-
-  def buildTx(txType:TransactionType.Value, from:String, to:UInt160, data:Array[Byte]) = {
-
-    val privKey = Account.getAccount(from).getPrivKey()
-
-    val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
-
-    var nextNonce: Long = 0
-    if (account != JsNull && account.toString() != "null") {
-      nextNonce = (account \ "nextNonce").as[Long]
-    }
-    val tx = new Transaction(txType,
-      privKey.publicKey.pubKeyHash,
-      to,
-      FixedNumber.Zero,
-      nextNonce,
-      data,
-      FixedNumber.Zero,
-      7000000,
-      BinaryData.empty)
-    tx.sign(privKey)
-
-    tx
-  }
-
-  def sendTx(tx:Transaction) = {
-
-    val txRawData = BinaryData(tx.toBytes)
-    val rawTx: String = "{\"rawTx\":\"" + txRawData.toString + "\"}"
-    val result = RPC.post("sendrawtransaction", rawTx)
-    result
-  }
 
   private def readFile(fileName: String): String = {
     var content = ""

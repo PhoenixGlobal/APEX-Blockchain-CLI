@@ -93,7 +93,7 @@ object WalletCache{
     val day = between / 1000 / 3600 / 24
     val year = between / 1000 / 3600 / 24 / 365*/
 
-    if(minute < 1) true
+    if(minute < 5) true
     else false
   }
 
@@ -295,7 +295,7 @@ class WalletCloseCommand extends Command {
       if(!WalletCache.isExist(name))  InvalidParams("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
       else{
         WalletCache.remove(name)
-        Success("wallet remove success\n")
+        Success("wallet close success\n")
       }
     } catch {
       case e: Throwable => Error(e)

@@ -31,39 +31,6 @@ class ProducerCommand extends CompositeCommand {
     new ListCommand
   )
 
-  private def buildTx(txType:TransactionType.Value, from:String, to:UInt160, data:Array[Byte]) = {
-
-    val privKey = Account.getAccount(from).getPrivKey()
-
-    val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
-
-    var nextNonce: Long = 0
-      if (account != JsNull) {
-      nextNonce = (account \ "nextNonce").as[Long]
-    }
-    val tx = new Transaction(txType,
-      privKey.publicKey.pubKeyHash,
-      to,
-      FixedNumber.Zero,
-      nextNonce,
-      data,
-      FixedNumber.Zero,
-      7000000L,
-      BinaryData.empty)
-    tx.sign(privKey)
-
-    tx
-  }
-
-  private def sendTx(tx:Transaction) = {
-
-    val txRawData = BinaryData(tx.toBytes)
-    val rawTx: String = "{\"rawTx\":\"" + txRawData.toString + "\"}"
-    val result = RPC.post("sendrawtransaction", rawTx)
-    result
-  }
-
-
   class RegisterCommand extends Command {
     override val cmd = "reg"
     override val description = "Register as an alternative production node"
@@ -98,8 +65,8 @@ class ProducerCommand extends CompositeCommand {
 
             val witnessInfo = new WitnessInfo(name = from, addr = fromHash, url = url, country = country, address = address, longitude = longitude, latitude = latitude);
             val registerData = new RegisterData(fromHash, witnessInfo, OperationType.register)
-            val tx = buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, registerData.toBytes)
-            val txResult = sendTx(tx)
+            val tx = AssetCommand.buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, registerData.toBytes)
+            val txResult = AssetCommand.sendTx(tx)
             Success(Json prettyPrint txResult)
           }
 
@@ -134,8 +101,8 @@ class ProducerCommand extends CompositeCommand {
             val witnessInfo = new WitnessInfo(name = from, addr = fromHash)
             val registerData = new RegisterData(fromHash, witnessInfo, OperationType.resisterCancel)
 
-            val tx = buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, registerData.toBytes)
-            val txResult = sendTx(tx)
+            val tx = AssetCommand.buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, registerData.toBytes)
+            val txResult = AssetCommand.sendTx(tx)
             Success(Json prettyPrint txResult)
           }
 
@@ -173,8 +140,8 @@ class ProducerCommand extends CompositeCommand {
 
             val voteData = new VoteData(PublicKeyHash.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.register)
 
-            val tx = buildTx(TransactionType.Call, from, UInt160.fromBytes(voteAddr.data), voteData.toBytes)
-            val txResult = sendTx(tx)
+            val tx = AssetCommand.buildTx(TransactionType.Call, from, voteAddr.toUInt160, voteData.toBytes)
+            val txResult = AssetCommand.sendTx(tx)
             Success(Json prettyPrint txResult)
           }
         }
@@ -212,8 +179,8 @@ class ProducerCommand extends CompositeCommand {
 
             val voteData = new VoteData(PublicKeyHash.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.register)
 
-            val tx = buildTx(TransactionType.Call, from, UInt160.fromBytes(voteAddr.data), voteData.toBytes)
-            val txResult = sendTx(tx)
+            val tx = AssetCommand.buildTx(TransactionType.Call, from, voteAddr.toUInt160, voteData.toBytes)
+            val txResult = AssetCommand.sendTx(tx)
             Success(Json prettyPrint txResult)
           }
         }
