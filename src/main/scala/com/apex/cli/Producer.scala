@@ -67,7 +67,7 @@ class ProducerCommand extends CompositeCommand {
             val registerData = new RegisterData(fromHash, witnessInfo, OperationType.register)
             val tx = AssetCommand.buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, registerData.toBytes)
             val txResult = AssetCommand.sendTx(tx)
-            Success(Json prettyPrint txResult)
+            ChainCommand.checkRes(txResult)
           }
 
         }
@@ -103,7 +103,7 @@ class ProducerCommand extends CompositeCommand {
 
             val tx = AssetCommand.buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, registerData.toBytes)
             val txResult = AssetCommand.sendTx(tx)
-            Success(Json prettyPrint txResult)
+            ChainCommand.checkRes(txResult)
           }
 
         }
@@ -142,7 +142,7 @@ class ProducerCommand extends CompositeCommand {
 
             val tx = AssetCommand.buildTx(TransactionType.Call, from, voteAddr.toUInt160, voteData.toBytes)
             val txResult = AssetCommand.sendTx(tx)
-            Success(Json prettyPrint txResult)
+            ChainCommand.checkRes(txResult)
           }
         }
       } catch {
@@ -181,7 +181,7 @@ class ProducerCommand extends CompositeCommand {
 
             val tx = AssetCommand.buildTx(TransactionType.Call, from, voteAddr.toUInt160, voteData.toBytes)
             val txResult = AssetCommand.sendTx(tx)
-            Success(Json prettyPrint txResult)
+            ChainCommand.checkRes(txResult)
           }
         }
       } catch {
@@ -206,11 +206,12 @@ class ProducerCommand extends CompositeCommand {
         }
 
         val result = RPC.post("getProducers", s"""{"listType":"${listType}"}""")
-        Success(Json prettyPrint result)
+        ChainCommand.checkRes(result)
       } catch {
         case e: Throwable => Error(e)
       }
-    }}
+    }
+  }
 
   class GetByAddrCommand extends Command {
     override val cmd = "getByAddr"
@@ -224,7 +225,7 @@ class ProducerCommand extends CompositeCommand {
       try {
         val address = paramList.params(0).asInstanceOf[StringParameter].value
         val result = RPC.post("getProducer", s"""{"address":"${address}"}""")
-        Success(Json prettyPrint result)
+        ChainCommand.checkRes(result)
       } catch {
         case e: Throwable => Error(e)
       }

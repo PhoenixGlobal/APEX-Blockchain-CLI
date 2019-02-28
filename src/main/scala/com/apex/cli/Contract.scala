@@ -1,14 +1,12 @@
 package com.apex.cli
 
 import java.nio.file.{Files, Paths}
-import spray.json.JsNull
 import com.apex.core.{Transaction, TransactionType}
 import com.apex.crypto.{BinaryData, FixedNumber, UInt160}
 import com.apex.solidity.Abi
 import com.apex.solidity.compiler.{CompilationResult, SolidityCompiler}
 import com.apex.solidity.compiler.SolidityCompiler.Options.{ABI, BIN, INTERFACE, METADATA}
 import org.junit.Assert
-import play.api.libs.json.{Json}
 import scala.io.Source
 
 /*
@@ -101,8 +99,9 @@ class ContractCommand extends CompositeCommand {
             val result = AssetCommand.sendTx(tx)
 
             WalletCache.reActWallet
-            if(result.toString().toBoolean) Success("contractAdd:"+tx.getContractAddress().get)
-            else Success("false")
+
+            if(ChainCommand.checkSucceed(result)) Success("execute succeed, contractAdd is "+tx.getContractAddress().get)
+            else ChainCommand.checkRes(result)
           }
         }
       } catch {
@@ -146,7 +145,7 @@ class ContractCommand extends CompositeCommand {
           else if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
           else {
             // 获取abi对象
-            val abiJson = Abi.fromJson(abiContent)
+            /*val abiJson = Abi.fromJson(abiContent)*/
             val data = Abi.fromJson(abiContent).encode(method)
 
             val tx = AssetCommand.buildTx(TransactionType.Call, from, UInt160.fromBytes(BinaryData(to)), data)
@@ -154,16 +153,23 @@ class ContractCommand extends CompositeCommand {
 
             WalletCache.reActWallet
 
-            if(txResult.toString().toBoolean == true){
+            if(ChainCommand.checkSucceed(txResult)){
 
               Thread.sleep(1000)
 
-              val result = RPC.post("getContract", s"""{"id":"${tx.id()}"}""")
-              if(result.toString.equals("null")){
-                Success("no result, txId is "+tx.id()+", type \"contract getContract\" to see contract status later.")
-              }else Success(Json prettyPrint result)
+              val contractResult = RPC.post("getContract", s"""{"id":"${tx.id()}"}""")
 
-            }else Success("false")
+              if(ChainCommand.checkSucceed(contractResult)){
+
+                val result = (contractResult \"result").as[String]
+
+                if(result != None && "null" != result){
+                  ChainCommand.checkRes(contractResult)
+                }else
+                  Success("execute succeed, type \"contract getContract\" to see contract status later, txId is "+tx.id()+".")
+              }else ChainCommand.checkRes(contractResult)
+
+            }else ChainCommand.checkRes(txResult)
           }
         }
       } catch {
@@ -188,10 +194,8 @@ class ContractCommand extends CompositeCommand {
         if (!checkResult.isEmpty) InvalidParams(checkResult)
         else {
           val id = paramList.params(0).asInstanceOf[StringParameter].value
-          val result = RPC.post("getContract", s"""{"id":"${id}"}""")
-          if(result.toString.equals("null")){
-            Success("no result.")
-          }else Success(Json prettyPrint result)
+          val rpcResult = RPC.post("getContract", s"""{"id":"${id}"}""")
+          ChainCommand.checkRes(rpcResult)
         }
       } catch {
         case e: Throwable => Error(e)

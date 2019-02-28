@@ -5,8 +5,7 @@ import java.util.Calendar
 import com.apex.cli.Account.checkWalletStatus
 import com.apex.crypto.Ecdsa.PrivateKey
 import com.apex.crypto.{Base58Check, BinaryData, Crypto, FixedNumber, UInt256}
-import play.api.libs.json.JsValue
-import scala.util.parsing.json._
+import play.api.libs.json.{JsValue, Json}
 
 /*
  * Copyright  2018 APEX Technologies.Co.Ltd. All rights reserved.
@@ -185,27 +184,33 @@ object Account {
   def getbalance(address :String) = {
     // 调用查询余额
     val rpcResult = RPC.post("showaccount", s"""{"address":"${address}"}""")
-    // 转换查询结果
-    val showaccount = JSON.parseFull(rpcResult.toString())
-    // 申明余额变量
-    var balance: String = FixedNumber.Zero.toString()
-    if (showaccount != None && !(rpcResult \ "balance").isEmpty) balance = regJson(showaccount).get("balance").get.toString
-    balance
+    getResultBalance(rpcResult)
   }
 
   def getResultBalance(rpcResult :JsValue) = {
     // 转换查询结果
-    val showaccount = JSON.parseFull(rpcResult.toString())
-    // 申明余额变量
+    val result = (rpcResult \"result").as[String]
+
     var balance: String = FixedNumber.Zero.toString()
-    if (showaccount != None && !(rpcResult \ "balance").isEmpty) balance = regJson(showaccount).get("balance").get.toString
+    if(result != None && "null" != result){
+      balance = (Json.parse(result) \"balance").as[String]
+    }
     balance
+  }
+
+  def getResultNonce(rpcResult :JsValue): Long ={
+    // 转换查询结果
+    val result = (rpcResult \"result").as[String]
+    var nextNonce: Long = 0
+
+    if(result != None && "null" != result){
+      nextNonce = (Json.parse(result) \"nextNonce").as[Long]
+    }
+    nextNonce
   }
 
   private def regJson(json: Option[Any]) = json match {
     case Some(map: Map[String, Any]) => map
-    //      case None => "erro"
-    //      case other => "Unknow data structure : " + other
   }
 }
 

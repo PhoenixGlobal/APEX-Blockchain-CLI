@@ -1,6 +1,6 @@
 package com.apex.cli
 
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 import scala.collection.mutable
 
 /*
@@ -32,7 +32,7 @@ class StatusCommand extends Command {
     try{
       val result = RPC.post("getblockheight", paramList.toJson())
       WalletCache.reActWallet
-      Success(Json prettyPrint result)
+      ChainCommand.checkRes(result)
     } catch {
       case e: Throwable => Error(e)
     }
@@ -65,7 +65,7 @@ class BlockCommand extends Command {
         mutable.HashMap(paramList.params(1).asInstanceOf[PrivKeyParameter].name.toString -> paramList.params(1).asInstanceOf[PrivKeyParameter].toJson)).toString()
 
       val result = RPC.post("getblock", data)
-      Success(Json prettyPrint result)
+      ChainCommand.checkRes(result)
     } catch {
       case e: Throwable => Error(e)
     }
@@ -101,9 +101,9 @@ class ResetGasLimitCommand  extends Command {
 
   override def execute(params: List[String]): Result = {
     try{
-      var gasLimit = paramList.params(0).asInstanceOf[IntParameter].value
+      val gasLimit = paramList.params(0).asInstanceOf[IntParameter].value
       val result = RPC.post("setGasLimit", s"""{"gasLimit":"${gasLimit}"}""", RPC.secretRpcUrl)
-      Success(Json prettyPrint result)
+      ChainCommand.checkRes(result)
     }catch {
       case e: Throwable => Error(e)
     }
@@ -116,10 +116,38 @@ class GasLimitCommand  extends Command {
   override def execute(params: List[String]): Result = {
 
     try{
-      val result1 = RPC.post("getGasLimit", paramList.toJson(), RPC.secretRpcUrl)
-      Success(Json prettyPrint result1)
+      val result = RPC.post("getGasLimit", paramList.toJson(), RPC.secretRpcUrl)
+      ChainCommand.checkRes(result)
     }catch {
       case e: Throwable => Error(e)
     }
+  }
+}
+
+object ChainCommand{
+
+  def checkSucceed(res:JsValue): Boolean ={
+
+    if((res \ "succeed").as[Boolean]){
+      true
+    }else false
+  }
+
+    def checkRes(res:JsValue): Result ={
+
+      if((res \ "succeed").as[Boolean]){
+        // 返回结果值
+        val result = (res \ "result").as[String]
+        Success(Json prettyPrint Json.parse(result))
+      }else{
+        // 返回状态码，和message
+        val status = (res \ "status").as[Int]
+        val message = (res \ "message").as[String]
+        Success("execute failed, status is "+status+", message is "+message)
+      }
+    }
+
+  def regJson(json: Option[Any]) = json match {
+    case Some(map: Map[String, Any]) => map
   }
 }

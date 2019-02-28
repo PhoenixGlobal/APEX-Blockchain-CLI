@@ -2,7 +2,6 @@ package com.apex.cli
 
 import com.apex.core.{Transaction, TransactionType}
 import com.apex.crypto.{BinaryData, Ecdsa, FixedNumber, UInt160, UInt256}
-import play.api.libs.json.{JsNull, Json}
 
 /*
  * Copyright  2018 APEX Technologies.Co.Ltd. All rights reserved.
@@ -75,12 +74,9 @@ class SendCommand extends Command {
           val privKey = Account.getAccount(from).getPrivKey()
           val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
 
-          var nextNonce: Long = 0
-          if (account != JsNull) {
-            nextNonce = (account \ "nextNonce").as[Long]
-          }
+          val nextNonce = Account.getResultNonce(account)
           // 获取账户余额
-          var balance = Account.getResultBalance(account)
+          val balance = Account.getResultBalance(account)
           // 判断账户余额是否充足
           if(BigDecimal.apply(balance) < amount) InvalidParams("insufficient account balance")
           else{
@@ -90,8 +86,8 @@ class SendCommand extends Command {
             val result = AssetCommand.sendTx(tx)
 
             WalletCache.reActWallet
-            Success("txId is "+tx.id())
-            Success(Json prettyPrint result)
+            if(ChainCommand.checkSucceed(result)) Success("execute succeed, txId is "+tx.id())
+            else ChainCommand.checkRes(result)
           }
 
         }
@@ -112,9 +108,7 @@ object AssetCommand{
 
     if(!checkedAccount){
       val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
-      if (account != JsNull && account.toString() != "null") {
-        nextNonce = (account \ "nextNonce").as[Long]
-      }
+      nextNonce = Account.getResultNonce(account)
     }
 
     val tx = new Transaction(txType,
@@ -138,5 +132,6 @@ object AssetCommand{
     val result = RPC.post("sendrawtransaction", rawTx)
     result
   }
+
 }
 
