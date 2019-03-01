@@ -81,7 +81,7 @@ class SendCommand extends Command {
           if(BigDecimal.apply(balance) < amount) InvalidParams("insufficient account balance")
           else{
 
-            val tx = AssetCommand.buildTx(TransactionType.Transfer, from, Ecdsa.PublicKeyHash.fromAddress(toAdress).get,
+            val tx = AssetCommand.buildTx(TransactionType.Transfer, from, Ecdsa.PublicKeyHash.fromAddress(toAdress).get, FixedNumber.fromDecimal(amount),
               BinaryData.empty, true, nextNonce)
             val result = AssetCommand.sendTx(tx)
 
@@ -100,7 +100,7 @@ class SendCommand extends Command {
 
 object AssetCommand{
 
-  def buildTx(txType:TransactionType.Value, from:String, to:UInt160,
+  def buildTx(txType:TransactionType.Value, from:String, to:UInt160, amount : FixedNumber,
               data:Array[Byte], checkedAccount:Boolean = false,  nonce:Long = 0) = {
 
     val privKey = Account.getAccount(from).getPrivKey()
@@ -114,7 +114,7 @@ object AssetCommand{
     val tx = new Transaction(txType,
       privKey.publicKey.pubKeyHash,
       to,
-      FixedNumber.Zero,
+      amount,
       nextNonce,
       data,
       FixedNumber.Zero,

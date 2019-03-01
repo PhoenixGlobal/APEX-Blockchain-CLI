@@ -95,7 +95,7 @@ class ContractCommand extends CompositeCommand {
           if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
           else if(dataContent.isEmpty) InvalidParams("data is empty, please type a different one")
           else {
-            val tx = AssetCommand.buildTx(TransactionType.Deploy, from, UInt160.Zero, BinaryData(dataContent))
+            val tx = AssetCommand.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.Zero, BinaryData(dataContent))
             val result = AssetCommand.sendTx(tx)
 
             WalletCache.reActWallet
@@ -148,7 +148,7 @@ class ContractCommand extends CompositeCommand {
             /*val abiJson = Abi.fromJson(abiContent)*/
             val data = Abi.fromJson(abiContent).encode(method)
 
-            val tx = AssetCommand.buildTx(TransactionType.Call, from, UInt160.fromBytes(BinaryData(to)), data)
+            val tx = AssetCommand.buildTx(TransactionType.Call, from, UInt160.fromBytes(BinaryData(to)), FixedNumber.Zero, data)
             val txResult = AssetCommand.sendTx(tx)
 
             WalletCache.reActWallet

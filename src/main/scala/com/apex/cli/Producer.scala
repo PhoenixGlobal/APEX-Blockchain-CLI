@@ -65,7 +65,7 @@ class ProducerCommand extends CompositeCommand {
 
             val witnessInfo = new WitnessInfo(name = from, addr = fromHash, url = url, country = country, address = address, longitude = longitude, latitude = latitude);
             val registerData = new RegisterData(fromHash, witnessInfo, OperationType.register)
-            val tx = AssetCommand.buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, registerData.toBytes)
+            val tx = AssetCommand.buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, FixedNumber.Zero, registerData.toBytes)
             val txResult = AssetCommand.sendTx(tx)
             ChainCommand.checkRes(txResult)
           }
@@ -101,7 +101,7 @@ class ProducerCommand extends CompositeCommand {
             val witnessInfo = new WitnessInfo(name = from, addr = fromHash)
             val registerData = new RegisterData(fromHash, witnessInfo, OperationType.resisterCancel)
 
-            val tx = AssetCommand.buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, registerData.toBytes)
+            val tx = AssetCommand.buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, FixedNumber.Zero, registerData.toBytes)
             val txResult = AssetCommand.sendTx(tx)
             ChainCommand.checkRes(txResult)
           }
@@ -140,7 +140,7 @@ class ProducerCommand extends CompositeCommand {
 
             val voteData = new VoteData(PublicKeyHash.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.register)
 
-            val tx = AssetCommand.buildTx(TransactionType.Call, from, voteAddr.toUInt160, voteData.toBytes)
+            val tx = AssetCommand.buildTx(TransactionType.Call, from, voteAddr.toUInt160, FixedNumber.Zero, voteData.toBytes)
             val txResult = AssetCommand.sendTx(tx)
             ChainCommand.checkRes(txResult)
           }
@@ -179,7 +179,7 @@ class ProducerCommand extends CompositeCommand {
 
             val voteData = new VoteData(PublicKeyHash.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.register)
 
-            val tx = AssetCommand.buildTx(TransactionType.Call, from, voteAddr.toUInt160, voteData.toBytes)
+            val tx = AssetCommand.buildTx(TransactionType.Call, from, voteAddr.toUInt160, FixedNumber.Zero, voteData.toBytes)
             val txResult = AssetCommand.sendTx(tx)
             ChainCommand.checkRes(txResult)
           }
