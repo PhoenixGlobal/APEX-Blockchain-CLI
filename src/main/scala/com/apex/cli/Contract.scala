@@ -113,7 +113,7 @@ class ContractCommand extends CompositeCommand {
   // 测试合约地址
   class CallCommand extends Command {
     override val cmd = "call"
-    override val description = "Call special function of smart contract"
+    override val description = "Call smart contract"
 
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),

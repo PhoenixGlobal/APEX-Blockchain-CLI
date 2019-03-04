@@ -33,7 +33,7 @@ class ProducerCommand extends CompositeCommand {
 
   class RegisterCommand extends Command {
     override val cmd = "reg"
-    override val description = "Register as an alternative production node"
+    override val description = "Register as an spare production node"
 
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
@@ -77,11 +77,12 @@ class ProducerCommand extends CompositeCommand {
     }}
 
   class ResisterCancelCommand extends Command {
-    override val cmd = "cancelReg"
-    override val description = "Logout candidate/production node qualification"
+    override val cmd = "unReg"
+    override val description = "Unregister as a producer"
 
     override val paramList: ParameterList = ParameterList.create(
-      new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true)
+      new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.",
+        true)
     )
 
     override def execute(params: List[String]): Result = {
@@ -153,7 +154,7 @@ class ProducerCommand extends CompositeCommand {
 
   class VoteCancelCommand extends Command {
     override val cmd = "cancelVote"
-    override val description = "Cancel vote"
+    override val description = "Cancel voting on the node"
 
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
