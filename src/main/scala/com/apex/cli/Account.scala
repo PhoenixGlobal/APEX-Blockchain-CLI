@@ -408,7 +408,11 @@ class AccountListCommand extends Command {
   override def execute(params: List[String]): Result = {
 
     try {
-      if (checkWalletStatus.isEmpty && WalletCache.getActivityWallet() != null) {
+      // 校验钱包不存在
+      val checkResult = checkWalletStatus
+      if (!checkWalletStatus.isEmpty)
+        InvalidParams(checkResult)
+      else{
         WalletCache.getActivityWallet().accounts.foreach { i =>
           // 申明余额变量
           var balance: String = Account.getbalance(i.address)
@@ -418,9 +422,9 @@ class AccountListCommand extends Command {
           println("")
         }
         WalletCache.reActWallet
+        Success("account list success\n")
       }
 
-      Success("account list success\n")
     } catch {
       case e: Throwable => Error(e)
     }
