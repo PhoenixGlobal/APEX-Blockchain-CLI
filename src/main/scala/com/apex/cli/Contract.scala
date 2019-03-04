@@ -172,7 +172,7 @@ class ContractCommand extends CompositeCommand {
                 if(result != None && "null" != result){
                   ChainCommand.checkRes(contractResult)
                 }else
-                  Success("execute succeed, type \"contract getContract\" to see contract status later, the transaction hash is "+tx.id()+".")
+                  Success("The contract broadcast is successful, type \"contract get\" to see contract status later, the transaction hash is "+tx.id()+".")
               }else ChainCommand.checkRes(contractResult)
 
             }else ChainCommand.checkRes(txResult)
