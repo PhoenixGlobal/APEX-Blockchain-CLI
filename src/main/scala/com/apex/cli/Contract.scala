@@ -96,12 +96,18 @@ class ContractCommand extends CompositeCommand {
           else if(dataContent.isEmpty) InvalidParams("data is empty, please type a different one")
           else {
             val tx = AssetCommand.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.Zero, BinaryData(dataContent))
-            val result = AssetCommand.sendTx(tx)
+            val txResult = AssetCommand.sendTx(tx)
 
             WalletCache.reActWallet
 
-            if(ChainCommand.checkSucceed(result)) Success("execute succeed, contractAdd is "+tx.getContractAddress().get)
-            else ChainCommand.checkRes(result)
+            if(ChainCommand.checkSucceed(txResult)) {
+              val result = (txResult \ "result").as[Boolean]
+              if(result)
+                Success("The contract broadcast is successful , the transaction hash is [" + tx.id() + "] , the contract address is [" + tx.getContractAddress().get + "] ")
+              else
+                Success("The contract broadcast failed. Please try again.")
+
+            }else ChainCommand.checkRes(txResult)
           }
         }
       } catch {
@@ -166,7 +172,7 @@ class ContractCommand extends CompositeCommand {
                 if(result != None && "null" != result){
                   ChainCommand.checkRes(contractResult)
                 }else
-                  Success("execute succeed, type \"contract getContract\" to see contract status later, txId is "+tx.id()+".")
+                  Success("execute succeed, type \"contract getContract\" to see contract status later, the transaction hash is "+tx.id()+".")
               }else ChainCommand.checkRes(contractResult)
 
             }else ChainCommand.checkRes(txResult)

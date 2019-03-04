@@ -19,8 +19,8 @@ class ProducerCommand extends CompositeCommand {
   override val description: String = "Operate producer"
   override val composite: Boolean = true
 
-  private val registerNodeAddr = DataWord.of("0000000000000000000000000000000000000000000000000000000000000101")
-  private val voteAddr = DataWord.of("0000000000000000000000000000000000000000000000000000000000000102")
+  val registerNodeAddr = DataWord.of("0000000000000000000000000000000000000000000000000000000000000101")
+  val voteAddr = DataWord.of("0000000000000000000000000000000000000000000000000000000000000102")
 
   override val subCommands: Seq[Command] = Seq(
     new RegisterCommand,
@@ -28,7 +28,9 @@ class ProducerCommand extends CompositeCommand {
     new VoteCommand,
     new VoteCancelCommand,
     new GetByAddrCommand,
-    new ListCommand
+    new ListCommand,
+    new ResetGasLimitCommand,
+    new GasLimitCommand
   )
 
   class RegisterCommand extends Command {
@@ -135,7 +137,6 @@ class ProducerCommand extends CompositeCommand {
 
           if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
           else {
-            val fromHash = Account.getAccount(from).getPrivKey().publicKey.pubKeyHash
             val candidate = paramList.params(1).asInstanceOf[AddressParameter].value
             val count = paramList.params(2).asInstanceOf[AmountParameter].value
 
@@ -174,11 +175,10 @@ class ProducerCommand extends CompositeCommand {
 
           if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
           else {
-            val fromHash = Account.getAccount(from).getPrivKey().publicKey.pubKeyHash
             val candidate = paramList.params(1).asInstanceOf[AddressParameter].value
             val count = paramList.params(2).asInstanceOf[AmountParameter].value
 
-            val voteData = new VoteData(PublicKeyHash.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.register)
+            val voteData = new VoteData(PublicKeyHash.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.resisterCancel)
 
             val tx = AssetCommand.buildTx(TransactionType.Call, from, voteAddr.toUInt160, FixedNumber.Zero, voteData.toBytes)
             val txResult = AssetCommand.sendTx(tx)
@@ -207,6 +207,7 @@ class ProducerCommand extends CompositeCommand {
         }
 
         val result = RPC.post("getProducers", s"""{"listType":"${listType}"}""")
+        WalletCache.reActWallet
         ChainCommand.checkRes(result)
       } catch {
         case e: Throwable => Error(e)
@@ -231,6 +232,40 @@ class ProducerCommand extends CompositeCommand {
         case e: Throwable => Error(e)
       }
     }}
+
+
+  class ResetGasLimitCommand  extends Command {
+    override val cmd = "resetGasLimit"
+    override val description = "Modify the gas limit of the production node"
+
+    override val paramList: ParameterList = ParameterList.create(
+      new IntParameter("gasLimit", "gasLimit","gasLimit")
+    )
+
+    override def execute(params: List[String]): Result = {
+      try{
+        val gasLimit = paramList.params(0).asInstanceOf[IntParameter].value
+        val result = RPC.post("setGasLimit", s"""{"gasLimit":"${gasLimit}"}""", RPC.secretRpcUrl)
+        ChainCommand.checkRes(result)
+      }catch {
+        case e: Throwable => Error(e)
+      }
+    }
+  }
+
+  class GasLimitCommand  extends Command {
+    override val cmd = "gasLimit"
+    override val description = "Query the gas limit of the production node"
+    override def execute(params: List[String]): Result = {
+
+      try{
+        val result = RPC.post("getGasLimit", paramList.toJson(), RPC.secretRpcUrl)
+        ChainCommand.checkRes(result)
+      }catch {
+        case e: Throwable => Error(e)
+      }
+    }
+  }
 
 }
 

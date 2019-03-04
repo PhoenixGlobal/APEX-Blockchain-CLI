@@ -361,9 +361,18 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
   override protected def validate(list: List[String], i: Int): Boolean = {
 
     // 验证若是帮助参数，返回true
-    if(Command.checkHelpParam(list)) true
-    else{
-
+    if(list.size==0 && track.dic.size == 1) {
+      var validate = false
+      track.dic.keys.foreach { i =>
+        val value = track.dic.get(i)
+        if (value.get.parameter.halt && !value.get.parameter.replaceable) {
+          validate = true
+        }
+      }
+        validate
+    }else if(Command.checkHelpParam(list)){
+      true
+    }else{
       // 重新赋值克隆dic值
       track.cloneDic = track.dic
 

@@ -86,7 +86,7 @@ class SendCommand extends Command {
             val result = AssetCommand.sendTx(tx)
 
             WalletCache.reActWallet
-            if(ChainCommand.checkSucceed(result)) Success("execute succeed, txId is "+tx.id())
+            if(ChainCommand.checkSucceed(result)) Success("execute succeed, the transaction hash is "+tx.id())
             else ChainCommand.checkRes(result)
           }
 

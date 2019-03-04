@@ -19,8 +19,6 @@ class ChainCommand extends CompositeCommand {
     new StatusCommand,
     new BlockCommand,
     /*new TransactionCommand,*/
-    new ResetGasLimitCommand,
-    new GasLimitCommand
   )
 }
 
@@ -46,8 +44,8 @@ class BlockCommand extends Command {
   override val paramList: ParameterList = ParameterList.create(
     new IntParameter("height", "height",
       "The height of block. Use either this param or \"id\", If both give, the front one make sense.", true,true),
-    new PrivKeyParameter("id", "id",
-      "The id of block. Use either this param or \"id\", If both give, the front one make sense.",true,true)
+    new PrivKeyParameter("hash", "hash",
+      "The hash of block. Use either this param or \"id\", If both give, the front one make sense.",true,true)
 
   )
 
@@ -90,39 +88,6 @@ class BlockCommand extends Command {
     }
   }
 }*/
-
-class ResetGasLimitCommand  extends Command {
-  override val cmd = "resetGasLimit"
-  override val description = "Modify the gas limit of the production node"
-
-  override val paramList: ParameterList = ParameterList.create(
-    new IntParameter("gasLimit", "gasLimit","gasLimit")
-  )
-
-  override def execute(params: List[String]): Result = {
-    try{
-      val gasLimit = paramList.params(0).asInstanceOf[IntParameter].value
-      val result = RPC.post("setGasLimit", s"""{"gasLimit":"${gasLimit}"}""", RPC.secretRpcUrl)
-      ChainCommand.checkRes(result)
-    }catch {
-      case e: Throwable => Error(e)
-    }
-  }
-}
-
-class GasLimitCommand  extends Command {
-  override val cmd = "gasLimit"
-  override val description = "Query the gas limit of the production node"
-  override def execute(params: List[String]): Result = {
-
-    try{
-      val result = RPC.post("getGasLimit", paramList.toJson(), RPC.secretRpcUrl)
-      ChainCommand.checkRes(result)
-    }catch {
-      case e: Throwable => Error(e)
-    }
-  }
-}
 
 object ChainCommand{
 
