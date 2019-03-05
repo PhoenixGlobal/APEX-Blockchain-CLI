@@ -18,7 +18,7 @@ class ChainCommand extends CompositeCommand {
   override val subCommands: Seq[Command] = Seq(
     new StatusCommand,
     new BlockCommand,
-    /*new TransactionCommand,*/
+    new TransactionCommand
   )
 }
 
@@ -70,24 +70,28 @@ class BlockCommand extends Command {
   }
 }
 
-/*class TransactionCommand extends Command {
+class TransactionCommand extends Command {
   override val cmd = "transaction"
   override val description = "how data of the transaction"
 
   override val paramList: ParameterList = ParameterList.create(
-    new IntParameter("id", "id","The id of transaction.")
+    new StringParameter("hash", "hash","The hash of transaction.")
   )
 
   override def execute(params: List[String]): Result = {
     try{
-      val result = RPC.post("gettx", paramList.toJson())
-      WalletCache.reActWallet
-      Success(Json prettyPrint result)
+      val checkResult = Account.checkWalletStatus
+      if (!checkResult.isEmpty) InvalidParams(checkResult)
+      else {
+        val id = paramList.params(0).asInstanceOf[StringParameter].value
+        val rpcResult = RPC.post("getContract", s"""{"id":"${id}"}""")
+        ChainCommand.checkRes(rpcResult)
+      }
     } catch {
       case e: Throwable => Error(e)
     }
   }
-}*/
+}
 
 object ChainCommand{
 

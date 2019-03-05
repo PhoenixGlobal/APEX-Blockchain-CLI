@@ -25,8 +25,7 @@ class ContractCommand extends CompositeCommand {
   override val subCommands: Seq[Command] = Seq(
     new CompileCommand,
     new DeployCommand,
-    new CallCommand,
-    new GetContractCommand
+    new CallCommand
   )
 
   class CompileCommand extends Command {
@@ -101,7 +100,7 @@ class ContractCommand extends CompositeCommand {
             WalletCache.reActWallet
 
             if(ChainCommand.checkSucceed(txResult)) {
-              val result = (txResult \ "result").as[Boolean]
+              val result = (txResult \ "result").as[String].toBoolean
               if(result)
                 Success("The contract broadcast is successful , the transaction hash is [" + tx.id() + "] , the contract address is [" + tx.getContractAddress().get + "] ")
               else
@@ -183,31 +182,6 @@ class ContractCommand extends CompositeCommand {
       }
     }
   }
-
-
-  class GetContractCommand
-    extends Command {
-    override val cmd = "get"
-    override val description = "Get contract by transaction id"
-
-    override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("id", "id", "The transaction id of contract."),
-    )
-
-    override def execute(params: List[String]): Result = {
-      try {
-        val checkResult = Account.checkWalletStatus
-        if (!checkResult.isEmpty) InvalidParams(checkResult)
-        else {
-          val id = paramList.params(0).asInstanceOf[StringParameter].value
-          val rpcResult = RPC.post("getContract", s"""{"id":"${id}"}""")
-          ChainCommand.checkRes(rpcResult)
-        }
-      } catch {
-        case e: Throwable => Error(e)
-      }
-    }}
-
 
   private def readFile(fileName: String): String = {
     var content = ""
