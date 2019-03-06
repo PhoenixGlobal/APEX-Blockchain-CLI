@@ -1,7 +1,13 @@
 package com.apex.cli
 
+import java.io.{ByteArrayInputStream, DataInputStream}
+import java.nio.file.{Files, Paths}
+
 import com.apex.core.{Transaction, TransactionType}
-import com.apex.crypto.{BinaryData, Ecdsa, FixedNumber, UInt160, UInt256}
+import com.apex.crypto.{BinaryData, Crypto, Ecdsa, FixedNumber, UInt160, UInt256, fromHexString}
+import org.bouncycastle.util.encoders.Hex
+
+import scala.io.Source
 
 /*
  * Copyright  2018 APEX Technologies.Co.Ltd. All rights reserved.
@@ -16,21 +22,8 @@ class AssetCommand extends CompositeCommand {
   override val composite: Boolean = true
 
   override val subCommands: Seq[Command] = Seq(
-    new CirculateCommand,
+    new BroadcastCommand,
     new SendCommand
-  )
-}
-
-class CirculateCommand extends SendCommand {
-  override val cmd = "circulate"
-  override val description = "Transfer tokens between accounts within current wallet. "
-
-  override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("from", "from",
-      "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.",
-      true),
-    new NicknameParameter("to", "to","The account where the asset come to"),
-    new AmountParameter("amount", "amount","The amount of the asset to be transfer.")
   )
 }
 
@@ -42,8 +35,10 @@ class SendCommand extends Command {
     new NicknameParameter("from", "from",
       "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.",
       true),
-    new AddressParameter("to", "to","The account where the asset come to"),
-    new AmountParameter("amount", "amount","The amount of the asset to be transfer.")
+    new StringParameter("to", "to","The account where the asset come to"),
+    new AmountParameter("amount", "amount","The amount of the asset to be transfer."),
+    new GasParameter("gasLimit", "gasLimit","."),
+    new GasPriceParameter("gasPrice", "gasPrice",".")
   )
 
   override def execute(params: List[String]): Result = {
@@ -56,13 +51,13 @@ class SendCommand extends Command {
         // 根据昵称获取转账地址
         if(params.size/2 == paramList.params.size)  from = paramList.params(0).asInstanceOf[NicknameParameter].value
 
-        // 赋值to收账地址
+        val to = paramList.params(1).asInstanceOf[StringParameter].value
         var toAdress = ""
-        if(this.cmd.equals("circulate")) {
-          val to = paramList.params(1).asInstanceOf[NicknameParameter].value
-          // 获取用户地址
-          if (Account.checkAccountStatus(to)) toAdress = Account.getAccount(to).address
-        }else toAdress = paramList.params(1).asInstanceOf[AddressParameter].value
+        if (to.length != 35) if (Account.checkAccountStatus(to)) toAdress = Account.getAccount(to).address
+        else toAdress = to
+
+        val price = paramList.params(4).asInstanceOf[GasPriceParameter].value
+        val gasPrice = calcGasPrice(price)
 
         if(!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
         else if(toAdress.isEmpty) InvalidParams("to account not exists, please type a different one")
@@ -70,6 +65,7 @@ class SendCommand extends Command {
         else if(Ecdsa.PublicKeyHash.fromAddress(toAdress) == None) InvalidParams("error to address, please type a different one")
         else{
           val amount = paramList.params(2).asInstanceOf[AmountParameter].value
+          val gasLimit = paramList.params(3).asInstanceOf[GasParameter].value
 
           val privKey = Account.getAccount(from).getPrivKey()
           val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
@@ -82,12 +78,12 @@ class SendCommand extends Command {
           else{
 
             val tx = AssetCommand.buildTx(TransactionType.Transfer, from, Ecdsa.PublicKeyHash.fromAddress(toAdress).get, FixedNumber.fromDecimal(amount),
-              BinaryData.empty, true, nextNonce)
+              BinaryData.empty, true, nextNonce, gasPrice, BigInt(gasLimit))
             val result = AssetCommand.sendTx(tx)
 
             WalletCache.reActWallet
             if(ChainCommand.checkSucceed(result)) Success("execute succeed, the transaction hash is "+tx.id())
-            else ChainCommand.checkRes(result)
+            else ChainCommand.returnFail(result)
           }
 
         }
@@ -96,12 +92,67 @@ class SendCommand extends Command {
       case e: Throwable => Error(e)
     }
   }
+
+  def calcGasPrice(price : String): FixedNumber ={
+    var gasPrice = FixedNumber.Zero
+    // 获取最后一位
+    val unit = price.toLowerCase.substring(price.length-1).charAt(0)
+    val priceNum = price.substring(0, price.length-1).toInt
+    unit match {
+      case 'p' => gasPrice = FixedNumber(priceNum)
+      case 'k' => gasPrice = FixedNumber(Math.pow(10,3).*(priceNum).toInt) // 10的3次幂 p
+      case 'm' => gasPrice = FixedNumber(Math.pow(10,6).*(priceNum).toInt)// 10的6次幂 p
+      case 'g' => gasPrice = FixedNumber(Math.pow(10,9).*(priceNum).toInt)// 10的9次幂 p
+      case 'c' => gasPrice = FixedNumber(Math.pow(10,12).*(priceNum).toInt)// 10的12次幂 p
+    }
+    gasPrice
+  }
+
+}
+
+class BroadcastCommand extends Command {
+  override val cmd = "broadcast"
+  override val description = "Broadcast original transaction information."
+
+  override val paramList: ParameterList = ParameterList.create(
+    new StringParameter("data", "data", "")
+  )
+
+  override def execute(params: List[String]): Result = {
+    try {
+      val checkResult = Account.checkWalletStatus
+      if (!checkResult.isEmpty) InvalidParams(checkResult)
+      else {
+        val data = paramList.params(0).asInstanceOf[StringParameter].value
+        val dataContent = AssetCommand.readFile(data)
+
+        WalletCache.reActWallet
+        if(dataContent.isEmpty) InvalidParams("data is empty, please type a different one")
+        else{
+
+          val  binaryData = BinaryData(dataContent)
+          val is = new DataInputStream(new ByteArrayInputStream(binaryData))
+          val tx = Transaction.deserialize(is)
+
+          if(tx.verifySignature()){
+            val result = AssetCommand.sendTx(tx)
+            if (ChainCommand.checkSucceed(result)) Success("execute succeed, the transaction hash is " + tx.id())
+            else ChainCommand.returnFail(result)
+          }else Success("There was an error in the original transaction information that could not be resolved.")
+        }
+
+      }
+  }catch
+  {
+    case e: Throwable => Error(e)
+  }
+}
 }
 
 object AssetCommand{
 
-  def buildTx(txType:TransactionType.Value, from:String, to:UInt160, amount : FixedNumber,
-              data:Array[Byte], checkedAccount:Boolean = false,  nonce:Long = 0) = {
+  def buildTx(txType:TransactionType.Value, from:String, to:UInt160, amount : FixedNumber, data:Array[Byte],
+              checkedAccount:Boolean = false,  nonce:Long = 0, gasPrice:FixedNumber = FixedNumber.Zero, gasLimit:BigInt = 7000000) = {
 
     val privKey = Account.getAccount(from).getPrivKey()
     var nextNonce: Long = nonce
@@ -117,8 +168,8 @@ object AssetCommand{
       amount,
       nextNonce,
       data,
-      FixedNumber.Zero,
-      BigInt(7000000),
+      gasPrice,
+      gasLimit,
       BinaryData.empty)
     tx.sign(privKey)
 
@@ -132,6 +183,14 @@ object AssetCommand{
     val result = RPC.post("sendrawtransaction", rawTx)
     result
   }
-
+  def readFile(fileName: String): String = {
+    var content = ""
+    if (Files.exists(Paths.get(fileName))) {
+      val file = Source.fromFile(fileName)
+      content = file.getLines.mkString
+      file.close()
+    }
+    content
+  }
 }
 

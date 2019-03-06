@@ -28,9 +28,15 @@ class StatusCommand extends Command {
 
   override def execute(params: List[String]): Result = {
     try{
-      val result = RPC.post("getblockheight", paramList.toJson())
+      val rpcResult = RPC.post("getLatesBlockInfo", paramList.toJson())
       WalletCache.reActWallet
-      ChainCommand.checkRes(result)
+      if(ChainCommand.checkSucceed(rpcResult)){
+        val result = ChainCommand.getStrRes(rpcResult)
+        // 获取用户index和id
+        val hash = (Json.parse(result) \"hash").as[String]
+        val height = (Json.parse(result) \"index").as[Long]
+        Success("The latest block height is "+height+", the block hash is "+hash)
+      }else ChainCommand.returnFail(rpcResult)
     } catch {
       case e: Throwable => Error(e)
     }
@@ -85,7 +91,13 @@ class TransactionCommand extends Command {
       else {
         val id = paramList.params(0).asInstanceOf[StringParameter].value
         val rpcResult = RPC.post("getContract", s"""{"id":"${id}"}""")
-        ChainCommand.checkRes(rpcResult)
+        if(ChainCommand.checkSucceed(rpcResult)){
+
+          if(ChainCommand.checkSucceedAndNull(rpcResult)){
+            ChainCommand.returnSuccess(rpcResult)
+          }else Success("No transaction information was queried")
+
+        }else ChainCommand.returnFail(rpcResult)
       }
     } catch {
       case e: Throwable => Error(e)
@@ -95,26 +107,50 @@ class TransactionCommand extends Command {
 
 object ChainCommand{
 
-  def checkSucceed(res:JsValue): Boolean ={
+  def getStrRes(rpcRes:JsValue): String ={
+    (rpcRes \ "result").as[String]
+  }
 
-    if((res \ "succeed").as[Boolean]){
+  def getBooleanRes(rpcRes: JsValue): Boolean ={
+    getStrRes(rpcRes).toBoolean
+  }
+
+  def checkSucceed(rpcRes:JsValue): Boolean ={
+
+    if((rpcRes \ "succeed").as[Boolean]){
       true
     }else false
   }
 
-    def checkRes(res:JsValue): Result ={
+  def checkSucceedAndNull(rpcRes:JsValue): Boolean ={
+    val result = ChainCommand.getStrRes(rpcRes)
 
-      if((res \ "succeed").as[Boolean]){
-        // 返回结果值
-        val result = (res \ "result").as[String]
-        Success(Json prettyPrint Json.parse(result))
-      }else{
-        // 返回状态码，和message
-        val status = (res \ "status").as[Int]
-        val message = (res \ "message").as[String]
-        Success("execute failed, status is "+status+", message is "+message)
-      }
+    if((rpcRes \ "succeed").as[Boolean] && "null" != result){
+      true
+    }else false
+  }
+
+  def checkRes(rpcRes:JsValue): Result ={
+
+    if((rpcRes \ "succeed").as[Boolean]){
+      returnSuccess(rpcRes)
+    }else{
+      returnFail(rpcRes)
     }
+  }
+
+  def returnSuccess(rpcRes:JsValue): Result ={
+    // 返回结果值
+    val result = (rpcRes \ "result").as[String]
+    Success(Json prettyPrint Json.parse(result))
+  }
+
+  def returnFail(rpcRes:JsValue): Result ={
+    // 返回状态码，和message
+    val status = (rpcRes \ "status").as[Int]
+    val message = (rpcRes \ "message").as[String]
+    Success("execute failed, status is "+status+", message is "+message)
+  }
 
   def regJson(json: Option[Any]) = json match {
     case Some(map: Map[String, Any]) => map

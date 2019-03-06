@@ -189,7 +189,7 @@ object Account {
 
   def getResultBalance(rpcResult :JsValue) = {
     // 转换查询结果
-    val result = (rpcResult \"result").as[String]
+    val result = ChainCommand.getStrRes(rpcResult)
 
     var balance: String = FixedNumber.Zero.toString()
     if(result != None && "null" != result){
@@ -200,7 +200,7 @@ object Account {
 
   def getResultNonce(rpcResult :JsValue): Long ={
     // 转换查询结果
-    val result = (rpcResult \"result").as[String]
+    val result = ChainCommand.getStrRes(rpcResult)
     var nextNonce: Long = 0
 
     if(result != None && "null" != result){

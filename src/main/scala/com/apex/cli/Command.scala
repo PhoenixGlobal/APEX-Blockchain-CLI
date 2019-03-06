@@ -153,8 +153,7 @@ object Command {
     new StatusCommand,
     new BlockCommand,
 
-    new SendCommand,
-    new CirculateCommand
+    new SendCommand
   ).groupBy(_.cmd)
 }
 

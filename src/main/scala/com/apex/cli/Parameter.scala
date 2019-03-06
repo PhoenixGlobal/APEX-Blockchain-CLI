@@ -8,6 +8,7 @@
 
 package com.apex.cli
 
+import com.apex.crypto.Ecdsa.PublicKeyHash
 import play.api.libs.json.{JsNumber, JsObject, JsString, JsValue}
 import util.control.Breaks._
 
@@ -238,6 +239,79 @@ class AmountParameter(override val name: String = "amount", override val shortNa
       value.signum > 0
     } catch {
       case _: Throwable => false
+    }
+  }
+}
+
+class GasParameter(override val name: String, override val shortName: String, override val description: String="",
+                   override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
+  var value: Integer = 0
+
+  override def toJson: JsValue = JsNumber(value.toInt)
+
+  override def validate(n: String, v: String, setEmpty : Boolean = false): Boolean = {
+    if(validateName(n) && setValue(v)){
+      true
+    } else false
+  }
+
+  private def setValue(s: String): Boolean = {
+    try {
+      value = s.toInt
+      if(value >0) true
+      else false
+    } catch {
+      case _: Throwable => false
+    }
+  }
+}
+
+
+class GasPriceParameter(override val name: String, override val shortName: String, override val description: String="",
+                   override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
+  var value: String = null
+  val regex = """^[0-9]*[1-9][0-9]*{1,}(p|P|k|K|m|M|g|G|c|C)$""".r
+
+  override def toJson: JsValue = JsString(value)
+
+  override def validate(n: String, v: String, setEmpty : Boolean = false): Boolean = {
+    if(setEmpty){
+      value = null
+      true
+    } else
+      validateName(n) && setValue(v)
+  }
+
+  private def setValue(s: String): Boolean = {
+    if(regex.pattern.matcher(s).matches()){
+      value = s
+      true
+    }else false
+  }
+}
+
+class ContractAddressParameter(override val name: String = "address", override val shortName: String = "address", override val description: String ="",
+                       override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
+  var value: String = null
+
+  override def toJson: JsValue = JsString(value)
+
+  override def validate(n: String, v: String, setEmpty : Boolean = false): Boolean = {
+    if(setEmpty){
+      value = null
+      true
+    } else
+      validateName(n) && setValue(v)
+  }
+
+  private def setValue(s: String): Boolean = {
+    if (s.length == 35) {
+      value = s
+      if(PublicKeyHash.fromAddress(value).get != None)
+      true
+      else false
+    } else {
+      false
     }
   }
 }
