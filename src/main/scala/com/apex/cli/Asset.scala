@@ -4,6 +4,7 @@ import java.io.{ByteArrayInputStream, DataInputStream}
 import java.nio.file.{Files, Paths}
 
 import com.apex.core.{Transaction, TransactionType}
+import com.apex.crypto.Ecdsa.PublicKeyHash
 import com.apex.crypto.{BinaryData, Crypto, Ecdsa, FixedNumber, UInt160, UInt256, fromHexString}
 import org.bouncycastle.util.encoders.Hex
 
@@ -53,7 +54,7 @@ class SendCommand extends Command {
 
         val to = paramList.params(1).asInstanceOf[StringParameter].value
         var toAdress = ""
-        if (to.length != 35) if (Account.checkAccountStatus(to)) toAdress = Account.getAccount(to).address
+        if (PublicKeyHash.fromAddress(to).get != None) if (Account.checkAccountStatus(to)) toAdress = Account.getAccount(to).address
         else toAdress = to
 
         val price = paramList.params(4).asInstanceOf[GasPriceParameter].value
