@@ -100,9 +100,8 @@ class ContractCommand extends CompositeCommand {
             WalletCache.reActWallet
 
             if(ChainCommand.checkSucceed(rpcTxResult)) {
-              val result = ChainCommand.getBooleanRes(rpcTxResult)
 
-              if(result)
+              if(ChainCommand.getBooleanRes(rpcTxResult))
                 Success("The contract broadcast is successful , the transaction hash is " + tx.id() + " , the contract address is " + tx.getContractAddress().get)
               else
                 Success("The contract broadcast failed. Please try again.")
@@ -167,7 +166,7 @@ class ContractCommand extends CompositeCommand {
 
               if(ChainCommand.checkSucceed(rpcContractResult)){
 
-                if(ChainCommand.checkSucceedAndNull(rpcContractResult)){
+                if(ChainCommand.checkNotNull(rpcContractResult)){
                   ChainCommand.checkRes(rpcContractResult)
                 }else
                   Success("The contract broadcast is successful, type \"contract get\" to see contract status later, the transaction hash is "+tx.id()+".")

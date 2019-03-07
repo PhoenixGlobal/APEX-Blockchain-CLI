@@ -127,6 +127,10 @@ object WalletCache{
     Files.exists(Paths.get(path))
   }
 
+  def getFileList(): Array[File] ={
+    new File(filePath).listFiles().filter(! _.isDirectory)
+  }
+
   def readWallet(name:String):String={
     val path = filePath + name + ".json"
     val file = Source.fromFile(path)
@@ -350,9 +354,19 @@ class WalletCommand extends CompositeCommand {
     override def execute(params: List[String]): Result = {
 
       try {
-        WalletCache.walletCaches.values.foreach { i =>
-          print(i.n)
-          if (i.activate && checkWalletStatus.isEmpty) print(" +")
+        println("Wallet  --  Loaded  --  Activated")
+        WalletCache.getFileList().foreach{i =>
+          val filename = i.getName
+          val walletname = filename.substring(0, filename.lastIndexOf("."))
+          print(walletname+"  --  ")
+          if (!WalletCache.isExist(walletname)) {
+            print("False  --  False")
+          }else {
+            print("True  --  ")
+            val wallet = WalletCache.get(walletname)
+            if (wallet.activate && checkWalletStatus.isEmpty) print("True")
+            else print("False")
+          }
           println("")
         }
         if (checkWalletStatus.isEmpty)

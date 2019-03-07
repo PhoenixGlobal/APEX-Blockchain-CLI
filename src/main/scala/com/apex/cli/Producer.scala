@@ -3,9 +3,9 @@ package com.apex.cli
 import com.apex.consensus.{RegisterData, VoteData, WitnessInfo}
 import com.apex.core.{OperationType, Transaction, TransactionType}
 import com.apex.crypto.Ecdsa.PublicKeyHash
-import com.apex.crypto.{BinaryData, FixedNumber, UInt160}
+import com.apex.crypto.{BinaryData, FixedNumber, UInt160, UInt256}
 import com.apex.vm.DataWord
-import play.api.libs.json.{JsNull, Json}
+import play.api.libs.json.{JsNull, JsValue, Json}
 
 /*
  * Copyright  2018 APEX Technologies.Co.Ltd. All rights reserved.
@@ -40,6 +40,7 @@ class ProducerCommand extends CompositeCommand {
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
       new StringParameter("url", "url", "The node official website"),
+      new StringParameter("company", "company", ""),
       new StringParameter("country", "country", "Country where the node is located"),
       new StringParameter("address", "address", "Contact address"),
       new IntParameter("longitude", "longitude", "The longitude of the node"),
@@ -60,16 +61,18 @@ class ProducerCommand extends CompositeCommand {
           else {
             val fromHash = Account.getAccount(from).getPrivKey().publicKey.pubKeyHash
             val url = paramList.params(1).asInstanceOf[StringParameter].value
-            val country = paramList.params(2).asInstanceOf[StringParameter].value
-            val address = paramList.params(3).asInstanceOf[StringParameter].value
-            val longitude = paramList.params(4).asInstanceOf[IntParameter].value
-            val latitude = paramList.params(5).asInstanceOf[IntParameter].value
+            val company = paramList.params(2).asInstanceOf[StringParameter].value
+            val country = paramList.params(3).asInstanceOf[StringParameter].value
+            val address = paramList.params(4).asInstanceOf[StringParameter].value
+            val longitude = paramList.params(5).asInstanceOf[IntParameter].value
+            val latitude = paramList.params(6).asInstanceOf[IntParameter].value
 
-            val witnessInfo = new WitnessInfo(name = from, addr = fromHash, url = url, country = country, address = address, longitude = longitude, latitude = latitude);
+            val witnessInfo = new WitnessInfo(name = company, addr = fromHash, url = url, country = country, address = address, longitude = longitude, latitude = latitude)
             val registerData = new RegisterData(fromHash, witnessInfo, OperationType.register)
             val tx = AssetCommand.buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, FixedNumber.Zero, registerData.toBytes)
-            val txResult = AssetCommand.sendTx(tx)
-            ChainCommand.checkRes(txResult)
+            val rpcTxResult = AssetCommand.sendTx(tx)
+
+            printRes(rpcTxResult, tx.id())
           }
 
         }
@@ -105,8 +108,9 @@ class ProducerCommand extends CompositeCommand {
             val registerData = new RegisterData(fromHash, witnessInfo, OperationType.resisterCancel)
 
             val tx = AssetCommand.buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, FixedNumber.Zero, registerData.toBytes)
-            val txResult = AssetCommand.sendTx(tx)
-            ChainCommand.checkRes(txResult)
+            val rpcTxResult = AssetCommand.sendTx(tx)
+
+            printRes(rpcTxResult, tx.id())
           }
 
         }
@@ -143,8 +147,8 @@ class ProducerCommand extends CompositeCommand {
             val voteData = new VoteData(PublicKeyHash.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.register)
 
             val tx = AssetCommand.buildTx(TransactionType.Call, from, voteAddr.toUInt160, FixedNumber.Zero, voteData.toBytes)
-            val txResult = AssetCommand.sendTx(tx)
-            ChainCommand.checkRes(txResult)
+            val rpcTxResult = AssetCommand.sendTx(tx)
+            printRes(rpcTxResult, tx.id())
           }
         }
       } catch {
@@ -181,8 +185,8 @@ class ProducerCommand extends CompositeCommand {
             val voteData = new VoteData(PublicKeyHash.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.resisterCancel)
 
             val tx = AssetCommand.buildTx(TransactionType.Call, from, voteAddr.toUInt160, FixedNumber.Zero, voteData.toBytes)
-            val txResult = AssetCommand.sendTx(tx)
-            ChainCommand.checkRes(txResult)
+            val rpcTxResult = AssetCommand.sendTx(tx)
+            printRes(rpcTxResult, tx.id())
           }
         }
       } catch {
@@ -226,8 +230,15 @@ class ProducerCommand extends CompositeCommand {
     override def execute(params: List[String]): Result = {
       try {
         val address = paramList.params(0).asInstanceOf[StringParameter].value
-        val result = RPC.post("getProducer", s"""{"address":"${address}"}""")
-        ChainCommand.checkRes(result)
+        val rpcResult = RPC.post("getProducer", s"""{"address":"${address}"}""")
+
+        if(ChainCommand.checkSucceed(rpcResult)){
+          if(ChainCommand.checkNotNull(rpcResult)){
+            ChainCommand.returnSuccess(rpcResult)
+          }else Success("No node information was found for this address.")
+
+        }else ChainCommand.returnFail(rpcResult)
+
       } catch {
         case e: Throwable => Error(e)
       }
@@ -245,8 +256,15 @@ class ProducerCommand extends CompositeCommand {
     override def execute(params: List[String]): Result = {
       try{
         val gasLimit = paramList.params(0).asInstanceOf[IntParameter].value
-        val result = RPC.post("setGasLimit", s"""{"gasLimit":"${gasLimit}"}""", RPC.secretRpcUrl)
-        ChainCommand.checkRes(result)
+        val rpcResult = RPC.post("setGasLimit", s"""{"gasLimit":"${gasLimit}"}""", RPC.secretRpcUrl)
+
+        if(ChainCommand.checkSucceed(rpcResult)){
+          if(ChainCommand.getBooleanRes(rpcResult)){
+            Success("The gas limit for contract processing by the production node has been successfully modified.")
+          }else Success("Permission error..")
+
+        }else ChainCommand.returnFail(rpcResult)
+
       }catch {
         case e: Throwable => Error(e)
       }
@@ -265,6 +283,17 @@ class ProducerCommand extends CompositeCommand {
         case e: Throwable => Error(e)
       }
     }
+  }
+
+  def printRes(rpcTxResult:JsValue, hash: UInt256): Result ={
+    if(ChainCommand.checkSucceed(rpcTxResult)) {
+
+      if( ChainCommand.getBooleanRes(rpcTxResult))
+        Success("This transaction has been broadcast successfully, the transaction hash is " + hash)
+      else
+        Success("This transaction failed to broadcast, please check the network.")
+
+    }else ChainCommand.returnFail(rpcTxResult)
   }
 
 }

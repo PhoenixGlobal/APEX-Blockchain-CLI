@@ -77,7 +77,7 @@ class BlockCommand extends Command {
 }
 
 class TransactionCommand extends Command {
-  override val cmd = "transaction"
+  override val cmd = "tx"
   override val description = "how data of the transaction"
 
   override val paramList: ParameterList = ParameterList.create(
@@ -93,7 +93,7 @@ class TransactionCommand extends Command {
         val rpcResult = RPC.post("getContract", s"""{"id":"${id}"}""")
         if(ChainCommand.checkSucceed(rpcResult)){
 
-          if(ChainCommand.checkSucceedAndNull(rpcResult)){
+          if(ChainCommand.checkNotNull(rpcResult)){
             ChainCommand.returnSuccess(rpcResult)
           }else Success("No transaction information was queried")
 
@@ -122,7 +122,7 @@ object ChainCommand{
     }else false
   }
 
-  def checkSucceedAndNull(rpcRes:JsValue): Boolean ={
+  def checkNotNull(rpcRes:JsValue): Boolean ={
     val result = ChainCommand.getStrRes(rpcRes)
 
     if((rpcRes \ "succeed").as[Boolean] && "null" != result){
