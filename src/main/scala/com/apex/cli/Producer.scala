@@ -261,7 +261,7 @@ class ProducerCommand extends CompositeCommand {
         if(ChainCommand.checkSucceed(rpcResult)){
           if(ChainCommand.getBooleanRes(rpcResult)){
             Success("The gas limit for contract processing by the production node has been successfully modified.")
-          }else Success("Permission error..")
+          }else Success("Permission error.")
 
         }else ChainCommand.returnFail(rpcResult)
 

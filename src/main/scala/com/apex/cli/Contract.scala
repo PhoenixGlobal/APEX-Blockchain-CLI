@@ -1,5 +1,6 @@
 package com.apex.cli
 
+import java.io.{File, FileWriter, PrintWriter}
 import java.nio.file.{Files, Paths}
 import com.apex.core.{Transaction, TransactionType}
 import com.apex.crypto.{BinaryData, FixedNumber, UInt160}
@@ -7,7 +8,6 @@ import com.apex.solidity.Abi
 import com.apex.solidity.compiler.{CompilationResult, SolidityCompiler}
 import com.apex.solidity.compiler.SolidityCompiler.Options.{ABI, BIN, INTERFACE, METADATA}
 import org.junit.Assert
-import scala.io.Source
 
 /*
  * Copyright  2018 APEX Technologies.Co.Ltd. All rights reserved.
@@ -34,7 +34,8 @@ class ContractCommand extends CompositeCommand {
 
     override val paramList: ParameterList = ParameterList.create(
       new StringParameter("contractName", "n", "The contract name."),
-    new StringParameter("source", "s", "Source code file name of smart contract.")
+    new StringParameter("source", "s", "Source code file name of smart contract."),
+    new StringParameter("p", "p", "")
     )
 
     override def execute(params: List[String]): Result = {
@@ -44,6 +45,7 @@ class ContractCommand extends CompositeCommand {
         else {
           val name = paramList.params(0).asInstanceOf[StringParameter].value
           val sourceFile = paramList.params(1).asInstanceOf[StringParameter].value
+          val writePath = paramList.params(2).asInstanceOf[StringParameter].value
           // 获取需要编译的合约文件
           val compileContent = AssetCommand.readFile(sourceFile)
           if (compileContent.isEmpty) InvalidParams("compile content is empty, please type a different one")
@@ -55,7 +57,9 @@ class ContractCommand extends CompositeCommand {
             WalletCache.reActWallet
 
             if (result.getContract(name) != null) {
-              Success("bin:"+result.getContract(name).bin+" \n abi："+result.getContract(name).abi)
+              writeFile(writePath+"\\"+name+"bin.txt", result.getContract(name).bin)
+              writeFile(writePath+"\\"+name+"abi.txt", result.getContract(name).abi)
+              Success("The contract compile is successful.")
             } else {
               Assert.fail()
               Success("false")
@@ -65,7 +69,15 @@ class ContractCommand extends CompositeCommand {
       } catch {
         case e: Throwable => Error(e)
       }
-  }}
+  }
+
+    def writeFile(filePath: String, data: String): Unit ={
+      val file = new File(filePath)
+      val fw = new FileWriter(file)
+      fw.write(data)
+      fw.close()
+    }
+  }
 
   class DeployCommand extends Command {
     override val cmd = "deploy"
@@ -74,7 +86,9 @@ class ContractCommand extends CompositeCommand {
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from",
         "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
-      new StringParameter("data", "data", "Bin data file name of deploy smart contract.")
+      new StringParameter("bin", "bin", "Bin data file name of deploy smart contract."),
+      new GasParameter("gasLimit", "gasLimit","."),
+      new GasPriceParameter("gasPrice", "gasPrice",".")
     )
 
     // 测试 data 6080604052348015600f57600080fd5b50603580601d6000396000f3006080604052600080fd00a165627a7a723058200b864e4f01cfb799a414a6ebdb9b63ce9225b82a293a346c33b42e691cdec0300029
@@ -94,7 +108,11 @@ class ContractCommand extends CompositeCommand {
           if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
           else if(dataContent.isEmpty) InvalidParams("data is empty, please type a different one")
           else {
-            val tx = AssetCommand.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.Zero, BinaryData(dataContent))
+            val gasLimit = paramList.params(2).asInstanceOf[GasParameter].value
+            val price = paramList.params(3).asInstanceOf[GasPriceParameter].value
+            val gasPrice = AssetCommand.calcGasPrice(price)
+
+            val tx = AssetCommand.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.Zero, BinaryData(dataContent), gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
             val rpcTxResult = AssetCommand.sendTx(tx)
 
             WalletCache.reActWallet
@@ -124,7 +142,9 @@ class ContractCommand extends CompositeCommand {
       new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
       new ContractAddressParameter("to", "to", "The target contract address."),
       new StringParameter("abi", "abi", "Path of the ABI file corresponding to the smart contract"),
-      new StringParameter("method", "m", "The method in the smart contract")
+      new StringParameter("method", "m", "The method in the smart contract"),
+      new GasParameter("gasLimit", "gasLimit","."),
+      new GasPriceParameter("gasPrice", "gasPrice",".")
     )
 
     override def execute(params: List[String]): Result = {
@@ -153,7 +173,11 @@ class ContractCommand extends CompositeCommand {
             val data = Abi.fromJson(abiContent).encode(method)
             if(data.size/8 < 4) InvalidParams("method not exists, please type a different one")
 
-            val tx = AssetCommand.buildTx(TransactionType.Call, from, UInt160.fromBytes(BinaryData(to)), FixedNumber.Zero, data)
+            val gasLimit = paramList.params(4).asInstanceOf[GasParameter].value
+            val price = paramList.params(5).asInstanceOf[GasPriceParameter].value
+            val gasPrice = AssetCommand.calcGasPrice(price)
+
+            val tx = AssetCommand.buildTx(TransactionType.Call, from, UInt160.fromBytes(BinaryData(to)), FixedNumber.Zero, data, gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
             val rpcTxResult = AssetCommand.sendTx(tx)
 
             WalletCache.reActWallet

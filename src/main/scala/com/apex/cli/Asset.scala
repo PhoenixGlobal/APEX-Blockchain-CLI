@@ -57,9 +57,6 @@ class SendCommand extends Command {
         if (PublicKeyHash.fromAddress(to).get != None) if (Account.checkAccountStatus(to)) toAdress = Account.getAccount(to).address
         else toAdress = to
 
-        val price = paramList.params(4).asInstanceOf[GasPriceParameter].value
-        val gasPrice = calcGasPrice(price)
-
         if(!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
         else if(toAdress.isEmpty) InvalidParams("to account not exists, please type a different one")
         else if(Account.getAccount(from).address.equals(toAdress)) InvalidParams("same address, please type a different one")
@@ -67,6 +64,8 @@ class SendCommand extends Command {
         else{
           val amount = paramList.params(2).asInstanceOf[AmountParameter].value
           val gasLimit = paramList.params(3).asInstanceOf[GasParameter].value
+          val price = paramList.params(4).asInstanceOf[GasPriceParameter].value
+          val gasPrice = AssetCommand.calcGasPrice(price)
 
           val privKey = Account.getAccount(from).getPrivKey()
           val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
@@ -93,22 +92,6 @@ class SendCommand extends Command {
       case e: Throwable => Error(e)
     }
   }
-
-  def calcGasPrice(price : String): FixedNumber ={
-    var gasPrice = FixedNumber.Zero
-    // 获取最后一位
-    val unit = price.toLowerCase.substring(price.length-1).charAt(0)
-    val priceNum = price.substring(0, price.length-1).toInt
-    unit match {
-      case 'p' => gasPrice = FixedNumber(priceNum)
-      case 'k' => gasPrice = FixedNumber(Math.pow(10,3).*(priceNum).toInt) // 10的3次幂 p
-      case 'm' => gasPrice = FixedNumber(Math.pow(10,6).*(priceNum).toInt)// 10的6次幂 p
-      case 'g' => gasPrice = FixedNumber(Math.pow(10,9).*(priceNum).toInt)// 10的9次幂 p
-      case 'c' => gasPrice = FixedNumber(Math.pow(10,12).*(priceNum).toInt)// 10的12次幂 p
-    }
-    gasPrice
-  }
-
 }
 
 class BroadcastCommand extends Command {
@@ -192,6 +175,21 @@ object AssetCommand{
       file.close()
     }
     content
+  }
+
+  def calcGasPrice(price : String): FixedNumber ={
+    var gasPrice = FixedNumber.Zero
+    // 获取最后一位
+    val unit = price.toLowerCase.substring(price.length-1).charAt(0)
+    val priceNum = price.substring(0, price.length-1).toInt
+    unit match {
+      case 'p' => gasPrice = FixedNumber(priceNum)
+      case 'k' => gasPrice = FixedNumber(Math.pow(10,3).*(priceNum).toInt) // 10的3次幂 p
+      case 'm' => gasPrice = FixedNumber(Math.pow(10,6).*(priceNum).toInt)// 10的6次幂 p
+      case 'g' => gasPrice = FixedNumber(Math.pow(10,9).*(priceNum).toInt)// 10的9次幂 p
+      case 'c' => gasPrice = FixedNumber(Math.pow(10,12).*(priceNum).toInt)// 10的12次幂 p
+    }
+    gasPrice
   }
 }
 
