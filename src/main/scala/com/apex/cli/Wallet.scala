@@ -16,7 +16,7 @@ import scala.io.Source
  *
  * @author: whitney.wei@chinapex.com: 18-12-20 @version: 1.0
  */
-class Wallet(val n :String, val p : Array[Byte], val accounts: Seq[Account]) extends com.apex.common.Serializable {
+class Wallet(val n: String, val p: Array[Byte], val accounts: Seq[Account]) extends com.apex.common.Serializable {
 
   def serialize(os: DataOutputStream) = {
     import com.apex.common.Serializable._
@@ -26,66 +26,66 @@ class Wallet(val n :String, val p : Array[Byte], val accounts: Seq[Account]) ext
   }
 }
 
-  object Wallet {
-    var Default: Wallet = null
+object Wallet {
+  var Default: Wallet = null
 
-    def deserialize(is: DataInputStream): Wallet = {
-      import com.apex.common.Serializable._
-      val n = is.readString()
-      val keys = is.readByteArray()
-      val accounts = is.readSeq(Account.deserialize)
-      new Wallet(n, keys, accounts)
-    }
-
-    def fromBytes(data: Array[Byte]): Wallet = {
-      val bs = new ByteArrayInputStream(data)
-      val is = new DataInputStream(bs)
-      deserialize(is)
-    }
+  def deserialize(is: DataInputStream): Wallet = {
+    import com.apex.common.Serializable._
+    val n = is.readString()
+    val keys = is.readByteArray()
+    val accounts = is.readSeq(Account.deserialize)
+    new Wallet(n, keys, accounts)
   }
 
-class WalletCache(val n:String, val p : Array[Byte],
-                  var lastModify:Long = Calendar.getInstance().getTimeInMillis,
-                  var activate : Boolean = true, var implyAccount : String = "",
-                  var accounts:Seq[Account] =  Seq[Account]()){
+  def fromBytes(data: Array[Byte]): Wallet = {
+    val bs = new ByteArrayInputStream(data)
+    val is = new DataInputStream(bs)
+    deserialize(is)
+  }
+}
+
+class WalletCache(val n: String, val p: Array[Byte],
+                  var lastModify: Long = Calendar.getInstance().getTimeInMillis,
+                  var activate: Boolean = true, var implyAccount: String = "",
+                  var accounts: Seq[Account] = Seq[Account]()) {
 
 }
 
-object WalletCache{
+object WalletCache {
 
-  val walletCaches : mutable.HashMap[String, WalletCache] = new mutable.HashMap[String,WalletCache]()
-  var activityWallet:String = ""
+  val walletCaches: mutable.HashMap[String, WalletCache] = new mutable.HashMap[String, WalletCache]()
+  var activityWallet: String = ""
 
-  def get(n:String): WalletCache ={
-    if(walletCaches.contains(n))
+  def get(n: String): WalletCache = {
+    if (walletCaches.contains(n))
       walletCaches.get(n).get
     else null
   }
 
   def getActivityWallet(): WalletCache = {
-      get(activityWallet)
+    get(activityWallet)
   }
 
-  def isExist(n:String):Boolean={
-    if(walletCaches.contains(n)) true
+  def isExist(n: String): Boolean = {
+    if (walletCaches.contains(n)) true
     else false
   }
 
-  def remove(n:String){
+  def remove(n: String) {
     walletCaches.remove(n)
-    if(activityWallet.equals(n)) activityWallet = ""
+    if (activityWallet.equals(n)) activityWallet = ""
   }
 
-  def size():Int={
+  def size(): Int = {
     walletCaches.size
   }
 
-  def reActWallet: Unit ={
-    if(WalletCache.getActivityWallet() != null)
+  def reActWallet: Unit = {
+    if (WalletCache.getActivityWallet() != null)
       WalletCache.getActivityWallet().lastModify = Calendar.getInstance().getTimeInMillis
   }
 
-  def checkTime(): Boolean ={
+  def checkTime(): Boolean = {
     val walletCache = get(WalletCache.activityWallet)
     val between = Calendar.getInstance().getTimeInMillis - walletCache.lastModify
     val minute = between / 1000 / 60
@@ -93,45 +93,45 @@ object WalletCache{
     val day = between / 1000 / 3600 / 24
     val year = between / 1000 / 3600 / 24 / 365*/
 
-    if(minute < 5) true
+    if (minute < 5) true
     else false
   }
 
-  def newWalletCache(wallet: Wallet): mutable.HashMap[String, WalletCache] ={
+  def newWalletCache(wallet: Wallet): mutable.HashMap[String, WalletCache] = {
 
-    if(!walletCaches.contains(wallet.n)) walletCaches.put(wallet.n, new WalletCache(wallet.n, wallet.p, accounts = wallet.accounts))
+    if (!walletCaches.contains(wallet.n)) walletCaches.put(wallet.n, new WalletCache(wallet.n, wallet.p, accounts = wallet.accounts))
     setActivate(wallet.n)
     walletCaches
   }
 
-  def setActivate(n:String): Unit ={
+  def setActivate(n: String): Unit = {
 
     for (key <- walletCaches.keys) {
       val walletCache = walletCaches.get(key).get
-      if(!walletCache.accounts.isEmpty) walletCache.implyAccount =  walletCache.accounts(0).n
-      if(n.equals(key)){
+      if (!walletCache.accounts.isEmpty) walletCache.implyAccount = walletCache.accounts(0).n
+      if (n.equals(key)) {
         walletCache.activate = true
         walletCache.lastModify = Calendar.getInstance().getTimeInMillis
         WalletCache.activityWallet = key
-      }else{
+      } else {
         walletCache.activate = false
       }
     }
   }
 
-  val filePath = System.getProperty("user.home")+"\\cli_wallet\\"
+  val filePath = System.getProperty("user.home") + "\\cli_wallet\\"
 
-  def fileExist(name:String):Boolean={
-    val path =  filePath + name + ".json"
+  def fileExist(name: String): Boolean = {
+    val path = filePath + name + ".json"
 
     Files.exists(Paths.get(path))
   }
 
-  def getFileList(): Array[File] ={
-    new File(filePath).listFiles().filter(! _.isDirectory)
+  def getFileList(): Array[File] = {
+    new File(filePath).listFiles().filter(!_.isDirectory)
   }
 
-  def readWallet(name:String):String={
+  def readWallet(name: String): String = {
     val path = filePath + name + ".json"
     val file = Source.fromFile(path)
     val walletContent = file.getLines.mkString
@@ -139,18 +139,18 @@ object WalletCache{
     walletContent
   }
 
-  def writeActWallet: Unit ={
+  def writeActWallet: Unit = {
     val walletCache = WalletCache.getActivityWallet()
     WalletCache.writeWallet(walletCache.n, walletCache.p, walletCache.accounts)
   }
 
-  def writeWallet(name:String, key:Array[Byte], accounts:Seq[Account]): Wallet ={
+  def writeWallet(name: String, key: Array[Byte], accounts: Seq[Account]): Wallet = {
 
     val file = new File(filePath)
     // 判断文件夹是否存在，不存在则创建
-    if  (!file.exists()  && !file.isDirectory()) {
-      file .mkdir()
-      val exportFile = new File(filePath+"export")
+    if (!file.exists() && !file.isDirectory()) {
+      file.mkdir()
+      val exportFile = new File(filePath + "export")
       exportFile.mkdir()
     }
 
@@ -163,8 +163,8 @@ object WalletCache{
 
     wallet.serialize(os)
 
-    val iv : Array[Byte] = new Array(16)
-    key.copyToArray(iv,0,16)
+    val iv: Array[Byte] = new Array(16)
+    key.copyToArray(iv, 0, 16)
 
     // 加密用户输入的密码
     val encrypted1 = Crypto.AesEncrypt(bs.toByteArray, key, iv)
@@ -177,10 +177,10 @@ object WalletCache{
     wallet
   }
 
-  def exportAccount(privkey: String, fileName : String): Unit ={
-    val path = filePath +"export\\" + fileName
+  def exportAccount(privkey: String, fileName: String): Unit = {
+    val path = filePath + "export\\" + fileName
 
-    val writer = new PrintWriter(new File(path ))
+    val writer = new PrintWriter(new File(path))
 
     writer.write(privkey)
     writer.close()
@@ -224,7 +224,7 @@ class WalletCommand extends CompositeCommand {
 
   class WalletCreateCommand extends Command {
 
-    override val cmd: String = "create"
+    override val cmd: String = "new"
     override val description: String = "create a new wallet"
 
     override val paramList: ParameterList = ParameterList.create(
@@ -355,13 +355,13 @@ class WalletCommand extends CompositeCommand {
 
       try {
         println("Wallet  --  Loaded  --  Activated")
-        WalletCache.getFileList().foreach{i =>
+        WalletCache.getFileList().foreach { i =>
           val filename = i.getName
           val walletname = filename.substring(0, filename.lastIndexOf("."))
-          print(walletname+"  --  ")
+          print(walletname + "  --  ")
           if (!WalletCache.isExist(walletname)) {
             print("False  --  False")
-          }else {
+          } else {
             print("True  --  ")
             val wallet = WalletCache.get(walletname)
             if (wallet.activate && checkWalletStatus.isEmpty) print("True")

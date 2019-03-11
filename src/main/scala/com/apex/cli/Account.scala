@@ -14,7 +14,7 @@ import play.api.libs.json.{JsValue, Json}
  *
  * @author: whitney.wei@chinapex.com: 18-12-10 @version: 1.0
  */
-class Account(var n : String, var pri : String, var address: String) extends com.apex.common.Serializable{
+class Account(var n: String, var pri: String, var address: String) extends com.apex.common.Serializable {
   override def serialize(os: DataOutputStream): Unit = {
     import com.apex.common.Serializable._
     os.writeString(n)
@@ -58,7 +58,8 @@ class Account(var n : String, var pri : String, var address: String) extends com
 }
 
 object Account {
-  var Default: Account = new Account("","", "")
+  var Default: Account = new Account("", "", "")
+
   def deserialize(is: DataInputStream): Account = {
     import com.apex.common.Serializable._
     val n = is.readString
@@ -73,10 +74,10 @@ object Account {
     deserialize(is)
   }
 
-    def newAccount(n : String): Account ={
-      val account = new Account(n, "", "")
-      account.generateNewPrivKey()
-      account
+  def newAccount(n: String): Account = {
+    val account = new Account(n, "", "")
+    account.generateNewPrivKey()
+    account
   }
 
   def checkWalletStatus: String = {
@@ -89,35 +90,35 @@ object Account {
     checkResult
   }
 
-  def checkAccountStatus(alias:String = "", address:String = ""): Boolean = {
-    if(alias != null && !alias.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.n).contains(alias)) true
-    else if(address  != null && !address.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.address).contains(address)) true
+  def checkAccountStatus(alias: String = "", address: String = ""): Boolean = {
+    if (alias != null && !alias.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.n).contains(alias)) true
+    else if (address != null && !address.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.address).contains(address)) true
     else false
   }
 
-  def checkAccountNotExists(alias:String = "", address:String=""): String = {
+  def checkAccountNotExists(alias: String = "", address: String = ""): String = {
     var checkResult = checkWalletStatus
-    if(!checkResult.isEmpty) checkResult
-    else if(alias != null && !alias.isEmpty && !WalletCache.getActivityWallet().accounts.groupBy(_.n).keySet.contains(alias))
+    if (!checkResult.isEmpty) checkResult
+    else if (alias != null && !alias.isEmpty && !WalletCache.getActivityWallet().accounts.groupBy(_.n).keySet.contains(alias))
       checkResult = "account alias [" + alias + "] not exists, please type a different alias"
-    else if(address  != null && !address.isEmpty && !WalletCache.getActivityWallet().accounts.groupBy(_.address).keySet.contains(address))
+    else if (address != null && !address.isEmpty && !WalletCache.getActivityWallet().accounts.groupBy(_.address).keySet.contains(address))
       checkResult = "account address [" + address + "] not exists, please type a different address"
 
     checkResult
   }
 
-  def checkAccountExists(alias:String = "", address:String=""): String = {
+  def checkAccountExists(alias: String = "", address: String = ""): String = {
     var checkResult = checkWalletStatus
-    if(!checkResult.isEmpty) checkResult
-    else if(alias != null && !alias.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.n).keySet.contains(alias))
+    if (!checkResult.isEmpty) checkResult
+    else if (alias != null && !alias.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.n).keySet.contains(alias))
       checkResult = "account alias [" + alias + "] already exists, please type a different alias"
-    else if(address != null && !address.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.address).keySet.contains(address))
+    else if (address != null && !address.isEmpty && WalletCache.getActivityWallet().accounts.groupBy(_.address).keySet.contains(address))
       checkResult = "account address [" + address + "] already exists, please type a different address"
 
     checkResult
   }
 
-  def addAccount(alias:String): Account ={
+  def addAccount(alias: String): Account = {
     val account = Account.newAccount(alias)
     createAccountCache(account)
     account
@@ -132,32 +133,32 @@ object Account {
     walletCache.implyAccount = account.n
     walletCache.lastModify = Calendar.getInstance().getTimeInMillis
     // 写入缓存值
-//    WalletCache.walletCaches.put(WalletCache.activityWallet, walletCache)
+    //    WalletCache.walletCaches.put(WalletCache.activityWallet, walletCache)
   }
 
-  def delAccount(alias:String = "", address:String = ""){
+  def delAccount(alias: String = "", address: String = "") {
 
     val walletCache = WalletCache.getActivityWallet()
 
     // 判断根据什么参数删除
-    if(alias!=null && !alias.isEmpty) walletCache.accounts = walletCache.accounts.filter(!_.n.contains(alias))
+    if (alias != null && !alias.isEmpty) walletCache.accounts = walletCache.accounts.filter(!_.n.contains(alias))
     else walletCache.accounts = walletCache.accounts.filter(!_.address.contains(address))
 
     // 修改缓存信息
-    if(walletCache.implyAccount.equals(alias)) walletCache.implyAccount = ""
+    if (walletCache.implyAccount.equals(alias)) walletCache.implyAccount = ""
     walletCache.lastModify = Calendar.getInstance().getTimeInMillis
 
     // 将缓存写入文件
     WalletCache.writeActWallet
   }
 
-  def getAccount(alias:String = "", address:String = ""): Account ={
+  def getAccount(alias: String = "", address: String = ""): Account = {
 
-    if(alias!=null && !alias.isEmpty) WalletCache.getActivityWallet().accounts.groupBy(_.n).get(alias).get(0)
+    if (alias != null && !alias.isEmpty) WalletCache.getActivityWallet().accounts.groupBy(_.n).get(alias).get(0)
     else WalletCache.getActivityWallet().accounts.groupBy(_.address).get(address).get(0)
   }
 
-  def modifyAccount(alias:String, to:String): Unit ={
+  def modifyAccount(alias: String, to: String): Unit = {
 
     // 获取账户信息
     val account = getAccount(alias)
@@ -174,37 +175,37 @@ object Account {
     WalletCache.writeActWallet
   }
 
-  def implyAccount(account:Account): Unit ={
+  def implyAccount(account: Account): Unit = {
 
     val walletCache = WalletCache.getActivityWallet()
     walletCache.implyAccount = account.n
     walletCache.lastModify = Calendar.getInstance().getTimeInMillis
   }
 
-  def getbalance(address :String) = {
+  def getbalance(address: String) = {
     // 调用查询余额
     val rpcResult = RPC.post("showaccount", s"""{"address":"${address}"}""")
     getResultBalance(rpcResult)
   }
 
-  def getResultBalance(rpcResult :JsValue) = {
+  def getResultBalance(rpcResult: JsValue) = {
     // 转换查询结果
     val result = ChainCommand.getStrRes(rpcResult)
 
     var balance: String = FixedNumber.Zero.toString()
-    if(result != None && "null" != result){
-      balance = (Json.parse(result) \"balance").as[String]
+    if (result != None && "null" != result) {
+      balance = (Json.parse(result) \ "balance").as[String]
     }
     balance
   }
 
-  def getResultNonce(rpcResult :JsValue): Long ={
+  def getResultNonce(rpcResult: JsValue): Long = {
     // 转换查询结果
     val result = ChainCommand.getStrRes(rpcResult)
     var nextNonce: Long = 0
 
-    if(result != None && "null" != result){
-      nextNonce = (Json.parse(result) \"nextNonce").as[Long]
+    if (result != None && "null" != result) {
+      nextNonce = (Json.parse(result) \ "nextNonce").as[Long]
     }
     nextNonce
   }
@@ -220,15 +221,15 @@ class AccountCommand extends CompositeCommand {
   override val composite: Boolean = true
 
   override val subCommands: Seq[Command] = Seq(
-  new CreateAccountCommand,
-  new ImportCommand,
-  new ExportCommand,
-  new DeleteCommand,
-  new RemoveCommand,
-  new RenameCommand,
-  new ShowCommand,
-  new ImplyCommand,
-  new AccountListCommand
+    new CreateAccountCommand,
+    new ImportCommand,
+    new ExportCommand,
+    new DeleteCommand,
+    new RemoveCommand,
+    new RenameCommand,
+    new ShowCommand,
+    new ImplyCommand,
+    new AccountListCommand
   )
 }
 
@@ -238,25 +239,25 @@ class CreateAccountCommand extends Command {
   override val description: String = "Add new account to current wallet"
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("alias", "a","alias of account")
+    new NicknameParameter("alias", "a", "alias of account")
   )
 
   override def execute(params: List[String]): Result = {
 
-    try{
+    try {
 
       val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
 
       // 账户校验
       val checkResult = Account.checkAccountExists(alias)
-      if(!checkResult.isEmpty) InvalidParams(checkResult)
-      else{
+      if (!checkResult.isEmpty) InvalidParams(checkResult)
+      else {
 
         val account = Account.addAccount(alias)
 
         WalletCache.writeActWallet
 
-        Success("success, address："+account.address+"\n")
+        Success("success, address：" + account.address + "\n")
       }
     } catch {
       case e: Throwable => Error(e)
@@ -277,14 +278,14 @@ class DeleteCommand extends Command {
   )
 
   override def execute(params: List[String]): Result = {
-    try{
+    try {
 
       val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
       val address = paramList.params(1).asInstanceOf[AddressParameter].value
 
       val checkResult = Account.checkAccountNotExists(alias, address)
-      if(!checkResult.isEmpty) InvalidParams(checkResult)
-      else{
+      if (!checkResult.isEmpty) InvalidParams(checkResult)
+      else {
 
         Account.delAccount(alias, address)
         Success("delete success\n")
@@ -295,7 +296,7 @@ class DeleteCommand extends Command {
   }
 }
 
-class RemoveCommand extends DeleteCommand{
+class RemoveCommand extends DeleteCommand {
   override val cmd: String = "remove"
   override val description: String = "Same to \"delete\" command"
 }
@@ -306,13 +307,13 @@ class RenameCommand extends Command {
   override val description: String = "Change the alias of one account within current wallet"
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("alias", "a","The alias of account."),
-    new NicknameParameter("to", "to","The new alias of account.")
+    new NicknameParameter("alias", "a", "The alias of account."),
+    new NicknameParameter("to", "to", "The new alias of account.")
   )
 
   override def execute(params: List[String]): Result = {
 
-    try{
+    try {
       val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
       val to = paramList.params(1).asInstanceOf[NicknameParameter].value
 
@@ -322,9 +323,9 @@ class RenameCommand extends Command {
       // 校验钱包存在
       val toCheckResult = Account.checkAccountExists(to)
 
-      if(!aliasCheckResult.isEmpty) InvalidParams(aliasCheckResult)
-      if(!toCheckResult.isEmpty) InvalidParams(toCheckResult)
-      else{
+      if (!aliasCheckResult.isEmpty) InvalidParams(aliasCheckResult)
+      if (!toCheckResult.isEmpty) InvalidParams(toCheckResult)
+      else {
         // 获取账户信息
         val account = Account.modifyAccount(alias, to)
 
@@ -351,14 +352,14 @@ class ShowCommand extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    try{
+    try {
       val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
       val address = paramList.params(1).asInstanceOf[AddressParameter].value
 
       // 校验钱包不存在
       val checkResult = Account.checkAccountNotExists(alias)
-      if(!checkResult.isEmpty) InvalidParams(checkResult)
-      else{
+      if (!checkResult.isEmpty) InvalidParams(checkResult)
+      else {
 
         val account = Account.getAccount(alias, address)
         println(account.n + " -- " + account.address + " -- " + Account.getbalance(account.address))
@@ -384,13 +385,13 @@ class ImplyCommand extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    try{
+    try {
       val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
       val address = paramList.params(1).asInstanceOf[AddressParameter].value
       // 校验钱包不存在
       val checkResult = Account.checkAccountNotExists(alias)
-      if(!checkResult.isEmpty) InvalidParams(checkResult)
-      else{
+      if (!checkResult.isEmpty) InvalidParams(checkResult)
+      else {
         Account.implyAccount(Account.getAccount(alias, address))
         Success("imply success\n")
       }
@@ -412,7 +413,7 @@ class AccountListCommand extends Command {
       val checkResult = checkWalletStatus
       if (!checkWalletStatus.isEmpty)
         InvalidParams(checkResult)
-      else{
+      else {
         WalletCache.getActivityWallet().accounts.foreach { i =>
           // 申明余额变量
           var balance: String = Account.getbalance(i.address)
@@ -437,27 +438,27 @@ class ImportCommand extends Command {
   override val description: String = "Import account to current wallet"
 
   override val paramList: ParameterList = ParameterList.create(
-    new StringParameter("key", "key","Pivate key"),
-    new NicknameParameter("alias", "a","alias of account")
+    new StringParameter("key", "key", "Pivate key"),
+    new NicknameParameter("alias", "a", "alias of account")
   )
 
   override def execute(params: List[String]): Result = {
 
-    try{
+    try {
 
       val key = paramList.params(0).asInstanceOf[StringParameter].value
       val alias = paramList.params(1).asInstanceOf[NicknameParameter].value
 
       // 判断用户名是否存在
       val checkResult = Account.checkAccountExists(alias)
-      if(!checkResult.isEmpty) InvalidParams(checkResult)
-      else{
-        val account = new Account(alias,"", "")
+      if (!checkResult.isEmpty) InvalidParams(checkResult)
+      else {
+        val account = new Account(alias, "", "")
         if (account.importPrivKeyFromWIF(key)) {
           val importAddress = account.getPrivKey().publicKey.address
 
           // 根据地址查询
-          if(!Account.checkAccountStatus(address = importAddress)){
+          if (!Account.checkAccountStatus(address = importAddress)) {
 
             // 设置缓存
             account.address = importAddress
@@ -467,7 +468,7 @@ class ImportCommand extends Command {
             WalletCache.writeActWallet
 
             Success("\nimport success\n")
-          }else InvalidParams("account key [" + key + "] already exists, please type a different key\n")
+          } else InvalidParams("account key [" + key + "] already exists, please type a different key\n")
 
         } else InvalidParams("key error\n")
       }
@@ -483,26 +484,26 @@ class ExportCommand extends Command {
   override val description: String = "Export one account within current wallet"
 
   override val paramList: ParameterList = ParameterList.create(
-    new NicknameParameter("alias", "a","alias of account"),
+    new NicknameParameter("alias", "a", "alias of account"),
     new StringParameter("file", "file",
       "The file which the private key is wrote to.Omit it if you want to print the private key on the screen.", true)
   )
 
   override def execute(params: List[String]): Result = {
 
-    try{
+    try {
       val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
       val file = paramList.params(1).asInstanceOf[StringParameter].value
 
       val checkResult = Account.checkWalletStatus
-      if(!checkResult.isEmpty) InvalidParams(checkResult)
-      else{
+      if (!checkResult.isEmpty) InvalidParams(checkResult)
+      else {
         // 显示私钥
         val account = Account.getAccount(alias)
 
-        if(file == null)
-          println("pri ==> "+account.pri)
-        else{
+        if (file == null)
+          println("pri ==> " + account.pri)
+        else {
           WalletCache.exportAccount(account.pri, file)
         }
         WalletCache.reActWallet

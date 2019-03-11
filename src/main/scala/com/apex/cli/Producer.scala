@@ -39,12 +39,12 @@ class ProducerCommand extends CompositeCommand {
 
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
-      new StringParameter("url", "url", "The node official website"),
-      new StringParameter("company", "company", ""),
-      new StringParameter("country", "country", "Country where the node is located"),
-      new StringParameter("address", "address", "Contact address"),
-      new IntParameter("longitude", "longitude", "The longitude of the node"),
-      new IntParameter("latitude", "latitude", "The latitude of the node")
+      new StringParameter("url", "url", "The offical website."),
+      new StringParameter("company", "company", "The name of producer node."),
+      new StringParameter("country", "country", "The country where the production node is located."),
+      new StringParameter("address", "address", "The contact address of the producer node,which is used to determind the order of all producers."),
+      new IntParameter("longitude", "longitude", "The position of the production node in the whole network is used to determine the working order of all producers."),
+      new IntParameter("latitude", "latitude", "The position of the production node in the whole network is used to determine the working order of all producers.")
     )
 
     override def execute(params: List[String]): Result = {
@@ -79,7 +79,8 @@ class ProducerCommand extends CompositeCommand {
       } catch {
         case e: Throwable => Error(e)
       }
-    }}
+    }
+  }
 
   class ResisterCancelCommand extends Command {
     override val cmd = "unReg"
@@ -117,7 +118,8 @@ class ProducerCommand extends CompositeCommand {
       } catch {
         case e: Throwable => Error(e)
       }
-    }}
+    }
+  }
 
   class VoteCommand extends Command {
     override val cmd = "vote"
@@ -125,8 +127,8 @@ class ProducerCommand extends CompositeCommand {
 
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
-      new AddressParameter("address", "address", "The address of the voted node"),
-      new AmountParameter("count", "count", "The number of votes")
+      new AddressParameter("address", "address", "The supported node address."),
+      new AmountParameter("count", "count", "The number of votes.")
     )
 
     override def execute(params: List[String]): Result = {
@@ -158,13 +160,13 @@ class ProducerCommand extends CompositeCommand {
   }
 
   class VoteCancelCommand extends Command {
-    override val cmd = "cancelVote"
+    override val cmd = "unVote"
     override val description = "Cancel voting on the node"
 
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
-      new AddressParameter("address", "address", "The node address that canceled vote "),
-      new AmountParameter("count", "count", "The number of votes canceled")
+      new AddressParameter("address", "address", "The supported node address."),
+      new AmountParameter("count", "count", "The number of votes.")
     )
 
     override def execute(params: List[String]): Result = {
@@ -192,21 +194,22 @@ class ProducerCommand extends CompositeCommand {
       } catch {
         case e: Throwable => Error(e)
       }
-    }}
+    }
+  }
 
   class ListCommand extends Command {
     override val cmd = "list"
     override val description = "Query node information"
 
     override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("type", "type", "Query node information in different states")
+      new StringParameter("type", "type", "Supports four query types,all:query all producer information;Previous:query the last round of production nodes.activate;Query the working production node;pending:Query the next round of production nodes with production rights. ")
     )
 
     override def execute(params: List[String]): Result = {
       try {
         val listType = paramList.params(0).asInstanceOf[StringParameter].value
 
-        if(listType != "all" || listType != "active" || listType != "pending" || listType != "previous"){
+        if (listType != "all" || listType != "active" || listType != "pending" || listType != "previous") {
           InvalidParams("type not exists, please type a different one")
         }
 
@@ -224,7 +227,7 @@ class ProducerCommand extends CompositeCommand {
     override val description = "Query node information by node address"
 
     override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("address", "address", "The node address to be queried")
+      new StringParameter("address", "address", "The address of the producer node.")
     )
 
     override def execute(params: List[String]): Result = {
@@ -232,68 +235,70 @@ class ProducerCommand extends CompositeCommand {
         val address = paramList.params(0).asInstanceOf[StringParameter].value
         val rpcResult = RPC.post("getProducer", s"""{"address":"${address}"}""")
 
-        if(ChainCommand.checkSucceed(rpcResult)){
-          if(ChainCommand.checkNotNull(rpcResult)){
+        if (ChainCommand.checkSucceed(rpcResult)) {
+          if (ChainCommand.checkNotNull(rpcResult)) {
             ChainCommand.returnSuccess(rpcResult)
-          }else Success("No node information was found for this address.")
+          } else Success("No node information was found for this address.")
 
-        }else ChainCommand.returnFail(rpcResult)
+        } else ChainCommand.returnFail(rpcResult)
 
       } catch {
         case e: Throwable => Error(e)
       }
-    }}
+    }
+  }
 
 
-  class ResetGasLimitCommand  extends Command {
+  class ResetGasLimitCommand extends Command {
     override val cmd = "resetGasLimit"
-    override val description = "Modify the gas limit of the production node"
+    override val description = "The most complex smart contract that the production node is willing to execute, please configure according to the processing power of the node."
 
     override val paramList: ParameterList = ParameterList.create(
-      new IntParameter("gasLimit", "gasLimit","gasLimit")
+      new IntParameter("gasLimit", "gasLimit", "The most complex smart contract that the production node is willing to execute.If the gas limit of the contract exceeds this parameter, the production node will not process the contract.")
     )
 
     override def execute(params: List[String]): Result = {
-      try{
+      try {
         val gasLimit = paramList.params(0).asInstanceOf[IntParameter].value
         val rpcResult = RPC.post("setGasLimit", s"""{"gasLimit":"${gasLimit}"}""", RPC.secretRpcUrl)
 
-        if(ChainCommand.checkSucceed(rpcResult)){
-          if(ChainCommand.getBooleanRes(rpcResult)){
+        if (ChainCommand.checkSucceed(rpcResult)) {
+          if (ChainCommand.getBooleanRes(rpcResult)) {
             Success("The gas limit for contract processing by the production node has been successfully modified.")
-          }else Success("Permission error.")
+          } else Success("Permission error.")
 
-        }else ChainCommand.returnFail(rpcResult)
+        } else ChainCommand.returnFail(rpcResult)
 
-      }catch {
+      } catch {
         case e: Throwable => Error(e)
       }
     }
   }
 
-  class GasLimitCommand  extends Command {
+  class GasLimitCommand extends Command {
     override val cmd = "gasLimit"
-    override val description = "Query the gas limit of the production node"
+    override val description = "Query the most complex smart contracts that production nodes are willing to execute"
+
     override def execute(params: List[String]): Result = {
 
-      try{
+      try {
         val result = RPC.post("getGasLimit", paramList.toJson(), RPC.secretRpcUrl)
         ChainCommand.checkRes(result)
-      }catch {
+      } catch {
         case e: Throwable => Error(e)
       }
     }
   }
 
-  def printRes(rpcTxResult:JsValue, hash: UInt256): Result ={
-    if(ChainCommand.checkSucceed(rpcTxResult)) {
+  def printRes(rpcTxResult: JsValue, hash: UInt256): Result = {
+    if (ChainCommand.checkSucceed(rpcTxResult)) {
 
-      if( ChainCommand.getBooleanRes(rpcTxResult))
+      if (ChainCommand.getBooleanRes(rpcTxResult))
         Success("This transaction has been broadcast successfully, the transaction hash is " + hash)
       else
         Success("This transaction failed to broadcast, please check the network.")
 
-    }else ChainCommand.returnFail(rpcTxResult)
+    } else ChainCommand.returnFail(rpcTxResult)
   }
 
 }

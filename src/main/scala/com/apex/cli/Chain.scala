@@ -27,16 +27,16 @@ class StatusCommand extends Command {
   override val description = "Show the status of block chain"
 
   override def execute(params: List[String]): Result = {
-    try{
+    try {
       val rpcResult = RPC.post("getLatesBlockInfo", paramList.toJson())
       WalletCache.reActWallet
-      if(ChainCommand.checkSucceed(rpcResult)){
+      if (ChainCommand.checkSucceed(rpcResult)) {
         val result = ChainCommand.getStrRes(rpcResult)
         // 获取用户index和id
-        val hash = (Json.parse(result) \"hash").as[String]
-        val height = (Json.parse(result) \"index").as[Long]
-        Success("The latest block height is "+height+", the block hash is "+hash)
-      }else ChainCommand.returnFail(rpcResult)
+        val hash = (Json.parse(result) \ "hash").as[String]
+        val height = (Json.parse(result) \ "index").as[Long]
+        Success("The latest block height is " + height + ", the block hash is " + hash)
+      } else ChainCommand.returnFail(rpcResult)
     } catch {
       case e: Throwable => Error(e)
     }
@@ -49,24 +49,24 @@ class BlockCommand extends Command {
 
   override val paramList: ParameterList = ParameterList.create(
     new IntParameter("height", "height",
-      "The height of block. Use either this param or \"id\", If both give, the front one make sense.", true,true),
+      "The height of block. Use either this param or \"id\", If both give, the front one make sense.", true, true),
     new PrivKeyParameter("hash", "hash",
-      "The hash of block. Use either this param or \"id\", If both give, the front one make sense.",true,true)
+      "The hash of block. Use either this param or \"id\", If both give, the front one make sense.", true, true)
 
   )
 
   override def execute(params: List[String]): Result = {
 
-    try{
+    try {
       val height = paramList.params(0).asInstanceOf[IntParameter].value
 
-      var data:String =""
-      if(height != null)
+      var data: String = ""
+      if (height != null)
         data = JsObject(
-          mutable.HashMap(paramList.params(0). asInstanceOf[IntParameter].name.toString -> paramList.params(0).asInstanceOf[IntParameter].toJson)).toString()
+          mutable.HashMap(paramList.params(0).asInstanceOf[IntParameter].name.toString -> paramList.params(0).asInstanceOf[IntParameter].toJson)).toString()
       else
-      data = JsObject(
-        mutable.HashMap(paramList.params(1).asInstanceOf[PrivKeyParameter].name.toString -> paramList.params(1).asInstanceOf[PrivKeyParameter].toJson)).toString()
+        data = JsObject(
+          mutable.HashMap(paramList.params(1).asInstanceOf[PrivKeyParameter].name.toString -> paramList.params(1).asInstanceOf[PrivKeyParameter].toJson)).toString()
 
       val result = RPC.post("getblock", data)
       ChainCommand.checkRes(result)
@@ -81,23 +81,23 @@ class TransactionCommand extends Command {
   override val description = "how data of the transaction"
 
   override val paramList: ParameterList = ParameterList.create(
-    new StringParameter("hash", "hash","The hash of transaction.")
+    new StringParameter("hash", "hash", "The hash of transaction.")
   )
 
   override def execute(params: List[String]): Result = {
-    try{
+    try {
       val checkResult = Account.checkWalletStatus
       if (!checkResult.isEmpty) InvalidParams(checkResult)
       else {
         val id = paramList.params(0).asInstanceOf[StringParameter].value
         val rpcResult = RPC.post("getContract", s"""{"id":"${id}"}""")
-        if(ChainCommand.checkSucceed(rpcResult)){
+        if (ChainCommand.checkSucceed(rpcResult)) {
 
-          if(ChainCommand.checkNotNull(rpcResult)){
+          if (ChainCommand.checkNotNull(rpcResult)) {
             ChainCommand.returnSuccess(rpcResult)
-          }else Success("No transaction information was queried")
+          } else Success("No transaction information was queried")
 
-        }else ChainCommand.returnFail(rpcResult)
+        } else ChainCommand.returnFail(rpcResult)
       }
     } catch {
       case e: Throwable => Error(e)
@@ -105,51 +105,51 @@ class TransactionCommand extends Command {
   }
 }
 
-object ChainCommand{
+object ChainCommand {
 
-  def getStrRes(rpcRes:JsValue): String ={
+  def getStrRes(rpcRes: JsValue): String = {
     (rpcRes \ "result").as[String]
   }
 
-  def getBooleanRes(rpcRes: JsValue): Boolean ={
+  def getBooleanRes(rpcRes: JsValue): Boolean = {
     getStrRes(rpcRes).toBoolean
   }
 
-  def checkSucceed(rpcRes:JsValue): Boolean ={
+  def checkSucceed(rpcRes: JsValue): Boolean = {
 
-    if((rpcRes \ "succeed").as[Boolean]){
+    if ((rpcRes \ "succeed").as[Boolean]) {
       true
-    }else false
+    } else false
   }
 
-  def checkNotNull(rpcRes:JsValue): Boolean ={
+  def checkNotNull(rpcRes: JsValue): Boolean = {
     val result = ChainCommand.getStrRes(rpcRes)
 
-    if((rpcRes \ "succeed").as[Boolean] && "null" != result){
+    if ((rpcRes \ "succeed").as[Boolean] && "null" != result) {
       true
-    }else false
+    } else false
   }
 
-  def checkRes(rpcRes:JsValue): Result ={
+  def checkRes(rpcRes: JsValue): Result = {
 
-    if((rpcRes \ "succeed").as[Boolean]){
+    if ((rpcRes \ "succeed").as[Boolean]) {
       returnSuccess(rpcRes)
-    }else{
+    } else {
       returnFail(rpcRes)
     }
   }
 
-  def returnSuccess(rpcRes:JsValue): Result ={
+  def returnSuccess(rpcRes: JsValue): Result = {
     // 返回结果值
     val result = (rpcRes \ "result").as[String]
     Success(Json prettyPrint Json.parse(result))
   }
 
-  def returnFail(rpcRes:JsValue): Result ={
+  def returnFail(rpcRes: JsValue): Result = {
     // 返回状态码，和message
     val status = (rpcRes \ "status").as[Int]
     val message = (rpcRes \ "message").as[String]
-    Success("execute failed, status is "+status+", message is "+message)
+    Success("execute failed, status is " + status + ", message is " + message)
   }
 
   def regJson(json: Option[Any]) = json match {

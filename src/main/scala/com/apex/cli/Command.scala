@@ -1,4 +1,5 @@
 package com.apex.cli
+
 /*
  * Copyright  2018 APEX Technologies.Co.Ltd. All rights reserved.
  *
@@ -6,6 +7,7 @@ package com.apex.cli
  *
  * @author: whitney.wei@chinapex.com: 18-11-10 @version: 1.0
  */
+
 import play.api.libs.json.Json
 
 
@@ -66,8 +68,8 @@ object Command {
       case cmd :: tail if all.contains(cmd) =>
         all(cmd).find(_.validate(tail)) match {
           case Some(command) =>
-            if(checkHelpParam(tail) && !command.composite) Help(helpPMessage(command))
-            else if(!command.composite && tail.size >0 &&
+            if (checkHelpParam(tail) && !command.composite) Help(helpPMessage(command))
+            else if (!command.composite && tail.size > 0 &&
               (command.paramList.params.isEmpty || command.paramList.params == null))
               InvalidParams(tail.mkString(" "))
             else command.execute(tail)
@@ -80,9 +82,10 @@ object Command {
     }
   }
 
-  def helpMessage(titleMsg:String, all: Map[String, Seq[Command]], compositeMsg : Boolean = false): String = {
+  def helpMessage(titleMsg: String, all: Map[String, Seq[Command]], compositeMsg: Boolean = false): String = {
 
     var message: String = null
+
     def paddingTail(str: String, padding: Int): String = {
       str.formatted(s"%-${padding}s")
     }
@@ -110,6 +113,7 @@ object Command {
   def helpPMessage(command: Command): String = {
 
     var message: String = null
+
     def paddingTail(str: String, padding: Int): String = {
       str.formatted(s"%-${padding}s")
     }
@@ -120,7 +124,7 @@ object Command {
       val column = s"${paddingTail("name", 15)} description"
 
       val content = command.paramList.params.map(p => {
-        s"${paddingTail("-"+p.shortName, 15)} ${p.description}"
+        s"${paddingTail("-" + p.shortName, 15)} ${p.description}"
       }).mkString("\n")
       message = s"$title\n$column\n$content"
     }
@@ -129,9 +133,9 @@ object Command {
   }
 
 
-  def checkHelpParam(params: List[String]):Boolean={
-    if(params.isEmpty || params.size>1 )false
-    else if(!params(0).equals("-h")) false
+  def checkHelpParam(params: List[String]): Boolean = {
+    if (params.isEmpty || params.size > 1) false
+    else if (!params(0).equals("-h")) false
     else true
   }
 
@@ -162,9 +166,9 @@ trait CompositeCommand extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    if(params.isEmpty || Command.checkHelpParam(params)){
+    if (params.isEmpty || Command.checkHelpParam(params)) {
       Help(Command.helpMessage(description, subCommands.groupBy(_.cmd)))
-    }else{
+    } else {
       Command.execCommand(params, subCommands.groupBy(_.cmd))
       // 排除类似 sys clear 二级命令
       /*Command.execCommand(params, subCommands.filterNot(_.sys).groupBy(_.cmd))*/

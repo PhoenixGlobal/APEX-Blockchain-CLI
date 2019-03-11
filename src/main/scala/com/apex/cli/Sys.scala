@@ -31,10 +31,13 @@ class HelpC extends Command {
   }
 }
 
-class VersionC  extends Command {
+class VersionC extends Command {
   override val cmd = "version"
   override val description = "Version information"
-  override def execute(params: List[String]): Result = {Success("1")}
+
+  override def execute(params: List[String]): Result = {
+    Success("1")
+  }
 }
 
 class VerC extends VersionC {
@@ -54,14 +57,15 @@ class ClearC extends Command {
 
   override def execute(params: List[String]): Result = {
 
-    try{
+    try {
       if (System.getProperty("os.name").contains("Windows")) new ProcessBuilder("cmd", "/c", "cls").inheritIO.start.waitFor
       else {
         println(System.getProperty("os.name"))
         System.out.print("\033\143")  // Runtime.getRuntime.exec("clear")
+        //   System.out.print("\u001b\u0063")
       }
       Help("Welcome to CLI, type \"help\" for command list:")
-    }catch {
+    } catch {
       case e: Throwable => Error(e)
     }
   }

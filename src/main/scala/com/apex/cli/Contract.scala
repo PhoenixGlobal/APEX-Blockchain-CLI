@@ -29,13 +29,13 @@ class ContractCommand extends CompositeCommand {
   )
 
   class CompileCommand extends Command {
-      override val cmd = "compile"
+    override val cmd = "compile"
     override val description = "Compile smart contract"
 
     override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("contractName", "n", "The contract name."),
-    new StringParameter("source", "s", "Source code file name of smart contract."),
-    new StringParameter("p", "p", "")
+      new StringParameter("contractName", "n", "The contract name to compile in the contract code."),
+      new StringParameter("source", "s", "Path address of the contract source file."),
+      new StringParameter("p", "p", "Output directories for BIN and ABI files.")
     )
 
     override def execute(params: List[String]): Result = {
@@ -57,8 +57,8 @@ class ContractCommand extends CompositeCommand {
             WalletCache.reActWallet
 
             if (result.getContract(name) != null) {
-              writeFile(writePath+"\\"+name+"bin.txt", result.getContract(name).bin)
-              writeFile(writePath+"\\"+name+"abi.txt", result.getContract(name).abi)
+              writeFile(writePath + "\\" + name + "bin.txt", result.getContract(name).bin)
+              writeFile(writePath + "\\" + name + "abi.txt", result.getContract(name).abi)
               Success("The contract compile is successful.")
             } else {
               Assert.fail()
@@ -69,9 +69,9 @@ class ContractCommand extends CompositeCommand {
       } catch {
         case e: Throwable => Error(e)
       }
-  }
+    }
 
-    def writeFile(filePath: String, data: String): Unit ={
+    def writeFile(filePath: String, data: String): Unit = {
       val file = new File(filePath)
       val fw = new FileWriter(file)
       fw.write(data)
@@ -86,9 +86,9 @@ class ContractCommand extends CompositeCommand {
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from",
         "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
-      new StringParameter("bin", "bin", "Bin data file name of deploy smart contract."),
-      new GasParameter("gasLimit", "gasLimit","."),
-      new GasPriceParameter("gasPrice", "gasPrice",".")
+      new StringParameter("bin", "bin", "The BIN files corresponding this contract."),
+      new GasParameter("gasLimit", "gasLimit", "Maximum number of gas this transactions/contract is willing to pay."),
+      new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay.")
     )
 
     // 测试 data 6080604052348015600f57600080fd5b50603580601d6000396000f3006080604052600080fd00a165627a7a723058200b864e4f01cfb799a414a6ebdb9b63ce9225b82a293a346c33b42e691cdec0300029
@@ -106,7 +106,7 @@ class ContractCommand extends CompositeCommand {
           val dataContent = AssetCommand.readFile(dataSource)
 
           if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
-          else if(dataContent.isEmpty) InvalidParams("data is empty, please type a different one")
+          else if (dataContent.isEmpty) InvalidParams("data is empty, please type a different one")
           else {
             val gasLimit = paramList.params(2).asInstanceOf[GasParameter].value
             val price = paramList.params(3).asInstanceOf[GasPriceParameter].value
@@ -117,14 +117,14 @@ class ContractCommand extends CompositeCommand {
 
             WalletCache.reActWallet
 
-            if(ChainCommand.checkSucceed(rpcTxResult)) {
+            if (ChainCommand.checkSucceed(rpcTxResult)) {
 
-              if(ChainCommand.getBooleanRes(rpcTxResult))
+              if (ChainCommand.getBooleanRes(rpcTxResult))
                 Success("The contract broadcast is successful , the transaction hash is " + tx.id() + " , the contract address is " + tx.getContractAddress().get)
               else
                 Success("The contract broadcast failed. Please try again.")
 
-            }else ChainCommand.returnFail(rpcTxResult)
+            } else ChainCommand.returnFail(rpcTxResult)
           }
         }
       } catch {
@@ -140,11 +140,11 @@ class ContractCommand extends CompositeCommand {
 
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
-      new ContractAddressParameter("to", "to", "The target contract address."),
-      new StringParameter("abi", "abi", "Path of the ABI file corresponding to the smart contract"),
-      new StringParameter("method", "m", "The method in the smart contract"),
-      new GasParameter("gasLimit", "gasLimit","."),
-      new GasPriceParameter("gasPrice", "gasPrice",".")
+      new ContractAddressParameter("to", "to", "The contract address."),
+      new StringParameter("abi", "abi", "The ABI files corresponding this contract."),
+      new StringParameter("method", "m", "The method name of called contract."),
+      new GasParameter("gasLimit", "gasLimit", "Maximum number of gas this transactions/contract is willing to pay."),
+      new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay.")
     )
 
     override def execute(params: List[String]): Result = {
@@ -171,7 +171,7 @@ class ContractCommand extends CompositeCommand {
           else {
             // 获取abi对象
             val data = Abi.fromJson(abiContent).encode(method)
-            if(data.size/8 < 4) InvalidParams("method not exists, please type a different one")
+            if (data.size / 8 < 4) InvalidParams("method not exists, please type a different one")
 
             val gasLimit = paramList.params(4).asInstanceOf[GasParameter].value
             val price = paramList.params(5).asInstanceOf[GasPriceParameter].value
@@ -182,21 +182,21 @@ class ContractCommand extends CompositeCommand {
 
             WalletCache.reActWallet
 
-            if(ChainCommand.checkSucceed(rpcTxResult)){
+            if (ChainCommand.checkSucceed(rpcTxResult)) {
 
               Thread.sleep(1000)
 
               val rpcContractResult = RPC.post("getContract", s"""{"id":"${tx.id()}"}""")
 
-              if(ChainCommand.checkSucceed(rpcContractResult)){
+              if (ChainCommand.checkSucceed(rpcContractResult)) {
 
-                if(ChainCommand.checkNotNull(rpcContractResult)){
+                if (ChainCommand.checkNotNull(rpcContractResult)) {
                   ChainCommand.checkRes(rpcContractResult)
-                }else
-                  Success("The contract broadcast is successful, type \"contract get\" to see contract status later, the transaction hash is "+tx.id()+".")
-              }else ChainCommand.returnFail(rpcContractResult)
+                } else
+                  Success("The contract broadcast is successful, type \"contract get\" to see contract status later, the transaction hash is " + tx.id() + ".")
+              } else ChainCommand.returnFail(rpcContractResult)
 
-            }else ChainCommand.returnFail(rpcTxResult)
+            } else ChainCommand.returnFail(rpcTxResult)
           }
         }
       } catch {

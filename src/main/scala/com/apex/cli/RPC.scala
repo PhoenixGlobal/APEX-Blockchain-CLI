@@ -15,7 +15,7 @@ import play.api.libs.json.Json
 object RPC {
   val client = new OkHttpClient
 
-  //  var rpcUrl = "http://40.73.116.98:9089/"
+  //  var rpcUrl = "http://40.73.6.198:9091/"
   //  var rpcUrl = "http://40.73.32.84:9089/" // 备用
   var rpcUrl = "http://127.0.0.1:8080/"
   var secretRpcUrl = "http://127.0.0.1:8081/"
@@ -24,7 +24,7 @@ object RPC {
   val mediaType = MediaType.parse("application/json; charset=utf-8")
 
   def post(path: String, data: String, callUrl: String = rpcUrl) = {
-    val url = callUrl+s"$path"
+    val url = callUrl + s"$path"
     val body = RequestBody.create(mediaType, data)
     val req = new Request.Builder()
       .url(url)

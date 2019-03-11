@@ -36,32 +36,32 @@ class SendCommand extends Command {
     new NicknameParameter("from", "from",
       "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.",
       true),
-    new StringParameter("to", "to","The account where the asset come to"),
-    new AmountParameter("amount", "amount","The amount of the asset to be transfer."),
-    new GasParameter("gasLimit", "gasLimit","."),
-    new GasPriceParameter("gasPrice", "gasPrice",".")
+    new StringParameter("to", "to", "The account where the asset come to"),
+    new AmountParameter("amount", "amount", "The amount of the asset to be transfer."),
+    new GasParameter("gasLimit", "gasLimit", "Maximum number of gas this transactions/contract is willing to pay."),
+    new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay.")
   )
 
   override def execute(params: List[String]): Result = {
-    try{
+    try {
       val checkResult = Account.checkWalletStatus
-      if(!checkResult.isEmpty) InvalidParams(checkResult)
+      if (!checkResult.isEmpty) InvalidParams(checkResult)
       else {
         // 赋值from昵称
         var from = WalletCache.getActivityWallet().implyAccount
         // 根据昵称获取转账地址
-        if(params.size/2 == paramList.params.size)  from = paramList.params(0).asInstanceOf[NicknameParameter].value
+        if (params.size / 2 == paramList.params.size) from = paramList.params(0).asInstanceOf[NicknameParameter].value
 
         val to = paramList.params(1).asInstanceOf[StringParameter].value
         var toAdress = ""
-        if (PublicKeyHash.fromAddress(to).get != None) if (Account.checkAccountStatus(to)) toAdress = Account.getAccount(to).address
+        if (PublicKeyHash.fromAddress(to) != None) if (Account.checkAccountStatus(to)) toAdress = Account.getAccount(to).address
         else toAdress = to
 
-        if(!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
-        else if(toAdress.isEmpty) InvalidParams("to account not exists, please type a different one")
-        else if(Account.getAccount(from).address.equals(toAdress)) InvalidParams("same address, please type a different one")
-        else if(Ecdsa.PublicKeyHash.fromAddress(toAdress) == None) InvalidParams("error to address, please type a different one")
-        else{
+        if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
+        else if (toAdress.isEmpty) InvalidParams("to account not exists, please type a different one")
+        else if (Account.getAccount(from).address.equals(toAdress)) InvalidParams("same address, please type a different one")
+        else if (Ecdsa.PublicKeyHash.fromAddress(toAdress) == None) InvalidParams("error to address, please type a different one")
+        else {
           val amount = paramList.params(2).asInstanceOf[AmountParameter].value
           val gasLimit = paramList.params(3).asInstanceOf[GasParameter].value
           val price = paramList.params(4).asInstanceOf[GasPriceParameter].value
@@ -74,15 +74,15 @@ class SendCommand extends Command {
           // 获取账户余额
           val balance = Account.getResultBalance(account)
           // 判断账户余额是否充足
-          if(BigDecimal.apply(balance) < amount) InvalidParams("insufficient account balance")
-          else{
+          if (BigDecimal.apply(balance) < amount) InvalidParams("insufficient account balance")
+          else {
 
             val tx = AssetCommand.buildTx(TransactionType.Transfer, from, Ecdsa.PublicKeyHash.fromAddress(toAdress).get, FixedNumber.fromDecimal(amount),
               BinaryData.empty, true, nextNonce, gasPrice, BigInt(gasLimit))
             val result = AssetCommand.sendTx(tx)
 
             WalletCache.reActWallet
-            if(ChainCommand.checkSucceed(result)) Success("execute succeed, the transaction hash is "+tx.id())
+            if (ChainCommand.checkSucceed(result)) Success("execute succeed, the transaction hash is " + tx.id())
             else ChainCommand.returnFail(result)
           }
 
@@ -111,37 +111,36 @@ class BroadcastCommand extends Command {
         val dataContent = AssetCommand.readFile(data)
 
         WalletCache.reActWallet
-        if(dataContent.isEmpty) InvalidParams("data is empty, please type a different one")
-        else{
+        if (dataContent.isEmpty) InvalidParams("data is empty, please type a different one")
+        else {
 
-          val  binaryData = BinaryData(dataContent)
+          val binaryData = BinaryData(dataContent)
           val is = new DataInputStream(new ByteArrayInputStream(binaryData))
           val tx = Transaction.deserialize(is)
 
-          if(tx.verifySignature()){
+          if (tx.verifySignature()) {
             val result = AssetCommand.sendTx(tx)
             if (ChainCommand.checkSucceed(result)) Success("execute succeed, the transaction hash is " + tx.id())
             else ChainCommand.returnFail(result)
-          }else Success("There was an error in the original transaction information that could not be resolved.")
+          } else Success("There was an error in the original transaction information that could not be resolved.")
         }
 
       }
-  }catch
-  {
-    case e: Throwable => Error(e)
+    } catch {
+      case e: Throwable => Error(e)
+    }
   }
 }
-}
 
-object AssetCommand{
+object AssetCommand {
 
-  def buildTx(txType:TransactionType.Value, from:String, to:UInt160, amount : FixedNumber, data:Array[Byte],
-              checkedAccount:Boolean = false,  nonce:Long = 0, gasPrice:FixedNumber = FixedNumber.Zero, gasLimit:BigInt = 7000000) = {
+  def buildTx(txType: TransactionType.Value, from: String, to: UInt160, amount: FixedNumber, data: Array[Byte],
+              checkedAccount: Boolean = false, nonce: Long = 0, gasPrice: FixedNumber = FixedNumber.Zero, gasLimit: BigInt = 7000000) = {
 
     val privKey = Account.getAccount(from).getPrivKey()
     var nextNonce: Long = nonce
 
-    if(!checkedAccount){
+    if (!checkedAccount) {
       val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
       nextNonce = Account.getResultNonce(account)
     }
@@ -160,13 +159,14 @@ object AssetCommand{
     tx
   }
 
-  def sendTx(tx:Transaction) = {
+  def sendTx(tx: Transaction) = {
 
     val txRawData = BinaryData(tx.toBytes)
     val rawTx: String = "{\"rawTx\":\"" + txRawData.toString + "\"}"
     val result = RPC.post("sendrawtransaction", rawTx)
     result
   }
+
   def readFile(fileName: String): String = {
     var content = ""
     if (Files.exists(Paths.get(fileName))) {
@@ -177,17 +177,17 @@ object AssetCommand{
     content
   }
 
-  def calcGasPrice(price : String): FixedNumber ={
+  def calcGasPrice(price: String): FixedNumber = {
     var gasPrice = FixedNumber.Zero
     // 获取最后一位
-    val unit = price.toLowerCase.substring(price.length-1).charAt(0)
-    val priceNum = price.substring(0, price.length-1).toInt
+    val unit = price.toLowerCase.substring(price.length - 1).charAt(0)
+    val priceNum = price.substring(0, price.length - 1).toInt
     unit match {
       case 'p' => gasPrice = FixedNumber(priceNum)
-      case 'k' => gasPrice = FixedNumber(Math.pow(10,3).*(priceNum).toInt) // 10的3次幂 p
-      case 'm' => gasPrice = FixedNumber(Math.pow(10,6).*(priceNum).toInt)// 10的6次幂 p
-      case 'g' => gasPrice = FixedNumber(Math.pow(10,9).*(priceNum).toInt)// 10的9次幂 p
-      case 'c' => gasPrice = FixedNumber(Math.pow(10,12).*(priceNum).toInt)// 10的12次幂 p
+      case 'k' => gasPrice = FixedNumber(Math.pow(10, 3).*(priceNum).toInt) // 10的3次幂 p
+      case 'm' => gasPrice = FixedNumber(Math.pow(10, 6).*(priceNum).toInt) // 10的6次幂 p
+      case 'g' => gasPrice = FixedNumber(Math.pow(10, 9).*(priceNum).toInt) // 10的9次幂 p
+      case 'c' => gasPrice = FixedNumber(Math.pow(10, 12).*(priceNum).toInt) // 10的12次幂 p
     }
     gasPrice
   }
