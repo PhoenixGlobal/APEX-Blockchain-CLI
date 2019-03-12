@@ -117,14 +117,12 @@ class ContractCommand extends CompositeCommand {
 
             WalletCache.reActWallet
 
-            if (ChainCommand.checkSucceed(rpcTxResult)) {
+            if (!ChainCommand.checkSucceed(rpcTxResult)) {
+              ChainCommand.returnFail(rpcTxResult)
+            } else if (ChainCommand.getBooleanRes(rpcTxResult)) {
+              Success("The contract broadcast is successful , the transaction hash is " + tx.id() + " , the contract address is " + tx.getContractAddress().get.address)
+            } else Success("The contract broadcast failed. Please try again.")
 
-              if (ChainCommand.getBooleanRes(rpcTxResult))
-                Success("The contract broadcast is successful , the transaction hash is " + tx.id() + " , the contract address is " + tx.getContractAddress().get)
-              else
-                Success("The contract broadcast failed. Please try again.")
-
-            } else ChainCommand.returnFail(rpcTxResult)
           }
         }
       } catch {
@@ -188,13 +186,11 @@ class ContractCommand extends CompositeCommand {
 
               val rpcContractResult = RPC.post("getContract", s"""{"id":"${tx.id()}"}""")
 
-              if (ChainCommand.checkSucceed(rpcContractResult)) {
-
-                if (ChainCommand.checkNotNull(rpcContractResult)) {
-                  ChainCommand.checkRes(rpcContractResult)
-                } else
-                  Success("The contract broadcast is successful, type \"contract get\" to see contract status later, the transaction hash is " + tx.id() + ".")
-              } else ChainCommand.returnFail(rpcContractResult)
+              if (!ChainCommand.checkSucceed(rpcTxResult)) {
+                ChainCommand.returnFail(rpcTxResult)
+              } else if (ChainCommand.checkNotNull(rpcTxResult)) {
+                ChainCommand.checkRes(rpcContractResult)
+              } else Success("The contract broadcast is successful, type \"contract get\" to see contract status later, the transaction hash is " + tx.id() + ".")
 
             } else ChainCommand.returnFail(rpcTxResult)
           }

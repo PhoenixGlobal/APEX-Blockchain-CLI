@@ -68,8 +68,14 @@ class BlockCommand extends Command {
         data = JsObject(
           mutable.HashMap(paramList.params(1).asInstanceOf[PrivKeyParameter].name.toString -> paramList.params(1).asInstanceOf[PrivKeyParameter].toJson)).toString()
 
-      val result = RPC.post("getblock", data)
-      ChainCommand.checkRes(result)
+      val rpcResult = RPC.post("getblock", data)
+
+      if (!ChainCommand.checkSucceed(rpcResult)) {
+        ChainCommand.returnFail(rpcResult)
+      } else if (ChainCommand.checkNotNull(rpcResult)) {
+        ChainCommand.returnSuccess(rpcResult)
+      } else Success("This block was not queried.")
+
     } catch {
       case e: Throwable => Error(e)
     }
@@ -91,13 +97,13 @@ class TransactionCommand extends Command {
       else {
         val id = paramList.params(0).asInstanceOf[StringParameter].value
         val rpcResult = RPC.post("getContract", s"""{"id":"${id}"}""")
-        if (ChainCommand.checkSucceed(rpcResult)) {
 
-          if (ChainCommand.checkNotNull(rpcResult)) {
-            ChainCommand.returnSuccess(rpcResult)
-          } else Success("No transaction information was queried")
+        if (!ChainCommand.checkSucceed(rpcResult)) {
+          ChainCommand.returnFail(rpcResult)
+        } else if (ChainCommand.checkNotNull(rpcResult)) {
+          ChainCommand.returnSuccess(rpcResult)
+        } else Success("No transaction information was queried")
 
-        } else ChainCommand.returnFail(rpcResult)
       }
     } catch {
       case e: Throwable => Error(e)
@@ -125,7 +131,7 @@ object ChainCommand {
   def checkNotNull(rpcRes: JsValue): Boolean = {
     val result = ChainCommand.getStrRes(rpcRes)
 
-    if ((rpcRes \ "succeed").as[Boolean] && "null" != result) {
+    if ((rpcRes \ "succeed").as[Boolean] && "null".equals(result)) {
       true
     } else false
   }

@@ -189,23 +189,27 @@ object Account {
   }
 
   def getResultBalance(rpcResult: JsValue) = {
-    // 转换查询结果
-    val result = ChainCommand.getStrRes(rpcResult)
 
     var balance: String = FixedNumber.Zero.toString()
-    if (result != None && "null" != result) {
-      balance = (Json.parse(result) \ "balance").as[String]
+    if (rpcResult != None && "null".equals(rpcResult)) {
+      // 转换查询结果
+      val result = ChainCommand.getStrRes(rpcResult)
+      if (result != None && "null".equals(result)) {
+        balance = (Json.parse(result) \ "balance").as[String]
+      }
     }
     balance
   }
 
   def getResultNonce(rpcResult: JsValue): Long = {
-    // 转换查询结果
-    val result = ChainCommand.getStrRes(rpcResult)
     var nextNonce: Long = 0
+    if (rpcResult != None && "null".equals(rpcResult)) {
+      // 转换查询结果
+      val result = ChainCommand.getStrRes(rpcResult)
 
-    if (result != None && "null" != result) {
-      nextNonce = (Json.parse(result) \ "nextNonce").as[Long]
+      if (result != None && "null".equals(result)) {
+        nextNonce = (Json.parse(result) \ "nextNonce").as[Long]
+      }
     }
     nextNonce
   }

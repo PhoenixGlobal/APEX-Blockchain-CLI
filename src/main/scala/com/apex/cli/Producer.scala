@@ -235,12 +235,11 @@ class ProducerCommand extends CompositeCommand {
         val address = paramList.params(0).asInstanceOf[StringParameter].value
         val rpcResult = RPC.post("getProducer", s"""{"address":"${address}"}""")
 
-        if (ChainCommand.checkSucceed(rpcResult)) {
-          if (ChainCommand.checkNotNull(rpcResult)) {
-            ChainCommand.returnSuccess(rpcResult)
-          } else Success("No node information was found for this address.")
-
-        } else ChainCommand.returnFail(rpcResult)
+        if (!ChainCommand.checkSucceed(rpcResult)) {
+          ChainCommand.returnFail(rpcResult)
+        } else if (ChainCommand.checkNotNull(rpcResult)) {
+          ChainCommand.returnSuccess(rpcResult)
+        } else Success("No node information was found for this address.")
 
       } catch {
         case e: Throwable => Error(e)
@@ -262,12 +261,11 @@ class ProducerCommand extends CompositeCommand {
         val gasLimit = paramList.params(0).asInstanceOf[IntParameter].value
         val rpcResult = RPC.post("setGasLimit", s"""{"gasLimit":"${gasLimit}"}""", RPC.secretRpcUrl)
 
-        if (ChainCommand.checkSucceed(rpcResult)) {
-          if (ChainCommand.getBooleanRes(rpcResult)) {
-            Success("The gas limit for contract processing by the production node has been successfully modified.")
-          } else Success("Permission error.")
-
-        } else ChainCommand.returnFail(rpcResult)
+        if (!ChainCommand.checkSucceed(rpcResult)) {
+          ChainCommand.returnFail(rpcResult)
+        } else if (ChainCommand.getBooleanRes(rpcResult)) {
+          Success("The gas limit for contract processing by the production node has been successfully modified.")
+        } else Success("Permission error.")
 
       } catch {
         case e: Throwable => Error(e)
@@ -291,14 +289,12 @@ class ProducerCommand extends CompositeCommand {
   }
 
   def printRes(rpcTxResult: JsValue, hash: UInt256): Result = {
-    if (ChainCommand.checkSucceed(rpcTxResult)) {
 
-      if (ChainCommand.getBooleanRes(rpcTxResult))
-        Success("This transaction has been broadcast successfully, the transaction hash is " + hash)
-      else
-        Success("This transaction failed to broadcast, please check the network.")
-
-    } else ChainCommand.returnFail(rpcTxResult)
+    if (!ChainCommand.checkSucceed(rpcTxResult)) {
+      ChainCommand.returnFail(rpcTxResult)
+    } else if (ChainCommand.getBooleanRes(rpcTxResult)) {
+      Success("This transaction has been broadcast successfully, the transaction hash is " + hash)
+    } else Success("This transaction failed to broadcast, please check the network.")
   }
 
 }
