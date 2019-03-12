@@ -183,13 +183,13 @@ object AssetCommand {
     var gasPrice = FixedNumber.Zero
     // 获取最后一位
     val unit = price.toLowerCase.substring(price.length - 1).charAt(0)
-    val priceNum = price.substring(0, price.length - 1).toInt
+    val priceNum = price.substring(0, price.length - 1).toLong
     unit match {
-      case 'p' => gasPrice = FixedNumber(priceNum)
-      case 'k' => gasPrice = FixedNumber(Math.pow(10, 9).*(priceNum).toInt) // 10的3次幂 p
-      case 'm' => gasPrice = FixedNumber(Math.pow(10, 12).*(priceNum).toInt) // 10的6次幂 p
-      case 'g' => gasPrice = FixedNumber(Math.pow(10, 15).*(priceNum).toInt) // 10的9次幂 p
-      case 'c' => gasPrice = FixedNumber(Math.pow(10, 18).*(priceNum).toInt) // 10的12次幂 p
+      case 'p' => gasPrice = FixedNumber(BigInt.long2bigInt(priceNum))
+      case 'k' => gasPrice = FixedNumber(BigInt.long2bigInt((Math.pow(10, 9) * priceNum).longValue())) // 10的3次幂 p
+      case 'm' => gasPrice = FixedNumber(BigInt.long2bigInt((Math.pow(10, 12) * priceNum).longValue())) // 10的6次幂 p
+      case 'g' => gasPrice = FixedNumber(BigInt.long2bigInt((Math.pow(10, 15) * priceNum).longValue())) // 10的9次幂 p
+      case 'c' => gasPrice = FixedNumber(BigInt.long2bigInt((Math.pow(10, 18) * priceNum).longValue())) // 10的12次幂 p
     }
     gasPrice
   }
