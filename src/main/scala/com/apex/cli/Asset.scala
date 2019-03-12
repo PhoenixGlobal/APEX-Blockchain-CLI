@@ -56,8 +56,8 @@ class SendCommand extends Command {
 
         val to = paramList.params(1).asInstanceOf[StringParameter].value
         var toAdress = ""
-        if (PublicKeyHash.fromAddress(to) != None) if (Account.checkAccountStatus(to)) toAdress = Account.getAccount(to).address
-        else toAdress = to
+        if (to.length == 35) toAdress = to
+        else if (Account.checkAccountStatus(to)) toAdress = Account.getAccount(to).address
 
         if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
         else if (toAdress.isEmpty) InvalidParams("to account not exists, please type a different one")
@@ -143,8 +143,8 @@ object AssetCommand {
     var nextNonce: Long = nonce
 
     if (!checkedAccount) {
-      val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
-      nextNonce = Account.getResultNonce(account)
+      nextNonce = Account.getNonce(privKey.publicKey.address)
+
     }
 
     val tx = new Transaction(txType,

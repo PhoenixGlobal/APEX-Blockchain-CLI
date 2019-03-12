@@ -182,6 +182,11 @@ object Account {
     walletCache.lastModify = Calendar.getInstance().getTimeInMillis
   }
 
+  def getNonce(address: String): Long ={
+    val account = RPC.post("showaccount", s"""{"address":"${address}"}""")
+    Account.getResultNonce(account)
+  }
+
   def getbalance(address: String) = {
     // 调用查询余额
     val rpcResult = RPC.post("showaccount", s"""{"address":"${address}"}""")
@@ -229,7 +234,8 @@ class AccountCommand extends CompositeCommand {
     new RenameCommand,
     new ShowCommand,
     new ImplyCommand,
-    new AccountListCommand
+    new AccountListCommand,
+    new GetNonceCommand
   )
 }
 
@@ -425,6 +431,35 @@ class AccountListCommand extends Command {
         WalletCache.reActWallet
         Success("account list success\n")
       }
+
+    } catch {
+      case e: Throwable => Error(e)
+    }
+  }
+}
+
+class GetNonceCommand extends Command {
+
+  override val cmd: String = "getNonce"
+  override val description: String = "Query the maximum none value of the address on the blockchain, which helps create a continuous and correct transaction."
+
+  override val paramList: ParameterList = ParameterList.create(
+    new NicknameParameter("alias", "a",
+      "The alias of account. Use either this param or \"address\", If both give, the front one make sense.", true, true),
+    new AddressParameter("address", "address",
+      "The address of account. Use either this param or \"a\", If both give, the front one make sense.", true, true)
+  )
+
+  override def execute(params: List[String]): Result = {
+
+    try {
+      val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
+      var address = paramList.params(1).asInstanceOf[AddressParameter].value
+
+      if (alias != null && !alias.isEmpty)
+        address = Account.getAccount(alias, address).address
+
+      Success(Account.getNonce(address).toString)
 
     } catch {
       case e: Throwable => Error(e)
