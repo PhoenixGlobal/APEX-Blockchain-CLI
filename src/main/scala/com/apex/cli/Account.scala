@@ -191,10 +191,10 @@ object Account {
   def getResultBalance(rpcResult: JsValue) = {
 
     var balance: String = FixedNumber.Zero.toString()
-    if (rpcResult != None && "null".equals(rpcResult)) {
+    if (!None.equals(rpcResult) && !"null".equals(rpcResult)) {
       // 转换查询结果
       val result = ChainCommand.getStrRes(rpcResult)
-      if (result != None && "null".equals(result)) {
+      if (!None.equals(result) && !"null".equals(result)) {
         balance = (Json.parse(result) \ "balance").as[String]
       }
     }
@@ -203,19 +203,15 @@ object Account {
 
   def getResultNonce(rpcResult: JsValue): Long = {
     var nextNonce: Long = 0
-    if (rpcResult != None && "null".equals(rpcResult)) {
+    if (!None.equals(rpcResult)  && !"null".equals(rpcResult)) {
       // 转换查询结果
       val result = ChainCommand.getStrRes(rpcResult)
 
-      if (result != None && "null".equals(result)) {
+      if (!None.equals(result)  && "null".equals(result)) {
         nextNonce = (Json.parse(result) \ "nextNonce").as[Long]
       }
     }
     nextNonce
-  }
-
-  private def regJson(json: Option[Any]) = json match {
-    case Some(map: Map[String, Any]) => map
   }
 }
 

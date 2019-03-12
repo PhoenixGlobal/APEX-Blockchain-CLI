@@ -52,7 +52,6 @@ class BlockCommand extends Command {
       "The height of block. Use either this param or \"id\", If both give, the front one make sense.", true, true),
     new PrivKeyParameter("hash", "hash",
       "The hash of block. Use either this param or \"id\", If both give, the front one make sense.", true, true)
-
   )
 
   override def execute(params: List[String]): Result = {
@@ -156,9 +155,5 @@ object ChainCommand {
     val status = (rpcRes \ "status").as[Int]
     val message = (rpcRes \ "message").as[String]
     Success("execute failed, status is " + status + ", message is " + message)
-  }
-
-  def regJson(json: Option[Any]) = json match {
-    case Some(map: Map[String, Any]) => map
   }
 }

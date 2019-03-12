@@ -156,7 +156,7 @@ class ContractCommand extends CompositeCommand {
           if (params.size / 2 == paramList.params.size) from = paramList.params(0).asInstanceOf[NicknameParameter].value
 
           // 合约地址
-          val to = paramList.params(1).asInstanceOf[StringParameter].value
+          val to = paramList.params(1).asInstanceOf[ContractAddressParameter].value
           // abi文件路径
           val abiFilePath = paramList.params(2).asInstanceOf[StringParameter].value
           // 调用智能合约的方法名及参数
