@@ -64,6 +64,7 @@ class SendCommand extends Command {
         else if (Account.getAccount(from).address.equals(toAdress)) InvalidParams("same address, please type a different one")
         else if (Ecdsa.PublicKeyHash.fromAddress(toAdress) == None) InvalidParams("error to address, please type a different one")
         else {
+          WalletCache.reActWallet
           val amount = paramList.params(2).asInstanceOf[AmountParameter].value
           val gasLimit = paramList.params(3).asInstanceOf[GasParameter].value
           val price = paramList.params(4).asInstanceOf[GasPriceParameter].value
@@ -83,7 +84,6 @@ class SendCommand extends Command {
               BinaryData.empty, true, nextNonce, gasPrice, BigInt(gasLimit))
             val result = AssetCommand.sendTx(tx)
 
-            WalletCache.reActWallet
             if (ChainCommand.checkSucceed(result)) Success("execute succeed, the transaction hash is " + tx.id())
             else ChainCommand.returnFail(result)
           }
@@ -106,9 +106,6 @@ class BroadcastCommand extends Command {
 
   override def execute(params: List[String]): Result = {
     try {
-      val checkResult = Account.checkWalletStatus
-      if (!checkResult.isEmpty) InvalidParams(checkResult)
-      else {
         val data = paramList.params(0).asInstanceOf[StringParameter].value
         val dataContent = AssetCommand.readFile(data)
 
@@ -127,7 +124,6 @@ class BroadcastCommand extends Command {
           } else Success("There was an error in the original transaction information that could not be resolved.")
         }
 
-      }
     } catch {
       case e: Throwable => Error(e)
     }
@@ -144,7 +140,6 @@ object AssetCommand {
 
     if (!checkedAccount) {
       nextNonce = Account.getNonce(privKey.publicKey.address)
-
     }
 
     val tx = new Transaction(txType,

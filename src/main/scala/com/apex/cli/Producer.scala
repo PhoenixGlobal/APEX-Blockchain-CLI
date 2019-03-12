@@ -48,10 +48,12 @@ class ProducerCommand extends CompositeCommand {
     )
 
     override def execute(params: List[String]): Result = {
+
       try {
         val checkResult = Account.checkWalletStatus
         if (!checkResult.isEmpty) InvalidParams(checkResult)
         else {
+          WalletCache.reActWallet
           // 赋值from昵称
           var from = WalletCache.getActivityWallet().implyAccount
           // 根据昵称获取转账地址
@@ -96,6 +98,7 @@ class ProducerCommand extends CompositeCommand {
         val checkResult = Account.checkWalletStatus
         if (!checkResult.isEmpty) InvalidParams(checkResult)
         else {
+          WalletCache.reActWallet
           // 赋值from昵称
           var from = WalletCache.getActivityWallet().implyAccount
           // 根据昵称获取转账地址
@@ -136,6 +139,7 @@ class ProducerCommand extends CompositeCommand {
         val checkResult = Account.checkWalletStatus
         if (!checkResult.isEmpty) InvalidParams(checkResult)
         else {
+          WalletCache.reActWallet
           // 赋值from昵称
           var from = WalletCache.getActivityWallet().implyAccount
           // 根据昵称获取转账地址
@@ -174,6 +178,7 @@ class ProducerCommand extends CompositeCommand {
         val checkResult = Account.checkWalletStatus
         if (!checkResult.isEmpty) InvalidParams(checkResult)
         else {
+          WalletCache.reActWallet
           // 赋值from昵称
           var from = WalletCache.getActivityWallet().implyAccount
           // 根据昵称获取转账地址
@@ -207,6 +212,7 @@ class ProducerCommand extends CompositeCommand {
 
     override def execute(params: List[String]): Result = {
       try {
+        WalletCache.reActWallet
         val listType = paramList.params(0).asInstanceOf[StringParameter].value
 
         if (listType != "all" || listType != "active" || listType != "pending" || listType != "previous") {
@@ -214,7 +220,6 @@ class ProducerCommand extends CompositeCommand {
         }
 
         val result = RPC.post("getProducers", s"""{"listType":"${listType}"}""")
-        WalletCache.reActWallet
         ChainCommand.checkRes(result)
       } catch {
         case e: Throwable => Error(e)
@@ -232,6 +237,7 @@ class ProducerCommand extends CompositeCommand {
 
     override def execute(params: List[String]): Result = {
       try {
+        WalletCache.reActWallet
         val address = paramList.params(0).asInstanceOf[StringParameter].value
         val rpcResult = RPC.post("getProducer", s"""{"address":"${address}"}""")
 
@@ -258,6 +264,7 @@ class ProducerCommand extends CompositeCommand {
 
     override def execute(params: List[String]): Result = {
       try {
+        WalletCache.reActWallet
         val gasLimit = paramList.params(0).asInstanceOf[IntParameter].value
         val rpcResult = RPC.post("setGasLimit", s"""{"gasLimit":"${gasLimit}"}""", RPC.secretRpcUrl)
 
@@ -280,6 +287,7 @@ class ProducerCommand extends CompositeCommand {
     override def execute(params: List[String]): Result = {
 
       try {
+        WalletCache.reActWallet
         val result = RPC.post("getGasLimit", paramList.toJson(), RPC.secretRpcUrl)
         ChainCommand.checkRes(result)
       } catch {

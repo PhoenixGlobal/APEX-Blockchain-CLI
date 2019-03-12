@@ -40,30 +40,26 @@ class ContractCommand extends CompositeCommand {
 
     override def execute(params: List[String]): Result = {
       try {
-        val checkResult = Account.checkWalletStatus
-        if (!checkResult.isEmpty) InvalidParams(checkResult)
+        val name = paramList.params(0).asInstanceOf[StringParameter].value
+        val sourceFile = paramList.params(1).asInstanceOf[StringParameter].value
+        val writePath = paramList.params(2).asInstanceOf[StringParameter].value
+        WalletCache.reActWallet
+        // 获取需要编译的合约文件
+        val compileContent = AssetCommand.readFile(sourceFile)
+        if (compileContent.isEmpty) InvalidParams("compile content is empty, please type a different one")
         else {
-          val name = paramList.params(0).asInstanceOf[StringParameter].value
-          val sourceFile = paramList.params(1).asInstanceOf[StringParameter].value
-          val writePath = paramList.params(2).asInstanceOf[StringParameter].value
-          // 获取需要编译的合约文件
-          val compileContent = AssetCommand.readFile(sourceFile)
-          if (compileContent.isEmpty) InvalidParams("compile content is empty, please type a different one")
-          else {
 
-            val source = Paths.get(sourceFile)
-            val res: SolidityCompiler.Result = SolidityCompiler.compile(source.toFile, true, Seq(ABI, BIN, INTERFACE, METADATA))
-            val result = CompilationResult.parse(res.output)
-            WalletCache.reActWallet
+          val source = Paths.get(sourceFile)
+          val res: SolidityCompiler.Result = SolidityCompiler.compile(source.toFile, true, Seq(ABI, BIN, INTERFACE, METADATA))
+          val result = CompilationResult.parse(res.output)
 
-            if (result.getContract(name) != null) {
-              writeFile(writePath + "\\" + name + "bin.txt", result.getContract(name).bin)
-              writeFile(writePath + "\\" + name + "abi.txt", result.getContract(name).abi)
-              Success("The contract compile is successful.")
-            } else {
-              Assert.fail()
-              Success("false")
-            }
+          if (result.getContract(name) != null) {
+            writeFile(writePath + "\\" + name + "bin.txt", result.getContract(name).bin)
+            writeFile(writePath + "\\" + name + "abi.txt", result.getContract(name).abi)
+            Success("The contract compile is successful.")
+          } else {
+            Assert.fail()
+            Success("false")
           }
         }
       } catch {
@@ -97,6 +93,7 @@ class ContractCommand extends CompositeCommand {
         val checkResult = Account.checkWalletStatus
         if (!checkResult.isEmpty) InvalidParams(checkResult)
         else {
+          WalletCache.reActWallet
           // 赋值from昵称
           var from = WalletCache.getActivityWallet().implyAccount
           // 根据昵称获取转账地址
@@ -114,8 +111,6 @@ class ContractCommand extends CompositeCommand {
 
             val tx = AssetCommand.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.Zero, BinaryData(dataContent), gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
             val rpcTxResult = AssetCommand.sendTx(tx)
-
-            WalletCache.reActWallet
 
             if (!ChainCommand.checkSucceed(rpcTxResult)) {
               ChainCommand.returnFail(rpcTxResult)
@@ -150,6 +145,7 @@ class ContractCommand extends CompositeCommand {
         val checkResult = Account.checkWalletStatus
         if (!checkResult.isEmpty) InvalidParams(checkResult)
         else {
+          WalletCache.reActWallet
           // 赋值from昵称
           var from = WalletCache.getActivityWallet().implyAccount
           // 根据昵称获取转账地址
@@ -177,8 +173,6 @@ class ContractCommand extends CompositeCommand {
 
             val tx = AssetCommand.buildTx(TransactionType.Call, from, UInt160.fromBytes(BinaryData(to)), FixedNumber.Zero, data, gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
             val rpcTxResult = AssetCommand.sendTx(tx)
-
-            WalletCache.reActWallet
 
             if (ChainCommand.checkSucceed(rpcTxResult)) {
 

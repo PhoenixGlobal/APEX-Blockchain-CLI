@@ -58,7 +58,7 @@ class BlockCommand extends Command {
 
     try {
       val height = paramList.params(0).asInstanceOf[IntParameter].value
-
+      WalletCache.reActWallet
       var data: String = ""
       if (height != null)
         data = JsObject(
@@ -91,10 +91,8 @@ class TransactionCommand extends Command {
 
   override def execute(params: List[String]): Result = {
     try {
-      val checkResult = Account.checkWalletStatus
-      if (!checkResult.isEmpty) InvalidParams(checkResult)
-      else {
         val id = paramList.params(0).asInstanceOf[StringParameter].value
+        WalletCache.reActWallet
         val rpcResult = RPC.post("getContract", s"""{"id":"${id}"}""")
 
         if (!ChainCommand.checkSucceed(rpcResult)) {
@@ -103,7 +101,6 @@ class TransactionCommand extends Command {
           ChainCommand.returnSuccess(rpcResult)
         } else Success("No transaction information was queried")
 
-      }
     } catch {
       case e: Throwable => Error(e)
     }

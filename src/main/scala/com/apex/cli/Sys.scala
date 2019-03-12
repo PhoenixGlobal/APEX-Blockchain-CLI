@@ -26,7 +26,7 @@ class HelpC extends Command {
   override val description: String = "help"
 
   override def execute(params: List[String]): Result = {
-
+    WalletCache.reActWallet
     Help(Command.helpMessage("APEX NETWORK\n", Command.all, true))
   }
 }
@@ -36,6 +36,7 @@ class VersionC extends Command {
   override val description = "Version information"
 
   override def execute(params: List[String]): Result = {
+    WalletCache.reActWallet
     Success("1")
   }
 }
@@ -58,6 +59,7 @@ class ClearC extends Command {
   override def execute(params: List[String]): Result = {
 
     try {
+      WalletCache.reActWallet
       if (System.getProperty("os.name").contains("Windows")) new ProcessBuilder("cmd", "/c", "cls").inheritIO.start.waitFor
       else {
         println(System.getProperty("os.name"))

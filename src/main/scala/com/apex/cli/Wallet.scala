@@ -302,6 +302,7 @@ class WalletCommand extends CompositeCommand {
 
         if (!WalletCache.isExist(name)) InvalidParams("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
         else {
+          WalletCache.reActWallet
           WalletCache.remove(name)
           Success("wallet close success\n")
         }
@@ -354,6 +355,7 @@ class WalletCommand extends CompositeCommand {
     override def execute(params: List[String]): Result = {
 
       try {
+        WalletCache.reActWallet
         println("Wallet  --  Loaded  --  Activated")
         WalletCache.getFileList().foreach { i =>
           val filename = i.getName
@@ -369,8 +371,6 @@ class WalletCommand extends CompositeCommand {
           }
           println("")
         }
-        if (checkWalletStatus.isEmpty)
-          WalletCache.reActWallet
         Success("wallet list success\n")
       } catch {
         case e: Throwable => Error(e)

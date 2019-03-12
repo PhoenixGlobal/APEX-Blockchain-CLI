@@ -212,7 +212,7 @@ object Account {
       // 转换查询结果
       val result = ChainCommand.getStrRes(rpcResult)
 
-      if (!None.equals(result)  && "null".equals(result)) {
+      if (!None.equals(result)  && !"null".equals(result)) {
         nextNonce = (Json.parse(result) \ "nextNonce").as[Long]
       }
     }
@@ -420,18 +420,16 @@ class AccountListCommand extends Command {
       if (!checkWalletStatus.isEmpty)
         InvalidParams(checkResult)
       else {
+        WalletCache.reActWallet
         WalletCache.getActivityWallet().accounts.foreach { i =>
           // 申明余额变量
-          var balance: String = Account.getbalance(i.address)
-
+          val balance: String = Account.getbalance(i.address)
           print(i.n + " -- " + i.address + " -- " + balance)
           if (i.n.equals(WalletCache.getActivityWallet().implyAccount)) print(" +")
           println("")
         }
-        WalletCache.reActWallet
         Success("account list success\n")
       }
-
     } catch {
       case e: Throwable => Error(e)
     }
@@ -453,6 +451,7 @@ class GetNonceCommand extends Command {
   override def execute(params: List[String]): Result = {
 
     try {
+      WalletCache.reActWallet
       val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
       var address = paramList.params(1).asInstanceOf[AddressParameter].value
 
@@ -460,7 +459,6 @@ class GetNonceCommand extends Command {
         address = Account.getAccount(alias, address).address
 
       Success(Account.getNonce(address).toString)
-
     } catch {
       case e: Throwable => Error(e)
     }
@@ -488,6 +486,7 @@ class ImportCommand extends Command {
       val checkResult = Account.checkAccountExists(alias)
       if (!checkResult.isEmpty) InvalidParams(checkResult)
       else {
+        WalletCache.reActWallet
         val account = new Account(alias, "", "")
         if (account.importPrivKeyFromWIF(key)) {
           val importAddress = account.getPrivKey().publicKey.address
@@ -533,6 +532,7 @@ class ExportCommand extends Command {
       val checkResult = Account.checkWalletStatus
       if (!checkResult.isEmpty) InvalidParams(checkResult)
       else {
+        WalletCache.reActWallet
         // 显示私钥
         val account = Account.getAccount(alias)
 
@@ -541,8 +541,6 @@ class ExportCommand extends Command {
         else {
           WalletCache.exportAccount(account.pri, file)
         }
-        WalletCache.reActWallet
-
         Success("export success\n")
       }
     } catch {
