@@ -39,7 +39,9 @@ class SendCommand extends Command {
     new StringParameter("to", "to", "The account where the asset come to"),
     new AmountParameter("amount", "amount", "The amount of the asset to be transfer."),
     new GasParameter("gasLimit", "gasLimit", "Maximum number of gas this transactions/contract is willing to pay."),
-    new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay.")
+    new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay."),
+    new GasPriceParameter("nonce", "nonce", "The nonce value of this transaction, optional parameter, used to determine the order of the transaction on the block chain.",
+      true)
   )
 
   override def execute(params: List[String]): Result = {
@@ -184,10 +186,10 @@ object AssetCommand {
     val priceNum = price.substring(0, price.length - 1).toInt
     unit match {
       case 'p' => gasPrice = FixedNumber(priceNum)
-      case 'k' => gasPrice = FixedNumber(Math.pow(10, 3).*(priceNum).toInt) // 10的3次幂 p
-      case 'm' => gasPrice = FixedNumber(Math.pow(10, 6).*(priceNum).toInt) // 10的6次幂 p
-      case 'g' => gasPrice = FixedNumber(Math.pow(10, 9).*(priceNum).toInt) // 10的9次幂 p
-      case 'c' => gasPrice = FixedNumber(Math.pow(10, 12).*(priceNum).toInt) // 10的12次幂 p
+      case 'k' => gasPrice = FixedNumber(Math.pow(10, 9).*(priceNum).toInt) // 10的3次幂 p
+      case 'm' => gasPrice = FixedNumber(Math.pow(10, 12).*(priceNum).toInt) // 10的6次幂 p
+      case 'g' => gasPrice = FixedNumber(Math.pow(10, 15).*(priceNum).toInt) // 10的9次幂 p
+      case 'c' => gasPrice = FixedNumber(Math.pow(10, 18).*(priceNum).toInt) // 10的12次幂 p
     }
     gasPrice
   }
