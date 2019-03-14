@@ -55,6 +55,7 @@ trait Command {
 object Command {
 
   def execute(command: String): Result = {
+    ParameterList.setNull()
     if (!command.trim.isEmpty) {
       val list = command.trim.split("""\s+""").toList
       execCommand(list, all)

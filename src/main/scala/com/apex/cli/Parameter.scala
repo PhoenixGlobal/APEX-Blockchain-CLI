@@ -424,7 +424,7 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
         case regex(n) => dic.get(n) match {
           case Some(item) =>
             // 判断是否为可跳过参数
-            if (halt && item.parameter.halt) halt
+            if (halt && item.parameter.halt && null == v ) halt
             else {
               // 验证参数规则send -to t1 -amount 1 -gasLimit 70000 -gasPrice 2k
               val validate = item.markThenValidate(n, v)
@@ -448,7 +448,6 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
   private val track = new Track(params)
 
   override protected def validate(list: List[String], i: Int): Boolean = {
-    ParameterList.setNull()
     // 验证若是帮助参数，返回true
     if (list.size == 0 && track.dic.size == 1) {
       var validate = false

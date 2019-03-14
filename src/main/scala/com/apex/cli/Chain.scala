@@ -127,7 +127,7 @@ object ChainCommand {
   def checkNotNull(rpcRes: JsValue): Boolean = {
     val result = ChainCommand.getStrRes(rpcRes)
 
-    if (checkSucceed(rpcRes) && !"null".equals(result)) {
+    if (checkSucceed(rpcRes) && !"null".equals(result) && !result.isEmpty) {
       true
     } else false
   }
