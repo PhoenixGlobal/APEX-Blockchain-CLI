@@ -3,7 +3,7 @@ package com.apex.cli
 import java.io.{File, FileWriter, PrintWriter}
 import java.nio.file.{Files, Paths}
 import com.apex.core.{Transaction, TransactionType}
-import com.apex.crypto.{BinaryData, FixedNumber, UInt160}
+import com.apex.crypto.{BinaryData, Ecdsa, FixedNumber, UInt160}
 import com.apex.solidity.Abi
 import com.apex.solidity.compiler.{CompilationResult, SolidityCompiler}
 import com.apex.solidity.compiler.SolidityCompiler.Options.{ABI, BIN, INTERFACE, METADATA}
@@ -117,7 +117,6 @@ class ContractCommand extends CompositeCommand {
             } else if (ChainCommand.getBooleanRes(rpcTxResult)) {
               Success("The contract broadcast is successful , the transaction hash is " + tx.id() + " , the contract address is " + tx.getContractAddress().get.address)
             } else Success("The contract broadcast failed. Please try again.")
-
           }
         }
       } catch {
@@ -171,7 +170,7 @@ class ContractCommand extends CompositeCommand {
             val price = paramList.params(5).asInstanceOf[GasPriceParameter].value
             val gasPrice = AssetCommand.calcGasPrice(price)
 
-            val tx = AssetCommand.buildTx(TransactionType.Call, from, UInt160.fromBytes(BinaryData(to)), FixedNumber.Zero, data, gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
+            val tx = AssetCommand.buildTx(TransactionType.Call, from, Ecdsa.PublicKeyHash.fromAddress(to).get, FixedNumber.Zero, data, gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
             val rpcTxResult = AssetCommand.sendTx(tx)
 
             if (ChainCommand.checkSucceed(rpcTxResult)) {
@@ -180,11 +179,11 @@ class ContractCommand extends CompositeCommand {
 
               val rpcContractResult = RPC.post("getContract", s"""{"id":"${tx.id()}"}""")
 
-              if (!ChainCommand.checkSucceed(rpcTxResult)) {
-                ChainCommand.returnFail(rpcTxResult)
-              } else if (ChainCommand.checkNotNull(rpcTxResult)) {
+              if (!ChainCommand.checkSucceed(rpcContractResult)) {
+                ChainCommand.returnFail(rpcContractResult)
+              } else if (ChainCommand.checkNotNull(rpcContractResult)) {
                 ChainCommand.checkRes(rpcContractResult)
-              } else Success("The contract broadcast is successful, type \"contract get\" to see contract status later, the transaction hash is " + tx.id() + ".")
+              } else Success("The contract broadcast is successful, type \"chain tx\" to see contract status later, the transaction hash is " + tx.id() + ".")
 
             } else ChainCommand.returnFail(rpcTxResult)
           }

@@ -4,10 +4,7 @@ import java.io.{ByteArrayInputStream, DataInputStream}
 import java.nio.file.{Files, Paths}
 
 import com.apex.core.{Transaction, TransactionType}
-import com.apex.crypto.Ecdsa.PublicKeyHash
 import com.apex.crypto.{BinaryData, Crypto, Ecdsa, FixedNumber, UInt160, UInt256, fromHexString}
-import org.bouncycastle.util.encoders.Hex
-
 import scala.io.Source
 
 /*
@@ -40,7 +37,7 @@ class SendCommand extends Command {
     new AmountParameter("amount", "amount", "The amount of the asset to be transfer."),
     new GasParameter("gasLimit", "gasLimit", "Maximum number of gas this transactions/contract is willing to pay."),
     new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay."),
-    new GasPriceParameter("nonce", "nonce", "The nonce value of this transaction, optional parameter, used to determine the order of the transaction on the block chain.",
+    new IntParameter("nonce", "nonce", "The nonce value of this transaction, optional parameter, used to determine the order of the transaction on the block chain.",
       true)
   )
 
@@ -50,9 +47,10 @@ class SendCommand extends Command {
       if (!checkResult.isEmpty) InvalidParams(checkResult)
       else {
         // 赋值from昵称
-        var from = WalletCache.getActivityWallet().implyAccount
+        var from = paramList.params(0).asInstanceOf[NicknameParameter].value
+
         // 根据昵称获取转账地址
-        if (params.size / 2 == paramList.params.size) from = paramList.params(0).asInstanceOf[NicknameParameter].value
+        if (null == from) from = WalletCache.getActivityWallet().implyAccount
 
         val to = paramList.params(1).asInstanceOf[StringParameter].value
         var toAdress = ""
@@ -69,15 +67,17 @@ class SendCommand extends Command {
           val gasLimit = paramList.params(3).asInstanceOf[GasParameter].value
           val price = paramList.params(4).asInstanceOf[GasPriceParameter].value
           val gasPrice = AssetCommand.calcGasPrice(price)
+          val nonce = paramList.params(5).asInstanceOf[IntParameter].value
 
           val privKey = Account.getAccount(from).getPrivKey()
           val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
 
           val nextNonce = Account.getResultNonce(account)
-          // 获取账户余额
           val balance = Account.getResultBalance(account)
+
+          if(nextNonce != 0 && nonce>0 && nextNonce > nonce) InvalidParams("The nonce must be greater than the maximum value that the current address has used on the chain.")
           // 判断账户余额是否充足
-          if (BigDecimal.apply(balance) < amount) InvalidParams("insufficient account balance")
+          else if (BigDecimal.apply(balance) < amount) InvalidParams("insufficient account balance")
           else {
 
             val tx = AssetCommand.buildTx(TransactionType.Transfer, from, Ecdsa.PublicKeyHash.fromAddress(toAdress).get, FixedNumber.fromDecimal(amount),
@@ -101,7 +101,7 @@ class BroadcastCommand extends Command {
   override val description = "Broadcast original transaction information."
 
   override val paramList: ParameterList = ParameterList.create(
-    new StringParameter("data", "data", "")
+    new StringParameter("data", "data", "Original transaction information calculated using the signature algorithm.")
   )
 
   override def execute(params: List[String]): Result = {

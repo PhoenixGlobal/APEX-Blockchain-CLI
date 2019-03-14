@@ -426,7 +426,7 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
             // 判断是否为可跳过参数
             if (halt && item.parameter.halt) halt
             else {
-              // 验证参数规则
+              // 验证参数规则send -to t1 -amount 1 -gasLimit 70000 -gasPrice 2k
               val validate = item.markThenValidate(n, v)
               if (!validate) ParameterList.setcheckMsg(n)
               // 定义可跳过参数值正确
