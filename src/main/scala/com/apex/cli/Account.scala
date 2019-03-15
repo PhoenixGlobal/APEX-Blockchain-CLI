@@ -451,7 +451,6 @@ class GetNonceCommand extends Command {
   override def execute(params: List[String]): Result = {
 
     try {
-      WalletCache.reActWallet
       val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
       var address = paramList.params(1).asInstanceOf[AddressParameter].value
 

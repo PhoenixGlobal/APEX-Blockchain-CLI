@@ -72,13 +72,15 @@ class SendCommand extends Command {
           val privKey = Account.getAccount(from).getPrivKey()
           val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
 
-          val nextNonce = Account.getResultNonce(account)
+          var nextNonce = Account.getResultNonce(account)
           val balance = Account.getResultBalance(account)
 
           if(nextNonce != 0 && nonce>0 && nextNonce > nonce) InvalidParams("The nonce must be greater than the maximum value that the current address has used on the chain.")
           // 判断账户余额是否充足
           else if (BigDecimal.apply(balance) < amount) InvalidParams("insufficient account balance")
           else {
+
+            if(nonce > 0) nextNonce = nonce.longValue()
 
             val tx = AssetCommand.buildTx(TransactionType.Transfer, from, Ecdsa.PublicKeyHash.fromAddress(toAdress).get, FixedNumber.fromDecimal(amount),
               BinaryData.empty, true, nextNonce, gasPrice, BigInt(gasLimit))
@@ -109,7 +111,6 @@ class BroadcastCommand extends Command {
         val data = paramList.params(0).asInstanceOf[StringParameter].value
         val dataContent = AssetCommand.readFile(data)
 
-        WalletCache.reActWallet
         if (dataContent.isEmpty) InvalidParams("data is empty, please type a different one")
         else {
 
@@ -180,11 +181,11 @@ object AssetCommand {
     val unit = price.toLowerCase.substring(price.length - 1).charAt(0)
     val priceNum = price.substring(0, price.length - 1).toLong
     unit match {
-      case 'p' => gasPrice = FixedNumber(BigInt.long2bigInt(priceNum))
-      case 'k' => gasPrice = FixedNumber(BigInt.long2bigInt((Math.pow(10, 9) * priceNum).longValue())) // 10的3次幂 p
-      case 'm' => gasPrice = FixedNumber(BigInt.long2bigInt((Math.pow(10, 12) * priceNum).longValue())) // 10的6次幂 p
-      case 'g' => gasPrice = FixedNumber(BigInt.long2bigInt((Math.pow(10, 15) * priceNum).longValue())) // 10的9次幂 p
-      case 'c' => gasPrice = FixedNumber(BigInt.long2bigInt((Math.pow(10, 18) * priceNum).longValue())) // 10的12次幂 p
+      case 'p' => gasPrice = FixedNumber.P * priceNum
+      case 'k' => gasPrice = FixedNumber.KP * priceNum
+      case 'm' => gasPrice = FixedNumber.MP * priceNum
+      case 'g' => gasPrice = FixedNumber.GP * priceNum
+      case 'c' => gasPrice = FixedNumber.CPX * priceNum
     }
     gasPrice
   }

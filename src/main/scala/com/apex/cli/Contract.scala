@@ -43,7 +43,6 @@ class ContractCommand extends CompositeCommand {
         val name = paramList.params(0).asInstanceOf[StringParameter].value
         val sourceFile = paramList.params(1).asInstanceOf[StringParameter].value
         val writePath = paramList.params(2).asInstanceOf[StringParameter].value
-        WalletCache.reActWallet
         // 获取需要编译的合约文件
         val compileContent = AssetCommand.readFile(sourceFile)
         if (compileContent.isEmpty) InvalidParams("compile content is empty, please type a different one")

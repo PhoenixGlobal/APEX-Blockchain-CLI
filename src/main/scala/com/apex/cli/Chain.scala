@@ -29,7 +29,6 @@ class StatusCommand extends Command {
   override def execute(params: List[String]): Result = {
     try {
       val rpcResult = RPC.post("getLatesBlockInfo", paramList.toJson())
-      WalletCache.reActWallet
       if (ChainCommand.checkSucceed(rpcResult)) {
         val result = ChainCommand.getStrRes(rpcResult)
         // 获取用户index和id
@@ -58,7 +57,6 @@ class BlockCommand extends Command {
 
     try {
       val height = paramList.params(0).asInstanceOf[IntParameter].value
-      WalletCache.reActWallet
       var data: String = ""
       if (height != null)
         data = JsObject(
@@ -92,7 +90,6 @@ class TransactionCommand extends Command {
   override def execute(params: List[String]): Result = {
     try {
         val id = paramList.params(0).asInstanceOf[StringParameter].value
-        WalletCache.reActWallet
         val rpcResult = RPC.post("getContract", s"""{"id":"${id}"}""")
 
         if (!ChainCommand.checkSucceed(rpcResult)) {

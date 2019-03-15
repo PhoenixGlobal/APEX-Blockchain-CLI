@@ -29,6 +29,7 @@ class ProducerCommand extends CompositeCommand {
     new VoteCancelCommand,
     new GetByAddrCommand,
     new ListCommand,
+    new GetVoteCommand,
     new ResetGasLimitCommand,
     new GasLimitCommand
   )
@@ -225,7 +226,6 @@ class ProducerCommand extends CompositeCommand {
 
     override def execute(params: List[String]): Result = {
       try {
-        WalletCache.reActWallet
         val listType = paramList.params(0).asInstanceOf[StringParameter].value
 
         if (listType != "all" || listType != "active" || listType != "pending" || listType != "previous") {
@@ -250,7 +250,6 @@ class ProducerCommand extends CompositeCommand {
 
     override def execute(params: List[String]): Result = {
       try {
-        WalletCache.reActWallet
         val address = paramList.params(0).asInstanceOf[StringParameter].value
         val rpcResult = RPC.post("getProducer", s"""{"address":"${address}"}""")
 
@@ -259,6 +258,39 @@ class ProducerCommand extends CompositeCommand {
         } else if (ChainCommand.checkNotNull(rpcResult)) {
           ChainCommand.returnSuccess(rpcResult)
         } else Success("No node information was found for this address.")
+
+      } catch {
+        case e: Throwable => Error(e)
+      }
+    }
+  }
+
+  class GetVoteCommand extends Command {
+    override val cmd = "getVote"
+    override val description = "Query this address for currently redeemable votes."
+
+    override val paramList: ParameterList = ParameterList.create(
+      new StringParameter("address", "a", "Query this address for currently redeemable votes.")
+    )
+
+    override def execute(params: List[String]): Result = {
+      try {
+        WalletCache.reActWallet
+        val a = paramList.params(0).asInstanceOf[StringParameter].value
+
+        var address = ""
+        if (a.length == 35) address = a
+        else if (Account.checkAccountStatus(a)) address = Account.getAccount(a).address
+
+        if (address.isEmpty) InvalidParams("to account not exists, please type a different one")
+
+        val rpcResult = RPC.post("getVote", s"""{"address":"${address}"}""")
+
+        if (!ChainCommand.checkSucceed(rpcResult)) {
+          ChainCommand.returnFail(rpcResult)
+        } else if (ChainCommand.checkNotNull(rpcResult)) {
+          ChainCommand.returnSuccess(rpcResult)
+        } else Success("No redeemable votes were found..")
 
       } catch {
         case e: Throwable => Error(e)
@@ -277,7 +309,6 @@ class ProducerCommand extends CompositeCommand {
 
     override def execute(params: List[String]): Result = {
       try {
-        WalletCache.reActWallet
         val gasLimit = paramList.params(0).asInstanceOf[IntParameter].value
         val rpcResult = RPC.post("setGasLimit", s"""{"gasLimit":"${gasLimit}"}""", RPC.secretRpcUrl)
 
@@ -300,7 +331,6 @@ class ProducerCommand extends CompositeCommand {
     override def execute(params: List[String]): Result = {
 
       try {
-        WalletCache.reActWallet
         val result = RPC.post("getGasLimit", paramList.toJson(), RPC.secretRpcUrl)
         ChainCommand.checkRes(result)
       } catch {
