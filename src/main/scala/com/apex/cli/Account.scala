@@ -196,10 +196,10 @@ object Account {
   def getResultBalance(rpcResult: JsValue) = {
 
     var balance: String = FixedNumber.Zero.toString()
-    if (!None.equals(rpcResult) && !"null".equals(rpcResult)) {
+    if (!"null".equals(rpcResult)) {
       // 转换查询结果
       val result = ChainCommand.getStrRes(rpcResult)
-      if (!None.equals(result) && !"null".equals(result)) {
+      if (!"null".equals(result)) {
         balance = (Json.parse(result) \ "balance").as[String]
       }
     }
@@ -208,11 +208,11 @@ object Account {
 
   def getResultNonce(rpcResult: JsValue): Long = {
     var nextNonce: Long = 0
-    if (!None.equals(rpcResult)  && !"null".equals(rpcResult)) {
+    if (!"null".equals(rpcResult)) {
       // 转换查询结果
       val result = ChainCommand.getStrRes(rpcResult)
 
-      if (!None.equals(result)  && !"null".equals(result)) {
+      if (!"null".equals(result)) {
         nextNonce = (Json.parse(result) \ "nextNonce").as[Long]
       }
     }
