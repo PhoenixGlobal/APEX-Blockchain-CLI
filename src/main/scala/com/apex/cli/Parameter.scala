@@ -173,7 +173,7 @@ class NicknameParameter(override val name: String, override val shortName: Strin
   }
 }
 
-class PasswordParameter(override val name: String = "password", override val shortName: String = "p", override val description: String = "") extends Parameter {
+/*class PasswordParameter(override val name: String = "password", override val shortName: String = "p", override val description: String = "") extends Parameter {
   var value: String = null
   private val regex = """^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{8,}$""".r
 
@@ -193,7 +193,7 @@ class PasswordParameter(override val name: String = "password", override val sho
       true
     } else false
   }
-}
+}*/
 
 class PrivKeyParameter(override val name: String = "privkey", override val shortName: String = "privkey", override val description: String = "",
                        override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {

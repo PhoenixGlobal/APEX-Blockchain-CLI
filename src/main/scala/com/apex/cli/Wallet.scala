@@ -42,6 +42,35 @@ object Wallet {
     val is = new DataInputStream(bs)
     deserialize(is)
   }
+
+  private val regex = """^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{8,}$""".r
+
+  def checkPassword(password: String): Boolean = {
+    regex.pattern.matcher(password).matches()
+  }
+
+  def enterPassword():String = {
+    val cnsl = System.console()
+    var yes = true
+    var password = ""
+
+    while(yes){
+      password = cnsl.readPassword("please enter password: ").mkString
+      if (!Wallet.checkPassword(password)){
+        println("Incorrect password format, password length must be greater than or equal to 8 and contain letters and numbers.")
+        val c = cnsl.readLine("do you want to re-enter the password[Y/N]?")
+        if(!c.toUpperCase().equals("Y")) {
+          yes = false
+          password = ""
+        }
+      }else {
+        yes = false
+      }
+    }
+    println(password)
+    password
+  }
+
 }
 
 class WalletCache(val n: String, val p: Array[Byte],
@@ -185,6 +214,7 @@ object WalletCache {
     writer.write(privkey)
     writer.close()
   }
+
 }
 
 class WalletCommand extends CompositeCommand {
@@ -228,23 +258,25 @@ class WalletCommand extends CompositeCommand {
     override val description: String = "create a new wallet"
 
     override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("name", "n", "Wallet's name."),
-      new PasswordParameter("password", "p", "Wallet's password.")
+      new StringParameter("name", "n", "Wallet's name.")
     )
 
     override def execute(params: List[String]): Result = {
 
       try {
         val name = paramList.params(0).asInstanceOf[StringParameter].value
-        val password = paramList.params(1).asInstanceOf[PasswordParameter].value
 
         if (WalletCache.fileExist(name)) InvalidParams("Wallet [" + name + "] already exists, please type a different name")
         else {
-          val key = Crypto.sha256(password.getBytes("UTF-8"))
+          val password = Wallet.enterPassword()
+          if (password.isEmpty) Help("Welcome to CLI, type \"help\" for command list:")
+          else {
+            val key = Crypto.sha256(password.getBytes("UTF-8"))
 
-          val wallet = WalletCache.writeWallet(name, key, Seq.empty)
-          WalletCache.newWalletCache(wallet)
-          Success("wallet create success\n")
+            val wallet = WalletCache.writeWallet(name, key, Seq.empty)
+            WalletCache.newWalletCache(wallet)
+            Success("wallet create success\n")
+          }
         }
       } catch {
         case e: Throwable => Error(e)
@@ -259,23 +291,25 @@ class WalletCommand extends CompositeCommand {
     override val description: String = "load an existed wallet"
 
     override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("name", "n", "Wallet's name."),
-      new PasswordParameter("password", "p", "Wallet's password.")
+      new StringParameter("name", "n", "Wallet's name.")
     )
 
     override def execute(params: List[String]): Result = {
 
       try {
         val name = paramList.params(0).asInstanceOf[StringParameter].value
-        val inputPwd = paramList.params(1).asInstanceOf[PasswordParameter].value
 
         if (!WalletCache.fileExist(name)) InvalidParams("Wallet [" + name + "] does not exist\n")
-        else if (WalletCache.get(name) != null) {
+        else if (WalletCache.get(name) != null)
           InvalidParams("Wallet [" + name + "] already exists, please type a different name")
-        } else {
+        else {
           try {
-            loadWallet(name, inputPwd)
-            Success("wallet load success\n")
+            val password = Wallet.enterPassword()
+            if (password.isEmpty) Help("Welcome to CLI, type \"help\" for command list:")
+            else {
+              loadWallet(name, password)
+              Success("wallet load success\n")
+            }
           } catch {
             case e: Throwable => InvalidParams("Invalid password\n")
           }
@@ -317,24 +351,25 @@ class WalletCommand extends CompositeCommand {
     override val description: String = "Activate a candidate wallet. Use this command to switch amoung different wallets"
 
     override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("name", "n", "Wallet's name."),
-      new PasswordParameter("password", "p", "Wallet's password.")
+      new StringParameter("name", "n", "Wallet's name.")
     )
 
     override def execute(params: List[String]): Result = {
 
       try {
         val name = paramList.params(0).asInstanceOf[StringParameter].value
-        val inputPwd = paramList.params(1).asInstanceOf[PasswordParameter].value
 
         // 判断要激活的钱包是否存在
         if (!WalletCache.isExist(name)) InvalidParams("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
         else {
-
-          loadWallet(name, inputPwd)
-          // 设置钱包的状态
-          WalletCache.setActivate(name)
-          Success("wallet activate success\n")
+          val password = Wallet.enterPassword()
+          if (password.isEmpty) Help("Welcome to CLI, type \"help\" for command list:")
+          else {
+            loadWallet(name, password)
+            // 设置钱包的状态
+            WalletCache.setActivate(name)
+            Success("wallet activate success\n")
+          }
         }
       } catch {
         case e: Throwable => Error(e)
