@@ -5,6 +5,7 @@ import java.nio.file.{Files, Paths}
 import java.util.Calendar
 import com.apex.cli.Account.checkWalletStatus
 import com.apex.crypto.Crypto
+import javax.crypto.BadPaddingException
 import org.apache.commons.net.util.Base64
 import scala.collection.mutable
 import scala.io.Source
@@ -49,25 +50,24 @@ object Wallet {
     regex.pattern.matcher(password).matches()
   }
 
-  def enterPassword():String = {
+  def enterPassword(): String = {
     val cnsl = System.console()
     var yes = true
     var password = ""
 
-    while(yes){
+    while (yes) {
       password = cnsl.readPassword("please enter password: ").mkString
-      if (!Wallet.checkPassword(password)){
+      if (!Wallet.checkPassword(password)) {
         println("Incorrect password format, password length must be greater than or equal to 8 and contain letters and numbers.")
         val c = cnsl.readLine("do you want to re-enter the password[Y/N]?")
-        if(!c.toUpperCase().equals("Y")) {
+        if (!c.toUpperCase().equals("Y")) {
           yes = false
           password = ""
         }
-      }else {
+      } else {
         yes = false
       }
     }
-    println(password)
     password
   }
 
@@ -279,6 +279,7 @@ class WalletCommand extends CompositeCommand {
           }
         }
       } catch {
+        case e: BadPaddingException => InvalidParams("Invalid password\n")
         case e: Throwable => Error(e)
       }
     }
@@ -303,18 +304,15 @@ class WalletCommand extends CompositeCommand {
         else if (WalletCache.get(name) != null)
           InvalidParams("Wallet [" + name + "] already exists, please type a different name")
         else {
-          try {
-            val password = Wallet.enterPassword()
-            if (password.isEmpty) Help("Welcome to CLI, type \"help\" for command list:")
-            else {
-              loadWallet(name, password)
-              Success("wallet load success\n")
-            }
-          } catch {
-            case e: Throwable => InvalidParams("Invalid password\n")
+          val password = Wallet.enterPassword()
+          if (password.isEmpty) Help("Welcome to CLI, type \"help\" for command list:")
+          else {
+            loadWallet(name, password)
+            Success("wallet load success\n")
           }
         }
       } catch {
+        case e: BadPaddingException => InvalidParams("Invalid password\n")
         case e: Throwable => Error(e)
       }
     }
@@ -372,6 +370,7 @@ class WalletCommand extends CompositeCommand {
           }
         }
       } catch {
+        case e: BadPaddingException => InvalidParams("Invalid password\n")
         case e: Throwable => Error(e)
       }
     }

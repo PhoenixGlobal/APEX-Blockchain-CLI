@@ -341,9 +341,9 @@ class ProducerCommand extends CompositeCommand {
 
   def printRes(rpcTxResult: JsValue, hash: UInt256): Result = {
 
-    if (!ChainCommand.checkSucceed(rpcTxResult)) {
-      ChainCommand.returnFail(rpcTxResult)
-    } else if (ChainCommand.getBooleanRes(rpcTxResult)) {
+    if (!ChainCommand.checkTxSucceed(rpcTxResult)) {
+      ChainCommand.returnTxFail(rpcTxResult)
+    } else if (ChainCommand.getTxBooleanRes(rpcTxResult)) {
       Success("This transaction has been broadcast successfully, the transaction hash is " + hash)
     } else Success("This transaction failed to broadcast, please check the network.")
   }

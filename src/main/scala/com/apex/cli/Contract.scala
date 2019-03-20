@@ -111,9 +111,9 @@ class ContractCommand extends CompositeCommand {
             val tx = AssetCommand.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.Zero, BinaryData(dataContent), gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
             val rpcTxResult = AssetCommand.sendTx(tx)
 
-            if (!ChainCommand.checkSucceed(rpcTxResult)) {
-              ChainCommand.returnFail(rpcTxResult)
-            } else if (ChainCommand.getBooleanRes(rpcTxResult)) {
+            if (!ChainCommand.checkTxSucceed(rpcTxResult)) {
+              ChainCommand.returnTxFail(rpcTxResult)
+            } else if (ChainCommand.getTxBooleanRes(rpcTxResult)) {
               Success("The contract broadcast is successful , the transaction hash is " + tx.id() + " , the contract address is " + tx.getContractAddress().get.address)
             } else Success("The contract broadcast failed. Please try again.")
           }
@@ -172,7 +172,7 @@ class ContractCommand extends CompositeCommand {
             val tx = AssetCommand.buildTx(TransactionType.Call, from, Ecdsa.PublicKeyHash.fromAddress(to).get, FixedNumber.Zero, data, gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
             val rpcTxResult = AssetCommand.sendTx(tx)
 
-            if (ChainCommand.checkSucceed(rpcTxResult)) {
+            if (ChainCommand.checkTxSucceed(rpcTxResult)) {
 
               Thread.sleep(1000)
 
@@ -184,7 +184,7 @@ class ContractCommand extends CompositeCommand {
                 ChainCommand.checkRes(rpcContractResult)
               } else Success("The contract broadcast is successful, type \"chain tx\" to see contract status later, the transaction hash is " + tx.id() + ".")
 
-            } else ChainCommand.returnFail(rpcTxResult)
+            } else ChainCommand.returnTxFail(rpcTxResult)
           }
         }
       } catch {

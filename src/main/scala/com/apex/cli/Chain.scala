@@ -114,6 +114,17 @@ object ChainCommand {
     getStrRes(rpcRes).toBoolean
   }
 
+  def getTxBooleanRes(rpcRes: JsValue): Boolean = {
+    (Json.parse(getStrRes(rpcRes)) \ "added").as[Boolean]
+  }
+
+  def checkTxSucceed(rpcRes: JsValue): Boolean = {
+
+    if (checkSucceed(rpcRes) && getTxBooleanRes(rpcRes)) {
+      true
+    } else false
+  }
+
   def checkSucceed(rpcRes: JsValue): Boolean = {
 
     if ((rpcRes \ "succeed").as[Boolean]) {
@@ -149,5 +160,11 @@ object ChainCommand {
     val status = (rpcRes \ "status").as[Int]
     val message = (rpcRes \ "message").as[String]
     Success("execute failed, status is " + status + ", message is " + message)
+  }
+
+  def returnTxFail(rpcRes: JsValue): Result = {
+    if (!checkSucceed(rpcRes)) {
+      returnFail(rpcRes)
+    } else Success((Json.parse(getStrRes(rpcRes)) \ "result").as[String])
   }
 }
