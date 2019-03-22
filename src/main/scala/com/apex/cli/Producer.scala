@@ -29,9 +29,7 @@ class ProducerCommand extends CompositeCommand {
     new VoteCancelCommand,
     new GetByAddrCommand,
     new ListCommand,
-    new GetVoteCommand,
-    new ResetGasLimitCommand,
-    new GasLimitCommand
+    new GetVoteCommand
   )
 
   class RegisterCommand extends Command {
@@ -292,47 +290,6 @@ class ProducerCommand extends CompositeCommand {
           ChainCommand.returnSuccess(rpcResult)
         } else Success("No redeemable votes were found..")
 
-      } catch {
-        case e: Throwable => Error(e)
-      }
-    }
-  }
-
-
-  class ResetGasLimitCommand extends Command {
-    override val cmd = "resetGasLimit"
-    override val description = "The most complex smart contract that the production node is willing to execute, please configure according to the processing power of the node."
-
-    override val paramList: ParameterList = ParameterList.create(
-      new IntParameter("gasLimit", "gasLimit", "The most complex smart contract that the production node is willing to execute.If the gas limit of the contract exceeds this parameter, the production node will not process the contract.")
-    )
-
-    override def execute(params: List[String]): Result = {
-      try {
-        val gasLimit = paramList.params(0).asInstanceOf[IntParameter].value
-        val rpcResult = RPC.post("setGasLimit", s"""{"gasLimit":"${gasLimit}"}""", RPC.secretRpcUrl)
-
-        if (!ChainCommand.checkSucceed(rpcResult)) {
-          ChainCommand.returnFail(rpcResult)
-        } else if (ChainCommand.getBooleanRes(rpcResult)) {
-          Success("The gas limit for contract processing by the production node has been successfully modified.")
-        } else Success("Permission error.")
-
-      } catch {
-        case e: Throwable => Error(e)
-      }
-    }
-  }
-
-  class GasLimitCommand extends Command {
-    override val cmd = "gasLimit"
-    override val description = "Query the most complex smart contracts that production nodes are willing to execute"
-
-    override def execute(params: List[String]): Result = {
-
-      try {
-        val result = RPC.post("getGasLimit", paramList.toJson(), RPC.secretRpcUrl)
-        ChainCommand.checkRes(result)
       } catch {
         case e: Throwable => Error(e)
       }

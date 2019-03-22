@@ -76,12 +76,12 @@ class SendCommand extends Command {
           var nextNonce = Account.getResultNonce(account)
           val balance = Account.getResultBalance(account)
 
-          if(nextNonce != 0 && nonce>0 && nextNonce > nonce) InvalidParams("The nonce must be greater than the maximum value that the current address has used on the chain.")
+          if (nextNonce != 0 && nonce > 0 && nextNonce > nonce) InvalidParams("The nonce must be greater than the maximum value that the current address has used on the chain.")
           // 判断账户余额是否充足
           else if (BigDecimal.apply(balance) < amount) InvalidParams("insufficient account balance")
           else {
 
-            if(nonce > 0) nextNonce = nonce.longValue()
+            if (nonce > 0) nextNonce = nonce.longValue()
 
             val tx = AssetCommand.buildTx(TransactionType.Transfer, from, Ecdsa.PublicKeyHash.fromAddress(toAdress).get, FixedNumber.fromDecimal(amount),
               BinaryData.empty, true, nextNonce, gasPrice, BigInt(gasLimit))
@@ -109,22 +109,22 @@ class BroadcastCommand extends Command {
 
   override def execute(params: List[String]): Result = {
     try {
-        val data = paramList.params(0).asInstanceOf[StringParameter].value
-        val dataContent = AssetCommand.readFile(data)
+      val data = paramList.params(0).asInstanceOf[StringParameter].value
+      val dataContent = AssetCommand.readFile(data)
 
-        if (dataContent.isEmpty) InvalidParams("data is empty, please type a different one")
-        else {
+      if (dataContent.isEmpty) InvalidParams("data is empty, please type a different one")
+      else {
 
-          val binaryData = BinaryData(dataContent)
-          val is = new DataInputStream(new ByteArrayInputStream(binaryData))
-          val tx = Transaction.deserialize(is)
+        val binaryData = BinaryData(dataContent)
+        val is = new DataInputStream(new ByteArrayInputStream(binaryData))
+        val tx = Transaction.deserialize(is)
 
-          if (tx.verifySignature()) {
-            val rpcResult = AssetCommand.sendTx(tx)
-            if (ChainCommand.checkTxSucceed(rpcResult)) Success("execute succeed, the transaction hash is " + tx.id())
-            else ChainCommand.returnTxFail(rpcResult)
-          } else Success("There was an error in the original transaction information that could not be resolved.")
-        }
+        if (tx.verifySignature()) {
+          val rpcResult = AssetCommand.sendTx(tx)
+          if (ChainCommand.checkTxSucceed(rpcResult)) Success("execute succeed, the transaction hash is " + tx.id())
+          else ChainCommand.returnTxFail(rpcResult)
+        } else Success("There was an error in the original transaction information that could not be resolved.")
+      }
 
     } catch {
       case e: Throwable => Error(e)
@@ -254,5 +254,6 @@ object AssetCommand {
     }
     gasPrice
   }
+
 }
 

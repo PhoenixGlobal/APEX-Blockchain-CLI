@@ -148,7 +148,7 @@ object WalletCache {
     }
   }
 
-  val filePath = System.getProperty("user.home") + "\\cli_wallet\\"
+  val filePath = System.getProperty("user.home") + "/cli_wallet/"
 
   def fileExist(name: String): Boolean = {
     val path = filePath + name + ".json"
@@ -207,7 +207,7 @@ object WalletCache {
   }
 
   def exportAccount(privkey: String, fileName: String): Unit = {
-    val path = filePath + "export\\" + fileName
+    val path = filePath + "export/" + fileName
 
     val writer = new PrintWriter(new File(path))
 

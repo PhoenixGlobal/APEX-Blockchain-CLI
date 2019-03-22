@@ -1,5 +1,6 @@
 package com.apex.cli
 
+import com.apex.crypto.FixedNumber
 import play.api.libs.json.{JsObject, JsValue, Json}
 import scala.collection.mutable
 
@@ -18,7 +19,8 @@ class ChainCommand extends CompositeCommand {
   override val subCommands: Seq[Command] = Seq(
     new StatusCommand,
     new BlockCommand,
-    new TransactionCommand
+    new TransactionCommand,
+    new GasCommand
   )
 }
 
@@ -89,18 +91,59 @@ class TransactionCommand extends Command {
 
   override def execute(params: List[String]): Result = {
     try {
-        val id = paramList.params(0).asInstanceOf[StringParameter].value
-        val rpcResult = RPC.post("getContract", s"""{"id":"${id}"}""")
+      val id = paramList.params(0).asInstanceOf[StringParameter].value
+      val rpcResult = RPC.post("getContract", s"""{"id":"${id}"}""")
 
-        if (!ChainCommand.checkSucceed(rpcResult)) {
-          ChainCommand.returnFail(rpcResult)
-        } else if (ChainCommand.checkNotNull(rpcResult)) {
-          ChainCommand.returnSuccess(rpcResult)
-        } else Success("No transaction information was queried")
+      if (!ChainCommand.checkSucceed(rpcResult)) {
+        ChainCommand.returnFail(rpcResult)
+      } else if (ChainCommand.checkNotNull(rpcResult)) {
+        ChainCommand.returnSuccess(rpcResult)
+      } else Success("No transaction information was queried")
 
     } catch {
       case e: Throwable => Error(e)
     }
+  }
+}
+
+class GasCommand extends Command {
+  override val cmd = "gas"
+  override val description = "Query the average gas price of the latest 1000 blocks on the block chain."
+
+  override def execute(params: List[String]): Result = {
+    try {
+      val rpcResult = RPC.post("getAverageGasPrice", paramList.toJson())
+
+      if (ChainCommand.checkSucceed(rpcResult)) {
+        val result = ChainCommand.getStrRes(rpcResult)
+
+        Success("The average gas price is " + fixedNumberToStr(BigDecimal.apply(result)))
+      } else ChainCommand.returnFail(rpcResult)
+    } catch {
+      case e: Throwable => Error(e)
+    }
+  }
+
+  def fixedNumberToStr(price: BigDecimal): String = {
+
+    val df = new java.text.DecimalFormat("#.00");
+    var strPrice = ""
+    if (price >= BigDecimal(FixedNumber.CPX.value)) {
+
+      strPrice = price.toString + "CPX"
+    } else if (price >= BigDecimal(FixedNumber.GP.value)) {
+
+      strPrice = df.format(price.*(BigDecimal.apply(1000000000L))) + "GP"
+    } else if (price >= BigDecimal(FixedNumber.MP.value)) {
+
+      strPrice = df.format(price.*(BigDecimal.apply(1000000000000L))) + "MP"
+    } else if (price >= BigDecimal(FixedNumber.KP.value)) {
+
+      strPrice = df.format(price.*(BigDecimal.apply(1000000000000000L))) + "KP"
+    } else {
+      strPrice = df.format(price.*(BigDecimal.apply(1000000000000000000L))) + "P"
+    }
+    strPrice
   }
 }
 

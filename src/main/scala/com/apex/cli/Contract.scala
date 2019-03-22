@@ -53,8 +53,8 @@ class ContractCommand extends CompositeCommand {
           val result = CompilationResult.parse(res.output)
 
           if (result.getContract(name) != null) {
-            writeFile(writePath + "\\" + name + "bin.txt", result.getContract(name).bin)
-            writeFile(writePath + "\\" + name + "abi.txt", result.getContract(name).abi)
+            writeFile(writePath + "/" + name + "bin.txt", result.getContract(name).bin)
+            writeFile(writePath + "/" + name + "abi.txt", result.getContract(name).abi)
             Success("The contract compile is successful.")
           } else {
             Assert.fail()
