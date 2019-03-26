@@ -242,18 +242,19 @@ object AssetCommand {
 
   def calcGasPrice(price: String): FixedNumber = {
     var gasPrice = FixedNumber.Zero
-    // 获取最后一位
-    val unit = price.toLowerCase.substring(price.length - 1).charAt(0)
-    val priceNum = price.substring(0, price.length - 1).toLong
+    val unit = price.substring(price.length - 2).replaceAll("\\d", "").toLowerCase
+    val priceNum = BigDecimal.apply(price.substring(0, price.length - unit.length))
+    val fPrice = FixedNumber.fromDecimal(priceNum)
     unit match {
-      case 'p' => gasPrice = FixedNumber.P * priceNum
-      case 'k' => gasPrice = FixedNumber.KP * priceNum
-      case 'm' => gasPrice = FixedNumber.MP * priceNum
-      case 'g' => gasPrice = FixedNumber.GP * priceNum
-      case 'c' => gasPrice = FixedNumber.CPX * priceNum
+      case "p" => gasPrice = FixedNumber.P * fPrice
+      case "k" => gasPrice = FixedNumber.KP * fPrice
+      case "m" => gasPrice = FixedNumber.MP * fPrice
+      case "g" => gasPrice = FixedNumber.GP * fPrice
+      case "kg" => gasPrice = FixedNumber.KGP * fPrice
+      case "mg" => gasPrice = FixedNumber.MGP * fPrice
+      case "c" => gasPrice = FixedNumber.CPX * fPrice
     }
-    gasPrice
+    gasPrice / FixedNumber.One
   }
-
 }
 

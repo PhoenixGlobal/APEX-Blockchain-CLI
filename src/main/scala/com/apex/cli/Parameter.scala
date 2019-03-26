@@ -270,7 +270,9 @@ class GasParameter(override val name: String, override val shortName: String, ov
 class GasPriceParameter(override val name: String, override val shortName: String, override val description: String = "",
                         override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
   var value: String = null
-  val regex = """^[0-9]*[1-9][0-9]*{1,}(p|P|k|K|m|M|g|G|c|C)$""".r
+  //  val regex = """^[0-9]*[1-9][0-9]*{1,}+(?:\.\d{1,2})(p|P|k|K|m|M|g|G|c|C|kg|KG|Kg|kG|mg|MG|Mg|mG|)$""".r
+  val regex =
+    """^(?!0+(?:\.0+)?$)(?:[1-9]\d*|0)(?:\.\d{1,2})?(p|P|k|K|m|M|g|G|c|C|kg|KG|Kg|kG|mg|MG|Mg|mG|)$""".r
 
   override def toJson: JsValue = JsString(value)
 
@@ -424,7 +426,7 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
         case regex(n) => dic.get(n) match {
           case Some(item) =>
             // 判断是否为可跳过参数
-            if (halt && item.parameter.halt && null == v ) halt
+            if (halt && item.parameter.halt && null == v) halt
             else {
               // 验证参数规则send -to t1 -amount 1 -gasLimit 70000 -gasPrice 2k
               val validate = item.markThenValidate(n, v)

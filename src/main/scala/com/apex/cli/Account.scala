@@ -226,7 +226,7 @@ class AccountCommand extends CompositeCommand {
   override val composite: Boolean = true
 
   override val subCommands: Seq[Command] = Seq(
-    new CreateAccountCommand,
+    new NewAccountCommand,
     new ImportCommand,
     new ExportCommand,
     new DeleteCommand,
@@ -239,7 +239,7 @@ class AccountCommand extends CompositeCommand {
   )
 }
 
-class CreateAccountCommand extends Command {
+class NewAccountCommand extends Command {
 
   override val cmd: String = "new"
   override val description: String = "Add new account to current wallet"

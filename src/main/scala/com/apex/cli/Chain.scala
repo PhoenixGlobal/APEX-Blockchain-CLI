@@ -126,19 +126,20 @@ class GasCommand extends Command {
 
   def fixedNumberToStr(price: BigDecimal): String = {
 
+    val fPrice = FixedNumber.fromDecimal(price)
     val df = new java.text.DecimalFormat("#.00");
     var strPrice = ""
-    if (price >= BigDecimal(FixedNumber.CPX.value)) {
-
+    if (fPrice >= FixedNumber.CPX) {
       strPrice = price.toString + "CPX"
-    } else if (price >= BigDecimal(FixedNumber.GP.value)) {
-
+    } else if (fPrice >= FixedNumber.MGP) {
+      strPrice = df.format(price.*(BigDecimal.apply(1000L))) + "MGP"
+    } else if (fPrice >= FixedNumber.MGP) {
+      strPrice = df.format(price.*(BigDecimal.apply(1000000L))) + "KGP"
+    } else if (fPrice >= FixedNumber.GP) {
       strPrice = df.format(price.*(BigDecimal.apply(1000000000L))) + "GP"
-    } else if (price >= BigDecimal(FixedNumber.MP.value)) {
-
+    } else if (fPrice >= FixedNumber.MP) {
       strPrice = df.format(price.*(BigDecimal.apply(1000000000000L))) + "MP"
-    } else if (price >= BigDecimal(FixedNumber.KP.value)) {
-
+    } else if (fPrice >= FixedNumber.KP) {
       strPrice = df.format(price.*(BigDecimal.apply(1000000000000000L))) + "KP"
     } else {
       strPrice = df.format(price.*(BigDecimal.apply(1000000000000000000L))) + "P"
