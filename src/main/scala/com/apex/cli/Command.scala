@@ -31,7 +31,7 @@ trait Command {
   val cmd: String
   val description: String
   val paramList: ParameterList = ParameterList.empty
-  /*  val sys: Boolean = false*/
+  // 是否为复合命令
   val composite: Boolean = false
 
   def validate(params: List[String]): Boolean = {
@@ -56,6 +56,7 @@ object Command {
 
   def execute(command: String): Result = {
     ParameterList.setNull()
+    // 判断是否为空
     if (!command.trim.isEmpty) {
       val list = command.trim.split("""\s+""").toList
       execCommand(list, all)
@@ -66,13 +67,18 @@ object Command {
 
   def execCommand(list: List[String], all: Map[String, Seq[Command]]): Result = {
     list match {
+        // 将集合分为1：其它，判断命令是否存在
       case cmd :: tail if all.contains(cmd) =>
+        // 验证参数信息
         all(cmd).find(_.validate(tail)) match {
           case Some(command) =>
+            // 如果是帮助参数，则直接返回
             if (checkHelpParam(tail) && !command.composite) Help(helpPMessage(command))
+            // 如果不是复合命令并且命令参数为空，却输入了参数信息，则提示参数错误
             else if (!command.composite && tail.size > 0 &&
               (command.paramList.params.isEmpty || command.paramList.params == null))
               InvalidParams(tail.mkString(" "))
+            // 调用真正的执行方法
             else command.execute(tail)
           case None =>
             InvalidParams(tail.mkString(" "))
@@ -162,7 +168,9 @@ object Command {
   ).groupBy(_.cmd)
 }
 
+// 复合命令的执行方法
 trait CompositeCommand extends Command {
+  // 子命令行
   val subCommands: Seq[Command]
 
   override def execute(params: List[String]): Result = {

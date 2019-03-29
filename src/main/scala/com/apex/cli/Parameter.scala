@@ -286,8 +286,11 @@ class GasPriceParameter(override val name: String, override val shortName: Strin
 
   private def setValue(s: String): Boolean = {
     if (regex.pattern.matcher(s).matches()) {
-      value = s
-      true
+      if((s.indexOf("p") != -1 || s.indexOf("P") != -1) &&  s.indexOf(".") != -1) false
+      else{
+        value = s
+        true
+      }
     } else false
   }
 }
@@ -422,6 +425,7 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
     //    }
 
     def validate(name: String, v: String): Boolean = {
+      // 第三步
       name match {
         case regex(n) => dic.get(n) match {
           case Some(item) =>
@@ -450,7 +454,8 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
   private val track = new Track(params)
 
   override protected def validate(list: List[String], i: Int): Boolean = {
-    // 验证若是帮助参数，返回true
+    // 第一步
+    // 有需求是，一个参数（可填可不填），如果可跳过并且不可替换，返回true
     if (list.size == 0 && track.dic.size == 1) {
       var validate = false
       track.dic.keys.foreach { i =>
@@ -462,6 +467,7 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
         }
       }
       validate
+      // 验证若是帮助参数，返回true
     } else if (Command.checkHelpParam(list)) {
       true
     } else {
@@ -484,6 +490,7 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
   }
 
   private def validateParam(cloneDic: Map[String, TrackItem]): Boolean = {
+    // 第四步
     var validate = true
 
     // 循环剩余参数进行判断
@@ -498,7 +505,7 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
           ParameterList.setcheckMsg(i.parameter.name)
           break()
         }
-        // 判断为可替代项也返回false
+        // 判断无可替代项也返回false
         else if (!track.halt && i.parameter.replaceable) {
           validate = false
           ParameterList.setcheckMsg(i.parameter.name)
@@ -510,6 +517,7 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
   }
 
   private def validateCore(list: List[String], track: Track): Boolean = {
+    // 第二步
     list match {
       case n :: v :: Nil => track.validate(n, v)
       case n :: v :: tail if track.validate(n, v) => validateCore(tail, track)
