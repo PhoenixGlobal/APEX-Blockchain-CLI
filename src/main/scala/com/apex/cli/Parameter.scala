@@ -220,7 +220,7 @@ class PrivKeyParameter(override val name: String = "privkey", override val short
 }
 
 
-class AmountParameter(override val name: String = "amount", override val shortName: String = "amount", override val description: String = "") extends Parameter {
+class AmountParameter(override val name: String = "amount", override val shortName: String = "amount", override val description: String = "", override val halt: Boolean = false) extends Parameter {
   var value: BigDecimal = null
 
   override def toJson: JsValue = JsString(value.toString)
@@ -270,9 +270,6 @@ class GasParameter(override val name: String, override val shortName: String, ov
 class GasPriceParameter(override val name: String, override val shortName: String, override val description: String = "",
                         override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
   var value: String = null
-  //  val regex = """^[0-9]*[1-9][0-9]*{1,}+(?:\.\d{1,2})(p|P|k|K|m|M|g|G|c|C|kg|KG|Kg|kG|mg|MG|Mg|mG|)$""".r
-  val regex =
-    """^(?!0+(?:\.0+)?$)(?:[1-9]\d*|0)(?:\.\d{1,2})?(p|P|k|K|m|M|g|G|c|C|kg|KG|Kg|kG|mg|MG|Mg|mG|)$""".r
 
   override def toJson: JsValue = JsString(value)
 
@@ -285,13 +282,8 @@ class GasPriceParameter(override val name: String, override val shortName: Strin
   }
 
   private def setValue(s: String): Boolean = {
-    if (regex.pattern.matcher(s).matches()) {
-      if((s.indexOf("p") != -1 || s.indexOf("P") != -1) &&  s.indexOf(".") != -1) false
-      else{
-        value = s
-        true
-      }
-    } else false
+    value = s
+    true
   }
 }
 

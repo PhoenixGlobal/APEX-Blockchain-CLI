@@ -8,18 +8,13 @@
 
 package com.apex.cli
 
-import com.apex.cli.RPC.rpcUrl
 import okhttp3.{MediaType, OkHttpClient, Request, RequestBody}
 import play.api.libs.json.Json
 
 object RPC {
   val client = new OkHttpClient
 
-  //  var rpcUrl = "http://40.73.6.198:9091/"
-  //  var rpcUrl = "http://40.73.32.84:9089/" // 备用
   var rpcUrl = "http://127.0.0.1:8080/"
-  var secretRpcUrl = "http://127.0.0.1:8081/"
-
 
   val mediaType = MediaType.parse("application/json; charset=utf-8")
 

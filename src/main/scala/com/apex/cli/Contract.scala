@@ -50,15 +50,22 @@ class ContractCommand extends CompositeCommand {
 
           val source = Paths.get(sourceFile)
           val res: SolidityCompiler.Result = SolidityCompiler.compile(source.toFile, true, Seq(ABI, BIN, INTERFACE, METADATA))
-          val result = CompilationResult.parse(res.output)
-
-          if (result.getContract(name) != null) {
-            writeFile(writePath + "/" + name + "bin.txt", result.getContract(name).bin)
-            writeFile(writePath + "/" + name + "abi.txt", result.getContract(name).abi)
-            Success("The contract compile is successful.")
+          if (res.errors.nonEmpty && res.output.isEmpty) {
+            Success(res.errors)
           } else {
-            Assert.fail()
-            Success("false")
+            val result = CompilationResult.parse(res.output)
+            if (result.getContract(name) != null) {
+              val bin = result.getContract(name).bin
+              val abi = result.getContract(name).abi
+              println("bin:" + bin)
+              println("abi:" + abi)
+              writeFile(writePath + "/" + name + "_bin.txt", bin)
+              writeFile(writePath + "/" + name + "_abi.txt", abi)
+              Success("The contract compile is successful.")
+            } else {
+              Assert.fail()
+              Success("false, cannot get contract:" + name)
+            }
           }
         }
       } catch {
@@ -83,7 +90,8 @@ class ContractCommand extends CompositeCommand {
         "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
       new StringParameter("bin", "bin", "The BIN files corresponding this contract."),
       new GasParameter("gasLimit", "gasLimit", "Maximum number of gas this transactions/contract is willing to pay."),
-      new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay.")
+      new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay."),
+      new AmountParameter("amount", "amount", "The amount of the asset to be transfer.", true)
     )
 
     // 测试 data 6080604052348015600f57600080fd5b50603580601d6000396000f3006080604052600080fd00a165627a7a723058200b864e4f01cfb799a414a6ebdb9b63ce9225b82a293a346c33b42e691cdec0300029
@@ -107,8 +115,9 @@ class ContractCommand extends CompositeCommand {
             val gasLimit = paramList.params(2).asInstanceOf[GasParameter].value
             val price = paramList.params(3).asInstanceOf[GasPriceParameter].value
             val gasPrice = AssetCommand.calcGasPrice(price)
+            val amount = paramList.params(4).asInstanceOf[AmountParameter].value
 
-            val tx = AssetCommand.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.Zero, BinaryData(dataContent), gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
+            val tx = AssetCommand.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.fromDecimal(amount), BinaryData(dataContent), gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
             val rpcTxResult = AssetCommand.sendTx(tx)
 
             if (!ChainCommand.checkTxSucceed(rpcTxResult)) {
@@ -135,7 +144,8 @@ class ContractCommand extends CompositeCommand {
       new StringParameter("abi", "abi", "The ABI files corresponding this contract."),
       new StringParameter("method", "m", "The method name of called contract."),
       new GasParameter("gasLimit", "gasLimit", "Maximum number of gas this transactions/contract is willing to pay."),
-      new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay.")
+      new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay."),
+      new AmountParameter("amount", "amount", "The amount of the asset to be transfer.", true)
     )
 
     override def execute(params: List[String]): Result = {
@@ -168,16 +178,15 @@ class ContractCommand extends CompositeCommand {
             val gasLimit = paramList.params(4).asInstanceOf[GasParameter].value
             val price = paramList.params(5).asInstanceOf[GasPriceParameter].value
             val gasPrice = AssetCommand.calcGasPrice(price)
+            val amount = paramList.params(6).asInstanceOf[AmountParameter].value
 
-            val tx = AssetCommand.buildTx(TransactionType.Call, from, Ecdsa.PublicKeyHash.fromAddress(to).get, FixedNumber.Zero, data, gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
+            val tx = AssetCommand.buildTx(TransactionType.Call, from, Ecdsa.PublicKeyHash.fromAddress(to).get, FixedNumber.fromDecimal(amount), data, gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
             val rpcTxResult = AssetCommand.sendTx(tx)
 
             if (ChainCommand.checkTxSucceed(rpcTxResult)) {
 
               Thread.sleep(1000)
-
               val rpcContractResult = RPC.post("getContract", s"""{"id":"${tx.id()}"}""")
-
               if (!ChainCommand.checkSucceed(rpcContractResult)) {
                 ChainCommand.returnFail(rpcContractResult)
               } else if (ChainCommand.checkNotNull(rpcContractResult)) {

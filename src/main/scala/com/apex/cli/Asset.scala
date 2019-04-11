@@ -242,10 +242,12 @@ object AssetCommand {
 
   def calcGasPrice(price: String): FixedNumber = {
     var gasPrice = FixedNumber.Zero
-    val unit = price.substring(price.length - 2).replaceAll("\\d", "").toLowerCase
+    val unit = price.replaceAll("^\\d+", "").toLowerCase
     val priceNum = BigDecimal.apply(price.substring(0, price.length - unit.length))
+
     val fPrice = FixedNumber.fromDecimal(priceNum)
     unit match {
+      case "" =>gasPrice = FixedNumber.P * fPrice       //default unit
       case "p" => gasPrice = FixedNumber.P * fPrice
       case "k" => gasPrice = FixedNumber.KP * fPrice
       case "m" => gasPrice = FixedNumber.MP * fPrice
@@ -253,6 +255,8 @@ object AssetCommand {
       case "kg" => gasPrice = FixedNumber.KGP * fPrice
       case "mg" => gasPrice = FixedNumber.MGP * fPrice
       case "c" => gasPrice = FixedNumber.CPX * fPrice
+      case _ =>
+        throw  new RuntimeException("wrong gasPrice unit. only support(p|k|m|g|kg|mg|c)")
     }
     gasPrice / FixedNumber.One
   }
