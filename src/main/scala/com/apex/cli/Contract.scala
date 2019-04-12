@@ -57,8 +57,8 @@ class ContractCommand extends CompositeCommand {
             if (result.getContract(name) != null) {
               val bin = result.getContract(name).bin
               val abi = result.getContract(name).abi
-              println("bin:" + bin)
-              println("abi:" + abi)
+              //              println("bin:" + bin)
+              //              println("abi:" + abi)
               writeFile(writePath + "/" + name + "_bin.txt", bin)
               writeFile(writePath + "/" + name + "_abi.txt", abi)
               Success("The contract compile is successful.")
@@ -101,10 +101,10 @@ class ContractCommand extends CompositeCommand {
         if (!checkResult.isEmpty) InvalidParams(checkResult)
         else {
           WalletCache.reActWallet
-          // 赋值from昵称
-          var from = WalletCache.getActivityWallet().implyAccount
           // 根据昵称获取转账地址
-          if (params.size / 2 == paramList.params.size) from = paramList.params(0).asInstanceOf[NicknameParameter].value
+          var from = paramList.params(0).asInstanceOf[NicknameParameter].value
+          // 取当前活跃帐号
+          if (from == null) from = WalletCache.getActivityWallet().implyAccount
 
           val dataSource = paramList.params(1).asInstanceOf[StringParameter].value
           val dataContent = AssetCommand.readFile(dataSource)
@@ -115,7 +115,8 @@ class ContractCommand extends CompositeCommand {
             val gasLimit = paramList.params(2).asInstanceOf[GasParameter].value
             val price = paramList.params(3).asInstanceOf[GasPriceParameter].value
             val gasPrice = AssetCommand.calcGasPrice(price)
-            val amount = paramList.params(4).asInstanceOf[AmountParameter].value
+            var amount = paramList.params(4).asInstanceOf[AmountParameter].value
+            if (amount == null) amount = BigDecimal.apply(0.0)
 
             val tx = AssetCommand.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.fromDecimal(amount), BinaryData(dataContent), gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
             val rpcTxResult = AssetCommand.sendTx(tx)
@@ -154,10 +155,10 @@ class ContractCommand extends CompositeCommand {
         if (!checkResult.isEmpty) InvalidParams(checkResult)
         else {
           WalletCache.reActWallet
-          // 赋值from昵称
-          var from = WalletCache.getActivityWallet().implyAccount
           // 根据昵称获取转账地址
-          if (params.size / 2 == paramList.params.size) from = paramList.params(0).asInstanceOf[NicknameParameter].value
+          var from = paramList.params(0).asInstanceOf[NicknameParameter].value
+          // 取当前活跃帐号
+          if (from == null) from = WalletCache.getActivityWallet().implyAccount
 
           // 合约地址
           val to = paramList.params(1).asInstanceOf[ContractAddressParameter].value
@@ -178,7 +179,9 @@ class ContractCommand extends CompositeCommand {
             val gasLimit = paramList.params(4).asInstanceOf[GasParameter].value
             val price = paramList.params(5).asInstanceOf[GasPriceParameter].value
             val gasPrice = AssetCommand.calcGasPrice(price)
-            val amount = paramList.params(6).asInstanceOf[AmountParameter].value
+
+            var amount = paramList.params(6).asInstanceOf[AmountParameter].value
+            if (amount == null) amount = BigDecimal.apply(0.0)
 
             val tx = AssetCommand.buildTx(TransactionType.Call, from, Ecdsa.PublicKeyHash.fromAddress(to).get, FixedNumber.fromDecimal(amount), data, gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
             val rpcTxResult = AssetCommand.sendTx(tx)
