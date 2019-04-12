@@ -87,7 +87,7 @@ class ChainAccountCommand extends Command {
   override val description = "Show data of a account"
 
   override val paramList: ParameterList = ParameterList.create(
-    new AddressParameter("addr", "addr",
+    new AddressParameter("address", "address",
       "The address of account.", true, true)
   )
 
