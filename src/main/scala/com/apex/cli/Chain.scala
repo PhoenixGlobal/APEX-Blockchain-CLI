@@ -20,7 +20,8 @@ class ChainCommand extends CompositeCommand {
     new StatusCommand,
     new BlockCommand,
     new TransactionCommand,
-    new GasCommand
+    new GasCommand,
+    new ChainAccountCommand
   )
 }
 
@@ -74,6 +75,37 @@ class BlockCommand extends Command {
       } else if (ChainCommand.checkNotNull(rpcResult)) {
         ChainCommand.returnSuccess(rpcResult)
       } else Success("This block was not queried.")
+
+    } catch {
+      case e: Throwable => Error(e)
+    }
+  }
+}
+
+class ChainAccountCommand extends Command {
+  override val cmd = "account"
+  override val description = "Show data of a account"
+
+  override val paramList: ParameterList = ParameterList.create(
+    new AddressParameter("addr", "addr",
+      "The address of account.", true, true)
+  )
+
+  override def execute(params: List[String]): Result = {
+    try {
+      val addr = paramList.params(0).asInstanceOf[AddressParameter].value
+      var data: String = ""
+      if (addr != null)
+        data = JsObject(
+          mutable.HashMap("address" -> paramList.params(0).asInstanceOf[AddressParameter].toJson)).toString()
+
+      val rpcResult = RPC.post("showaccount", data)
+
+      if (!ChainCommand.checkSucceed(rpcResult)) {
+        ChainCommand.returnFail(rpcResult)
+      } else if (ChainCommand.checkNotNull(rpcResult)) {
+        ChainCommand.returnSuccess(rpcResult)
+      } else Success("This account was not queried.")
 
     } catch {
       case e: Throwable => Error(e)
