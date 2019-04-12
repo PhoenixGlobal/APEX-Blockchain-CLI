@@ -122,7 +122,7 @@ class AddressParameter(override val name: String = "address", override val short
   }
 
   private def setValue(s: String): Boolean = {
-    if (s.length == 35) {
+    if (s.length == 35 && PublicKeyHash.fromAddress(s).isDefined) {
       value = s
       true
     } else {
