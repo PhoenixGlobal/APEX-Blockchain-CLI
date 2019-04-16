@@ -118,14 +118,25 @@ class ContractCommand extends CompositeCommand {
             var amount = paramList.params(4).asInstanceOf[AmountParameter].value
             if (amount == null) amount = BigDecimal.apply(0.0)
 
-            val tx = AssetCommand.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.fromDecimal(amount), BinaryData(dataContent), gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
-            val rpcTxResult = AssetCommand.sendTx(tx)
+            val privKey = Account.getAccount(from).getPrivKey()
+            val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
 
-            if (!ChainCommand.checkTxSucceed(rpcTxResult)) {
-              ChainCommand.returnTxFail(rpcTxResult)
-            } else if (ChainCommand.getTxBooleanRes(rpcTxResult)) {
-              Success("The contract broadcast is successful , the transaction hash is " + tx.id() + " , the contract address is " + tx.getContractAddress().get.address)
-            } else Success("The contract broadcast failed. Please try again.")
+            var nextNonce = Account.getResultNonce(account)
+            val balance = Account.getResultBalance(account)
+            if (BigDecimal.apply(balance) < amount) {
+              InvalidParams("insufficient account balance")
+            }
+            else {
+              val tx = AssetCommand.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.fromDecimal(amount), BinaryData(dataContent),
+                true, nextNonce, gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
+              val rpcTxResult = AssetCommand.sendTx(tx)
+
+              if (!ChainCommand.checkTxSucceed(rpcTxResult)) {
+                ChainCommand.returnTxFail(rpcTxResult)
+              } else if (ChainCommand.getTxBooleanRes(rpcTxResult)) {
+                Success("The contract broadcast is successful , the transaction hash is " + tx.id() + " , the contract address is " + tx.getContractAddress().get.address)
+              } else Success("The contract broadcast failed. Please try again.")
+            }
           }
         }
       } catch {
@@ -183,20 +194,30 @@ class ContractCommand extends CompositeCommand {
             var amount = paramList.params(6).asInstanceOf[AmountParameter].value
             if (amount == null) amount = BigDecimal.apply(0.0)
 
-            val tx = AssetCommand.buildTx(TransactionType.Call, from, Ecdsa.PublicKeyHash.fromAddress(to).get, FixedNumber.fromDecimal(amount), data, gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
-            val rpcTxResult = AssetCommand.sendTx(tx)
+            val privKey = Account.getAccount(from).getPrivKey()
+            val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
 
-            if (ChainCommand.checkTxSucceed(rpcTxResult)) {
+            var nextNonce = Account.getResultNonce(account)
+            val balance = Account.getResultBalance(account)
+            if (BigDecimal.apply(balance) < amount) {
+              InvalidParams("insufficient account balance")
+            }
+            else {
+              val tx = AssetCommand.buildTx(TransactionType.Call, from, Ecdsa.PublicKeyHash.fromAddress(to).get, FixedNumber.fromDecimal(amount), data,
+                true, nextNonce, gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
+              val rpcTxResult = AssetCommand.sendTx(tx)
 
-              Thread.sleep(1000)
-              val rpcContractResult = RPC.post("getContract", s"""{"id":"${tx.id()}"}""")
-              if (!ChainCommand.checkSucceed(rpcContractResult)) {
-                ChainCommand.returnFail(rpcContractResult)
-              } else if (ChainCommand.checkNotNull(rpcContractResult)) {
-                ChainCommand.checkRes(rpcContractResult)
-              } else Success("The contract broadcast is successful, type \"chain tx\" to see contract status later, the transaction hash is " + tx.id() + ".")
+              if (ChainCommand.checkTxSucceed(rpcTxResult)) {
+                Thread.sleep(1000)
+                val rpcContractResult = RPC.post("getContract", s"""{"id":"${tx.id()}"}""")
+                if (!ChainCommand.checkSucceed(rpcContractResult)) {
+                  ChainCommand.returnFail(rpcContractResult)
+                } else if (ChainCommand.checkNotNull(rpcContractResult)) {
+                  ChainCommand.checkRes(rpcContractResult)
+                } else Success("The contract broadcast is successful, type \"chain tx\" to see contract status later, the transaction hash is " + tx.id() + ".")
 
-            } else ChainCommand.returnTxFail(rpcTxResult)
+              } else ChainCommand.returnTxFail(rpcTxResult)
+            }
           }
         }
       } catch {
