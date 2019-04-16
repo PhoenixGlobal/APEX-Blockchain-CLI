@@ -199,7 +199,7 @@ class RawTxCommand extends Command {
 object AssetCommand {
 
   def buildTx(txType: TransactionType.Value, from: String, to: UInt160, amount: FixedNumber, data: Array[Byte],
-              checkedAccount: Boolean = false, nonce: Long = 0, gasPrice: FixedNumber = FixedNumber.Zero, gasLimit: BigInt = 7000000) = {
+              checkedAccount: Boolean = false, nonce: Long = 0, gasPrice: FixedNumber = FixedNumber.Zero, gasLimit: BigInt = 50000) = {
 
     val privKey = Account.getAccount(from).getPrivKey()
     var nextNonce: Long = nonce
