@@ -1,6 +1,6 @@
 package com.apex.cli
 
-import com.apex.consensus.{RegisterData, VoteData, WitnessInfo}
+import com.apex.consensus.{RegisterData, WitnessVoteData, WitnessInfo}
 import com.apex.core.{OperationType, Transaction, TransactionType}
 import com.apex.crypto.Ecdsa.PublicKeyHash
 import com.apex.crypto.{BinaryData, FixedNumber, UInt160, UInt256}
@@ -159,7 +159,7 @@ class ProducerCommand extends CompositeCommand {
             val price = paramList.params(3).asInstanceOf[GasPriceParameter].value
             val gasPrice = AssetCommand.calcGasPrice(price)
 
-            val voteData = new VoteData(PublicKeyHash.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.register)
+            val voteData = new WitnessVoteData(PublicKeyHash.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.register)
 
             val tx = AssetCommand.buildTx(TransactionType.Call, from, voteAddr.toUInt160, FixedNumber.Zero, voteData.toBytes, gasPrice = gasPrice)
             val rpcTxResult = AssetCommand.sendTx(tx)
@@ -201,7 +201,7 @@ class ProducerCommand extends CompositeCommand {
             val price = paramList.params(3).asInstanceOf[GasPriceParameter].value
             val gasPrice = AssetCommand.calcGasPrice(price)
 
-            val voteData = new VoteData(PublicKeyHash.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.resisterCancel)
+            val voteData = new WitnessVoteData(PublicKeyHash.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.resisterCancel)
 
             val tx = AssetCommand.buildTx(TransactionType.Call, from, voteAddr.toUInt160, FixedNumber.Zero, voteData.toBytes, gasPrice = gasPrice)
             val rpcTxResult = AssetCommand.sendTx(tx)
