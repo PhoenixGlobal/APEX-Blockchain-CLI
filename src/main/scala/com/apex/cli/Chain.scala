@@ -1,7 +1,8 @@
 package com.apex.cli
 
-import com.apex.crypto.FixedNumber
+import com.apex.crypto.{BinaryData, Ecdsa, FixedNumber, UInt160}
 import play.api.libs.json.{JsObject, JsValue, Json}
+
 import scala.collection.mutable
 
 /*
@@ -21,7 +22,8 @@ class ChainCommand extends CompositeCommand {
     new BlockCommand,
     new TransactionCommand,
     new GasCommand,
-    new ChainAccountCommand
+    new ChainAccountCommand,
+    new ChainKeyCommand
   )
 }
 
@@ -107,6 +109,58 @@ class ChainAccountCommand extends Command {
         ChainCommand.returnSuccess(rpcResult)
       } else Success("This account was not queried.")
 
+    } catch {
+      case e: Throwable => Error(e)
+    }
+  }
+}
+
+class ChainKeyCommand extends Command {
+  override val cmd = "key"
+  override val description = "key convert tool"
+
+  override val paramList: ParameterList = ParameterList.create(
+    new StringParameter("input", "input",
+      "The input key, any type", true, true)
+  )
+
+  override def execute(params: List[String]): Result = {
+    try {
+      val input = paramList.params(0).asInstanceOf[StringParameter].value
+
+      if (input.length() == 64) {
+        val privateKey = Ecdsa.PrivateKey(BinaryData(input))
+        print("priv key raw:         ");  println(privateKey.toString)  // 32
+        print("priv key WIF format:  ");  println(privateKey.toWIF)
+        print("pub key (compressed): ");  println(privateKey.publicKey.toString)  // 1 + 32
+        print("pub key hash160:      ");  println(privateKey.publicKey.pubKeyHash.toString)
+        print("Address:              ");  println(privateKey.publicKey.address)
+      }
+      else if (input.startsWith("K") || input.startsWith("L")) {
+        val privateKey = Ecdsa.PrivateKey.fromWIF(input).get
+        print("priv key raw:         ");  println(privateKey.toString)  // 32
+        print("priv key WIF format:  ");  println(privateKey.toWIF)
+        print("pub key (compressed): ");  println(privateKey.publicKey.toString)  // 1 + 32
+        print("pub key hash160:      ");  println(privateKey.publicKey.pubKeyHash.toString)
+        print("Address:              ");  println(privateKey.publicKey.address)
+      }
+      else if (input.length() == 66) {
+        val pubkey = Ecdsa.PublicKey(BinaryData(input))
+        print("pub key (compressed): ");  println(pubkey.toString)  // 1 + 32
+        print("pub key hash160:      ");  println(pubkey.pubKeyHash.toString)
+        print("Address:              ");  println(pubkey.address)
+      }
+      else if (input.length() == 40) {
+        val pubkeyHash = UInt160.fromBytes(BinaryData(input))
+        print("pub key hash160:      ");  println(pubkeyHash.toString)
+        print("Address:              ");  println(pubkeyHash.address)
+      }
+      else if (input.length() == 35) {
+        val pubkeyHash = Ecdsa.PublicKeyHash.fromAddress(input).get
+        print("pub key hash160:      ");  println(pubkeyHash.toString)
+        print("Address:              ");  println(pubkeyHash.address)
+      }
+      Success("Done")
     } catch {
       case e: Throwable => Error(e)
     }
