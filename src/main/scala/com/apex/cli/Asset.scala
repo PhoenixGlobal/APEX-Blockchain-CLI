@@ -67,7 +67,7 @@ class SendCommand extends Command {
           val amount = paramList.params(2).asInstanceOf[AmountParameter].value
           val gasLimit = paramList.params(3).asInstanceOf[GasParameter].value
           val price = paramList.params(4).asInstanceOf[GasPriceParameter].value
-          val gasPrice = AssetCommand.calcGasPrice(price)
+          val gasPrice = Util.calcGasPrice(price)
           val nonce = paramList.params(5).asInstanceOf[IntParameter].value
 
           val privKey = Account.getAccount(from).getPrivKey()
@@ -83,9 +83,9 @@ class SendCommand extends Command {
 
             if (nonce > 0) nextNonce = nonce.longValue()
 
-            val tx = AssetCommand.buildTx(TransactionType.Transfer, from, Ecdsa.PublicKeyHash.fromAddress(toAdress).get, FixedNumber.fromDecimal(amount),
+            val tx = Util.buildTx(TransactionType.Transfer, from, Ecdsa.PublicKeyHash.fromAddress(toAdress).get, FixedNumber.fromDecimal(amount),
               BinaryData.empty, true, nextNonce, gasPrice, BigInt(gasLimit))
-            val result = AssetCommand.sendTx(tx)
+            val result = Util.sendTx(tx)
 
             if (ChainCommand.checkTxSucceed(result)) Success("execute succeed, the transaction hash is " + tx.id())
             else ChainCommand.returnTxFail(result)
@@ -110,7 +110,7 @@ class BroadcastCommand extends Command {
   override def execute(params: List[String]): Result = {
     try {
       val data = paramList.params(0).asInstanceOf[StringParameter].value
-      val dataContent = AssetCommand.readFile(data)
+      val dataContent = Util.readFile(data)
 
       if (dataContent.isEmpty) InvalidParams("data is empty, please type a different one")
       else {
@@ -120,7 +120,7 @@ class BroadcastCommand extends Command {
         val tx = Transaction.deserialize(is)
 
         if (tx.verifySignature()) {
-          val rpcResult = AssetCommand.sendTx(tx)
+          val rpcResult = Util.sendTx(tx)
           if (ChainCommand.checkTxSucceed(rpcResult)) Success("execute succeed, the transaction hash is " + tx.id())
           else ChainCommand.returnTxFail(rpcResult)
         } else Success("There was an error in the original transaction information that could not be resolved.")
@@ -171,7 +171,7 @@ class RawTxCommand extends Command {
           val amount = paramList.params(2).asInstanceOf[AmountParameter].value
           val gasLimit = paramList.params(3).asInstanceOf[GasParameter].value
           val price = paramList.params(4).asInstanceOf[GasPriceParameter].value
-          val gasPrice = AssetCommand.calcGasPrice(price)
+          val gasPrice = Util.calcGasPrice(price)
 
           val privKey = Account.getAccount(from).getPrivKey()
           val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
@@ -182,7 +182,7 @@ class RawTxCommand extends Command {
           if (BigDecimal.apply(balance) < amount) InvalidParams("insufficient account balance")
           else {
 
-            val tx = AssetCommand.buildTx(TransactionType.Transfer, from, Ecdsa.PublicKeyHash.fromAddress(toAdress).get, FixedNumber.fromDecimal(amount),
+            val tx = Util.buildTx(TransactionType.Transfer, from, Ecdsa.PublicKeyHash.fromAddress(toAdress).get, FixedNumber.fromDecimal(amount),
               BinaryData.empty, true, nextNonce, gasPrice, BigInt(gasLimit))
 
             Success(BinaryData(tx.toBytes).toString)
@@ -195,70 +195,3 @@ class RawTxCommand extends Command {
     }
   }
 }
-
-object AssetCommand {
-
-  def buildTx(txType: TransactionType.Value, from: String, to: UInt160, amount: FixedNumber, data: Array[Byte],
-              checkedAccount: Boolean = false, nonce: Long = 0, gasPrice: FixedNumber = FixedNumber.Zero, gasLimit: BigInt = 50000) = {
-
-    val privKey = Account.getAccount(from).getPrivKey()
-    var nextNonce: Long = nonce
-
-    if (!checkedAccount) {
-      nextNonce = Account.getNonce(privKey.publicKey.address)
-    }
-
-    val tx = new Transaction(txType,
-      privKey.publicKey.pubKeyHash,
-      to,
-      amount,
-      nextNonce,
-      data,
-      gasPrice,
-      gasLimit,
-      BinaryData.empty)
-    tx.sign(privKey)
-
-    tx
-  }
-
-  def sendTx(tx: Transaction) = {
-
-    val txRawData = BinaryData(tx.toBytes)
-    val rawTx: String = "{\"rawTx\":\"" + txRawData.toString + "\"}"
-    val result = RPC.post("sendrawtransaction", rawTx)
-    result
-  }
-
-  def readFile(fileName: String): String = {
-    var content = ""
-    if (Files.exists(Paths.get(fileName))) {
-      val file = Source.fromFile(fileName)
-      content = file.getLines.mkString
-      file.close()
-    }
-    content
-  }
-
-  def calcGasPrice(price: String): FixedNumber = {
-    var gasPrice = FixedNumber.Zero
-    val unit = price.replaceAll("^\\d+", "").toLowerCase
-    val priceNum = BigDecimal.apply(price.substring(0, price.length - unit.length))
-
-    val fPrice = FixedNumber.fromDecimal(priceNum)
-    unit match {
-      case "" =>gasPrice = FixedNumber.P * fPrice       //default unit
-      case "p" => gasPrice = FixedNumber.P * fPrice
-      case "k" => gasPrice = FixedNumber.KP * fPrice
-      case "m" => gasPrice = FixedNumber.MP * fPrice
-      case "g" => gasPrice = FixedNumber.GP * fPrice
-      case "kg" => gasPrice = FixedNumber.KGP * fPrice
-      case "mg" => gasPrice = FixedNumber.MGP * fPrice
-      case "c" => gasPrice = FixedNumber.CPX * fPrice
-      case _ =>
-        throw  new RuntimeException("wrong gasPrice unit. only support(p|k|m|g|kg|mg|c)")
-    }
-    gasPrice / FixedNumber.One
-  }
-}
-

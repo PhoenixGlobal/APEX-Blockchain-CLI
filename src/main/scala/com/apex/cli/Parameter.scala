@@ -9,7 +9,9 @@
 package com.apex.cli
 
 import com.apex.crypto.Ecdsa.PublicKeyHash
+import javax.script.ScriptEngineManager
 import play.api.libs.json.{JsNumber, JsObject, JsString, JsValue}
+
 import util.control.Breaks._
 
 trait Parameter {
@@ -313,6 +315,26 @@ class ContractAddressParameter(override val name: String = "address", override v
   }
 }
 
+class DeployParameter(function: String) extends Parameter {
+  override val name: String = "p"
+  override val shortName: String = "p"
+  override val description: String = ""
+
+  override def toJson(): JsValue = ???
+
+  override def validate(n: String, v: String, setEmpty: Boolean): Boolean = {
+    if (validateName(n)) {
+      val manager = new ScriptEngineManager
+      val engine = manager.getEngineByName("nashorn")
+      val script = s"function deploy(limit, price, value, path, name, ...args){ return { 'gasLimit': limit, 'gasPrice': price, 'contractPath': path, 'contractName': name, 'contractArgs': args}; };$v;"
+      val deploy = engine.eval(script)
+      true
+    } else {
+      false
+    }
+  }
+}
+
 abstract class ParameterList(val params: Seq[Parameter]) {
   def validate(list: List[String]): Boolean = {
     if (params == null || params.isEmpty) {
@@ -363,6 +385,13 @@ object ParameterList {
   def int(name: String, shortName: String) = {
     new UnOrdered(Seq(new IntParameter(name, shortName)))
   }
+
+//  def js(name: String, script: String) = {
+//    val manager = new ScriptEngineManager
+//    val engine = manager.getEngineByName("nashorn")
+//    val script = s"function ${func.name}(){ return Array.prototype.slice.call(arguments); };$callString;"
+//    val args = engine.eval(script)
+//  }
 
   def str(name: String, shortName: String) = {
     new UnOrdered(Seq(new StringParameter(name, shortName)))

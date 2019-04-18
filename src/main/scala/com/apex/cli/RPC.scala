@@ -29,7 +29,7 @@ object RPC {
     val res = client.newCall(req).execute()
     try {
       val result = res.body.string()
-        Json parse result
+      Json parse result
     } finally {
       res.close()
     }

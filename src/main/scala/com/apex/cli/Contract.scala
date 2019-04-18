@@ -2,12 +2,19 @@ package com.apex.cli
 
 import java.io.{File, FileWriter, PrintWriter}
 import java.nio.file.{Files, Paths}
+
+import akka.actor.FSM.Failure
+import akka.stream.FlowMonitorState.Failed
 import com.apex.core.{Transaction, TransactionType}
 import com.apex.crypto.{BinaryData, Ecdsa, FixedNumber, UInt160}
 import com.apex.solidity.Abi
 import com.apex.solidity.compiler.{CompilationResult, SolidityCompiler}
 import com.apex.solidity.compiler.SolidityCompiler.Options.{ABI, BIN, INTERFACE, METADATA}
+import javax.script.ScriptEngineManager
+import jdk.nashorn.api.scripting.ScriptUtils
 import org.junit.Assert
+
+import scala.util.Try
 
 /*
  * Copyright  2018 APEX Technologies.Co.Ltd. All rights reserved.
@@ -25,7 +32,8 @@ class ContractCommand extends CompositeCommand {
   override val subCommands: Seq[Command] = Seq(
     new CompileCommand,
     new DeployCommand,
-    new CallCommand
+    new CallCommand,
+    new RunCommand
   )
 
   class CompileCommand extends Command {
@@ -44,7 +52,7 @@ class ContractCommand extends CompositeCommand {
         val sourceFile = paramList.params(1).asInstanceOf[StringParameter].value
         val writePath = paramList.params(2).asInstanceOf[StringParameter].value
         // 获取需要编译的合约文件
-        val compileContent = AssetCommand.readFile(sourceFile)
+        val compileContent = Util.readFile(sourceFile)
         if (compileContent.isEmpty) InvalidParams("compile content is empty, please type a different one")
         else {
 
@@ -107,14 +115,14 @@ class ContractCommand extends CompositeCommand {
           if (from == null) from = WalletCache.getActivityWallet().implyAccount
 
           val dataSource = paramList.params(1).asInstanceOf[StringParameter].value
-          val dataContent = AssetCommand.readFile(dataSource)
+          val dataContent = Util.readFile(dataSource)
 
           if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
           else if (dataContent.isEmpty) InvalidParams("data is empty, please type a different one")
           else {
             val gasLimit = paramList.params(2).asInstanceOf[GasParameter].value
             val price = paramList.params(3).asInstanceOf[GasPriceParameter].value
-            val gasPrice = AssetCommand.calcGasPrice(price)
+            val gasPrice = Util.calcGasPrice(price)
             var amount = paramList.params(4).asInstanceOf[AmountParameter].value
             if (amount == null) amount = BigDecimal.apply(0.0)
 
@@ -127,9 +135,9 @@ class ContractCommand extends CompositeCommand {
               InvalidParams("insufficient account balance")
             }
             else {
-              val tx = AssetCommand.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.fromDecimal(amount), BinaryData(dataContent),
+              val tx = Util.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.fromDecimal(amount), BinaryData(dataContent),
                 true, nextNonce, gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
-              val rpcTxResult = AssetCommand.sendTx(tx)
+              val rpcTxResult = Util.sendTx(tx)
 
               if (!ChainCommand.checkTxSucceed(rpcTxResult)) {
                 ChainCommand.returnTxFail(rpcTxResult)
@@ -179,7 +187,7 @@ class ContractCommand extends CompositeCommand {
           val method = paramList.params(3).asInstanceOf[StringParameter].value
 
           // 根据abi获取文件内容
-          val abiContent = AssetCommand.readFile(abiFilePath)
+          val abiContent = Util.readFile(abiFilePath)
           if (abiContent.isEmpty) InvalidParams("Abi content is empty, please type a different one")
           else if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
           else {
@@ -189,7 +197,7 @@ class ContractCommand extends CompositeCommand {
 
             val gasLimit = paramList.params(4).asInstanceOf[GasParameter].value
             val price = paramList.params(5).asInstanceOf[GasPriceParameter].value
-            val gasPrice = AssetCommand.calcGasPrice(price)
+            val gasPrice = Util.calcGasPrice(price)
 
             var amount = paramList.params(6).asInstanceOf[AmountParameter].value
             if (amount == null) amount = BigDecimal.apply(0.0)
@@ -203,9 +211,9 @@ class ContractCommand extends CompositeCommand {
               InvalidParams("insufficient account balance")
             }
             else {
-              val tx = AssetCommand.buildTx(TransactionType.Call, from, Ecdsa.PublicKeyHash.fromAddress(to).get, FixedNumber.fromDecimal(amount), data,
+              val tx = Util.buildTx(TransactionType.Call, from, Ecdsa.PublicKeyHash.fromAddress(to).get, FixedNumber.fromDecimal(amount), data,
                 true, nextNonce, gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
-              val rpcTxResult = AssetCommand.sendTx(tx)
+              val rpcTxResult = Util.sendTx(tx)
 
               if (ChainCommand.checkTxSucceed(rpcTxResult)) {
                 Thread.sleep(1000)
@@ -226,4 +234,99 @@ class ContractCommand extends CompositeCommand {
     }
   }
 
+}
+
+case class DeployInfo(gasLimit: BigInt, gasPrice: FixedNumber, amount: FixedNumber, contractPath: String, contractName: String, args: Array[Object])
+
+case class CallInfo(gasLimit: Long, gasPrice: Long, amount: Long, contractPath: String, contractName: String, args: Array[AnyRef] = Array.empty)
+
+object RunCommand {
+  val script =
+    "var BigInt = Java.type('scala.math.BigInt');\n" +
+      "var FixedNumber = Java.type('com.apex.crypto.FixedNumber');\n" +
+      "var DeployInfo = Java.type('com.apex.cli.DeployInfo');\n" +
+      "var CallInfo = Java.type('com.apex.cli.CallInfo');\n" +
+      "function deploy(gas,price,amount,path,name) {\n" +
+      "   var gasLimit = BigInt.apply(gas);\n" +
+      "   var gasPrice = new FixedNumber(BigInt.apply(price));\n" +
+      "   var value = new FixedNumber(BigInt.apply(amount));" +
+      "   var args = Java.to(Array.prototype.slice.call(arguments,5), 'java.lang.Object[]');" +
+      "   var deploy = new DeployInfo(gasLimit,gasPrice,value,path,name,args)\n" +
+      "   return deploy;\n" +
+      "}\n" +
+      "function call(gasLimit,gasPrice,amount,contractPath,contractName) {\n" +
+      "    return new DeployInfo(gasLimit,gasPrice,amount,contractPath,contractName)\n" +
+      "}\n"
+}
+
+class RunCommand extends Command {
+
+  import RunCommand._
+
+  override val cmd: String = "run"
+  override val description: String = "deploy or call contract. eg. deploy(gasLimit, gasPrice, amount, contractPath, contractName, contractArgs...) or call(gasLimit, gasPrice, amount, contractAddress, abiPath, functionName, args...)"
+  override val paramList: ParameterList = ParameterList.create(new StringParameter("p", "p", "deploy(gasLimit)\ncall(gasLimit)"))
+
+  override def execute(params: List[String]): Result = {
+    try {
+      val manager = new ScriptEngineManager
+      val engine = manager.getEngineByName("nashorn")
+      val input = paramList.params(0).asInstanceOf[StringParameter].value
+      Try(engine.eval(s"$script$input")) match {
+        case util.Success(result) => result match {
+          case info: DeployInfo => deploy(info)
+          case info: CallInfo => call(info)
+          case _ => InvalidParams(input)
+        }
+        case util.Failure(e) => {
+          println(e.getMessage)
+          InvalidParams(input)
+        }
+      }
+    } catch {
+      case e: Throwable => Error(e)
+    }
+  }
+
+  private def deploy(info: DeployInfo): Result = {
+    val wallet = WalletCache.getActivityWallet
+    if (wallet == null) {
+      //      throw new Exception("no active wallet")
+    }
+
+    val from = "" //wallet.implyAccount
+    val source = Paths.get(info.contractPath)
+    val res: SolidityCompiler.Result = SolidityCompiler.compile(source.toFile, true, Seq(ABI, BIN, INTERFACE, METADATA))
+    val result = CompilationResult.parse(res.output)
+    val contract = result.getContract(info.contractName)
+    val abi = Abi.fromJson(contract.abi)
+    val ctorData = abi.findConstructor match {
+      case Some(ctor) => {
+        if (ctor.inputs.length != info.args.length) {
+          val expect = ctor.inputs.map(_.solidityType.toString).mkString(",")
+          val actual = info.args.map(_.getClass.getName).mkString(",")
+          throw new Exception(s"constructor not match. expect constructor($expect) actual constructor($actual)")
+        }
+        ctor.encodeArguments(info.args)
+      }
+      case None => Array.empty
+    }
+    val data = BinaryData(contract.bin).toArray ++ ctorData
+    val privKey = Account.getAccount(from).getPrivKey()
+    val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
+    val nextNonce = Account.getResultNonce(account)
+    val tx = Util.buildTx(TransactionType.Deploy, from, UInt160.Zero, info.amount, data,
+      true, nextNonce, info.gasPrice, info.gasLimit)
+    val rpcTxResult = Util.sendTx(tx)
+
+    if (!ChainCommand.checkTxSucceed(rpcTxResult)) {
+      ChainCommand.returnTxFail(rpcTxResult)
+    } else if (ChainCommand.getTxBooleanRes(rpcTxResult)) {
+      Success("The contract broadcast is successful , the transaction hash is " + tx.id() + " , the contract address is " + tx.getContractAddress().get.address)
+    } else Success("The contract broadcast failed. Please try again.")
+  }
+
+  private def call(info: CallInfo): Result = {
+    throw new NotImplementedError
+  }
 }

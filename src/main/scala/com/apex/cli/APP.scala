@@ -4,7 +4,6 @@ package com.apex.cli
 object APP {
 
   def main(args: Array[String]): Unit = {
-
     // 接受用户rpc请求地址
     val parmLen = args.length
     if (parmLen > 0) {
