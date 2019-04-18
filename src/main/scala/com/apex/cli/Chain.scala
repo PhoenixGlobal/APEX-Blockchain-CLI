@@ -160,9 +160,15 @@ class ChainKeyCommand extends Command {
         print("pub key hash160:      ");  println(pubkeyHash.toString)
         print("Address:              ");  println(pubkeyHash.address)
       }
+      else {
+        println("input format error")
+      }
       Success("Done")
     } catch {
-      case e: Throwable => Error(e)
+      case e: Throwable => {
+        println("input format error")
+        Error(e)
+      }
     }
   }
 }

@@ -138,11 +138,12 @@ class ContractCommand extends CompositeCommand {
               val tx = Util.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.fromDecimal(amount), BinaryData(dataContent),
                 true, nextNonce, gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
               val rpcTxResult = Util.sendTx(tx)
+              println("transaction hash is " + tx.id())
 
               if (!ChainCommand.checkTxSucceed(rpcTxResult)) {
                 ChainCommand.returnTxFail(rpcTxResult)
               } else if (ChainCommand.getTxBooleanRes(rpcTxResult)) {
-                Success("The contract broadcast is successful , the transaction hash is " + tx.id() + " , the contract address is " + tx.getContractAddress().get.address)
+                Success("The contract broadcast is successful, the contract address is " + tx.getContractAddress().get.address)
               } else Success("The contract broadcast failed. Please try again.")
             }
           }
