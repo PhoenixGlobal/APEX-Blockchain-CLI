@@ -1,6 +1,6 @@
 package com.apex.cli
 
-import com.apex.crypto.{BinaryData, Ecdsa, FixedNumber, UInt160}
+import com.apex.crypto.{BinaryData, Crypto, Ecdsa, FixedNumber, UInt160}
 import play.api.libs.json.{JsObject, JsValue, Json}
 
 import scala.collection.mutable
@@ -23,7 +23,8 @@ class ChainCommand extends CompositeCommand {
     new TransactionCommand,
     new GasCommand,
     new ChainAccountCommand,
-    new ChainKeyCommand
+    new ChainKeyCommand,
+    new ChainSignCommand
   )
 }
 
@@ -117,7 +118,7 @@ class ChainAccountCommand extends Command {
 
 class ChainKeyCommand extends Command {
   override val cmd = "key"
-  override val description = "key convert tool"
+  override val description = "key convert tool (-input XXX)"
 
   override val paramList: ParameterList = ParameterList.create(
     new StringParameter("input", "input",
@@ -163,6 +164,45 @@ class ChainKeyCommand extends Command {
       else {
         println("input format error")
       }
+      Success("Done")
+    } catch {
+      case e: Throwable => {
+        println("input format error")
+        Error(e)
+      }
+    }
+  }
+}
+
+class ChainSignCommand extends Command {
+  override val cmd = "sign"
+  override val description = "tx sign tool (-key XXX -data XXX)"
+
+  override val paramList: ParameterList = ParameterList.create(
+    new StringParameter("key", "key",
+      "The input key", true, true),
+    new StringParameter("data", "data",
+      "The input key", true, true)
+  )
+
+  override def execute(params: List[String]): Result = {
+    try {
+      val key = paramList.params(0).asInstanceOf[StringParameter].value
+      val data = paramList.params(1).asInstanceOf[StringParameter].value
+
+      println("key=" + key)
+      println("data=" + data)
+
+      val privateKey = Ecdsa.PrivateKey.fromWIF(key).get
+
+      val signature = Crypto.sign(BinaryData(data), privateKey.toBin)
+
+      println("signature=" + BinaryData(signature))
+
+      val tx = data + BinaryData(Seq(signature.length.toByte)).toString + BinaryData(signature).toString
+
+      println("tx=" + tx)
+
       Success("Done")
     } catch {
       case e: Throwable => {
