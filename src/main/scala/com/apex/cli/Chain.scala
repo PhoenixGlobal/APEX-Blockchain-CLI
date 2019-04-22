@@ -224,25 +224,25 @@ class ChainCreateTxCommand extends Command {
 
   override val paramList: ParameterList = ParameterList.create(
     new StringParameter("key", "key",
-      "", true, true),
+      "private key", true, true),
     new StringParameter("type", "type",
-      "", true, true),
+      "tx type", true, true),
     new StringParameter("to", "to",
-      "", true, true),
+      "to address", true, true),
     new StringParameter("amount", "amount",
-      "", true, true),
+      "transfer amount", true, true),
     new StringParameter("nonce", "nonce",
-      "", true, true),
+      "nonce value", true, true),
     new StringParameter("data", "data",
-      "", true, true),
+      "tx data, hex format", true, true),
     new StringParameter("gasprice", "gasprice",
-      "", true, true),
+      "gas price", true, true),
     new StringParameter("gaslimit", "gaslimit",
-      "", true, true),
+      "gas limit", true, true),
     new StringParameter("executetime", "executetime",
-      "", true, true),
+      "execute time", true, true),
     new StringParameter("version", "version",
-      "", true, true)
+      "version", true, true)
   )
 
   override def execute(params: List[String]): Result = {
@@ -273,9 +273,9 @@ class ChainCreateTxCommand extends Command {
       val os = new DataOutputStream(bs)
       tx.serialize(os)
 
-      println("tx:" + BinaryData(bs.toByteArray).toString)
+      println("tx=" + BinaryData(bs.toByteArray).toString)
 
-      println("txid:" + tx.id)
+      println("txid=" + tx.id)
 
       Success("Done")
     } catch {
