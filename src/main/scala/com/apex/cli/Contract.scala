@@ -250,7 +250,7 @@ object RunCommand {
       "function deploy(gas,price,amount,path,name) {\n" +
       "   var gasLimit = BigInt.apply(gas);\n" +
       "   var gasPrice = new FixedNumber(BigInt.apply(price));\n" +
-//      "   var value = new FixedNumber(BigInt.apply(amount));\n" +
+      //      "   var value = new FixedNumber(BigInt.apply(amount));\n" +
       "   var value = BigDecimal.decimal(amount);\n" +
       "   var args = Java.to(Array.prototype.slice.call(arguments,5), 'java.lang.Object[]');" +
       "   var deploy = new DeployInfo(gasLimit,gasPrice,value,path,name,args)\n" +
@@ -260,7 +260,7 @@ object RunCommand {
       "   var gasLimit = BigInt.apply(gasLimit);\n" +
       "   var gasPrice = new FixedNumber(BigInt.apply(gasPrice));\n" +
       "   var value = BigDecimal.decimal(amount);\n" +
-//      "   var args = Java.to(Array.prototype.slice.call(arguments,6), 'java.lang.Object[]');" +
+      //      "   var args = Java.to(Array.prototype.slice.call(arguments,6), 'java.lang.Object[]');" +
       "    return new CallInfo(gasLimit,gasPrice,value,contractAddress,abiPath, methodName)\n" +
       "}\n"
 }
@@ -329,16 +329,22 @@ class RunCommand extends Command {
       val data = BinaryData(contract.bin).toArray ++ ctorData
       val privKey = Account.getAccount(from).getPrivKey()
       val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
-      val nextNonce = Account.getResultNonce(account)
-      val tx = Util.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.fromDecimal(info.amount), data,
-        true, nextNonce, info.gasPrice, info.gasLimit)
-      val rpcTxResult = Util.sendTx(tx)
+      var nextNonce = Account.getResultNonce(account)
+      val balance = Account.getResultBalance(account)
+      if (info.amount > BigDecimal.apply(balance)) {
+        InvalidParams("insufficient account balance")
+      }
+      else {
+        val tx = Util.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.fromDecimal(info.amount), data,
+          true, nextNonce, info.gasPrice, info.gasLimit)
+        val rpcTxResult = Util.sendTx(tx)
 
-      if (!ChainCommand.checkTxSucceed(rpcTxResult)) {
-        ChainCommand.returnTxFail(rpcTxResult)
-      } else if (ChainCommand.getTxBooleanRes(rpcTxResult)) {
-        Success("The contract broadcast is successful , the transaction hash is " + tx.id() + " , the contract address is " + tx.getContractAddress().get.address)
-      } else Success("The contract broadcast failed. Please try again.")
+        if (!ChainCommand.checkTxSucceed(rpcTxResult)) {
+          ChainCommand.returnTxFail(rpcTxResult)
+        } else if (ChainCommand.getTxBooleanRes(rpcTxResult)) {
+          Success("The contract broadcast is successful , the transaction hash is " + tx.id() + " , the contract address is " + tx.getContractAddress().get.address)
+        } else Success("The contract broadcast failed. Please try again.")
+      }
     }
   }
 
