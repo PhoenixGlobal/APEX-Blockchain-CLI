@@ -1,17 +1,16 @@
 package com.apex.cli
 
-import java.io.{File, FileWriter, PrintWriter}
-import java.nio.file.{Files, Paths}
+import java.io.{File, FileWriter}
+import java.nio.file.Paths
 
-import akka.actor.FSM.Failure
-import akka.stream.FlowMonitorState.Failed
-import com.apex.core.{Transaction, TransactionType}
+
+import com.apex.core.TransactionType
 import com.apex.crypto.{BinaryData, Ecdsa, FixedNumber, UInt160}
 import com.apex.solidity.Abi
 import com.apex.solidity.compiler.{CompilationResult, SolidityCompiler}
 import com.apex.solidity.compiler.SolidityCompiler.Options.{ABI, BIN, INTERFACE, METADATA}
 import javax.script.ScriptEngineManager
-import jdk.nashorn.api.scripting.ScriptUtils
+
 import org.junit.Assert
 
 import scala.util.Try
@@ -237,26 +236,32 @@ class ContractCommand extends CompositeCommand {
 
 }
 
-case class DeployInfo(gasLimit: BigInt, gasPrice: FixedNumber, amount: FixedNumber, contractPath: String, contractName: String, args: Array[Object])
+case class DeployInfo(gasLimit: BigInt, gasPrice: FixedNumber, amount: BigDecimal, contractPath: String, contractName: String, args: Array[Object])
 
-case class CallInfo(gasLimit: Long, gasPrice: Long, amount: Long, contractPath: String, contractName: String, args: Array[AnyRef] = Array.empty)
+case class CallInfo(gasLimit: BigInt, gasPrice: FixedNumber, amount: BigDecimal, contractAddress: String, abiPath: String, methodName: String)
 
 object RunCommand {
   val script =
     "var BigInt = Java.type('scala.math.BigInt');\n" +
+      "var BigDecimal = Java.type('scala.math.BigDecimal');\n" +
       "var FixedNumber = Java.type('com.apex.crypto.FixedNumber');\n" +
       "var DeployInfo = Java.type('com.apex.cli.DeployInfo');\n" +
       "var CallInfo = Java.type('com.apex.cli.CallInfo');\n" +
       "function deploy(gas,price,amount,path,name) {\n" +
       "   var gasLimit = BigInt.apply(gas);\n" +
       "   var gasPrice = new FixedNumber(BigInt.apply(price));\n" +
-      "   var value = new FixedNumber(BigInt.apply(amount));" +
+//      "   var value = new FixedNumber(BigInt.apply(amount));\n" +
+      "   var value = BigDecimal.decimal(amount);\n" +
       "   var args = Java.to(Array.prototype.slice.call(arguments,5), 'java.lang.Object[]');" +
       "   var deploy = new DeployInfo(gasLimit,gasPrice,value,path,name,args)\n" +
       "   return deploy;\n" +
       "}\n" +
-      "function call(gasLimit,gasPrice,amount,contractPath,contractName) {\n" +
-      "    return new DeployInfo(gasLimit,gasPrice,amount,contractPath,contractName)\n" +
+      "function call(gasLimit,gasPrice,amount,contractAddress,abiPath, methodName) {\n" +
+      "   var gasLimit = BigInt.apply(gasLimit);\n" +
+      "   var gasPrice = new FixedNumber(BigInt.apply(gasPrice));\n" +
+      "   var value = BigDecimal.decimal(amount);\n" +
+//      "   var args = Java.to(Array.prototype.slice.call(arguments,6), 'java.lang.Object[]');" +
+      "    return new CallInfo(gasLimit,gasPrice,value,contractAddress,abiPath, methodName)\n" +
       "}\n"
 }
 
@@ -292,42 +297,96 @@ class RunCommand extends Command {
   private def deploy(info: DeployInfo): Result = {
     val wallet = WalletCache.getActivityWallet
     if (wallet == null) {
-      //      throw new Exception("no active wallet")
+      throw new Exception("no active wallet,please active your wallet first.")
     }
 
-    val from = "" //wallet.implyAccount
+    val from = WalletCache.getActivityWallet().implyAccount
     val source = Paths.get(info.contractPath)
     val res: SolidityCompiler.Result = SolidityCompiler.compile(source.toFile, true, Seq(ABI, BIN, INTERFACE, METADATA))
-    val result = CompilationResult.parse(res.output)
-    val contract = result.getContract(info.contractName)
-    val abi = Abi.fromJson(contract.abi)
-    val ctorData = abi.findConstructor match {
-      case Some(ctor) => {
-        if (ctor.inputs.length != info.args.length) {
-          val expect = ctor.inputs.map(_.solidityType.toString).mkString(",")
-          val actual = info.args.map(_.getClass.getName).mkString(",")
-          throw new Exception(s"constructor not match. expect constructor($expect) actual constructor($actual)")
-        }
-        ctor.encodeArguments(info.args)
-      }
-      case None => Array.empty
-    }
-    val data = BinaryData(contract.bin).toArray ++ ctorData
-    val privKey = Account.getAccount(from).getPrivKey()
-    val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
-    val nextNonce = Account.getResultNonce(account)
-    val tx = Util.buildTx(TransactionType.Deploy, from, UInt160.Zero, info.amount, data,
-      true, nextNonce, info.gasPrice, info.gasLimit)
-    val rpcTxResult = Util.sendTx(tx)
 
-    if (!ChainCommand.checkTxSucceed(rpcTxResult)) {
-      ChainCommand.returnTxFail(rpcTxResult)
-    } else if (ChainCommand.getTxBooleanRes(rpcTxResult)) {
-      Success("The contract broadcast is successful , the transaction hash is " + tx.id() + " , the contract address is " + tx.getContractAddress().get.address)
-    } else Success("The contract broadcast failed. Please try again.")
+    if (res.errors.nonEmpty && res.output.isEmpty) {
+      Success(res.errors)
+    } else {
+      val result = CompilationResult.parse(res.output)
+      val contract = result.getContract(info.contractName)
+
+      //write contract into file.
+      writeFile(info.contractName + "_bin.txt", contract.bin)
+      writeFile(info.contractName + "_abi.txt", contract.abi)
+
+      val abi = Abi.fromJson(contract.abi)
+      val ctorData = abi.findConstructor match {
+        case Some(ctor) => {
+          if (ctor.inputs.length != info.args.length) {
+            val expect = ctor.inputs.map(_.solidityType.toString).mkString(",")
+            val actual = info.args.map(_.getClass.getName).mkString(",")
+            throw new Exception(s"constructor not match. expect constructor($expect) actual constructor($actual)")
+          }
+          ctor.encodeArguments(info.args)
+        }
+        case None => Array.empty
+      }
+      val data = BinaryData(contract.bin).toArray ++ ctorData
+      val privKey = Account.getAccount(from).getPrivKey()
+      val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
+      val nextNonce = Account.getResultNonce(account)
+      val tx = Util.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.fromDecimal(info.amount), data,
+        true, nextNonce, info.gasPrice, info.gasLimit)
+      val rpcTxResult = Util.sendTx(tx)
+
+      if (!ChainCommand.checkTxSucceed(rpcTxResult)) {
+        ChainCommand.returnTxFail(rpcTxResult)
+      } else if (ChainCommand.getTxBooleanRes(rpcTxResult)) {
+        Success("The contract broadcast is successful , the transaction hash is " + tx.id() + " , the contract address is " + tx.getContractAddress().get.address)
+      } else Success("The contract broadcast failed. Please try again.")
+    }
   }
 
   private def call(info: CallInfo): Result = {
-    throw new NotImplementedError
+    val wallet = WalletCache.getActivityWallet
+    if (wallet == null) {
+      throw new Exception("no active wallet,please active your wallet first.")
+    }
+
+    val from = WalletCache.getActivityWallet().implyAccount
+    val to = info.contractAddress
+
+    val privKey = Account.getAccount(from).getPrivKey()
+    val account = RPC.post("showaccount", s"""{"address":"${privKey.publicKey.address}"}""")
+
+    var nextNonce = Account.getResultNonce(account)
+    val balance = Account.getResultBalance(account)
+    if (info.amount > BigDecimal.apply(balance)) {
+      InvalidParams("insufficient account balance")
+    }
+    else {
+
+      val abiContent = Util.readFile(info.abiPath)
+      val data = Abi.fromJson(abiContent).encode(info.methodName)
+
+      val tx = Util.buildTx(TransactionType.Call, from, Ecdsa.PublicKeyHash.fromAddress(to).get, FixedNumber.fromDecimal(info.amount), data,
+        true, nextNonce, info.gasPrice, info.gasLimit)
+      val rpcTxResult = Util.sendTx(tx)
+
+      if (ChainCommand.checkTxSucceed(rpcTxResult)) {
+        Thread.sleep(1000)
+        val rpcContractResult = RPC.post("getContract", s"""{"id":"${tx.id()}"}""")
+        if (!ChainCommand.checkSucceed(rpcContractResult)) {
+          ChainCommand.returnFail(rpcContractResult)
+        } else if (ChainCommand.checkNotNull(rpcContractResult)) {
+          ChainCommand.checkRes(rpcContractResult)
+        } else Success("The contract broadcast is successful, type \"chain tx\" to see contract status later, the transaction hash is " + tx.id() + ".")
+
+      } else ChainCommand.returnTxFail(rpcTxResult)
+    }
+
+  }
+
+  def writeFile(filePath: String, data: String): Unit = {
+    println("write to file:" + filePath)
+    val file = new File(filePath)
+    val fw = new FileWriter(file)
+    fw.write(data)
+    fw.close()
   }
 }
