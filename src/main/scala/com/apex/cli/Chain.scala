@@ -1,5 +1,9 @@
 package com.apex.cli
 
+import java.io.{ByteArrayOutputStream, DataOutputStream}
+
+import com.apex.core.{Transaction, TransactionType}
+import com.apex.crypto.Ecdsa.PublicKeyHash
 import com.apex.crypto.{BinaryData, Crypto, Ecdsa, FixedNumber, UInt160}
 import play.api.libs.json.{JsObject, JsValue, Json}
 
@@ -24,7 +28,8 @@ class ChainCommand extends CompositeCommand {
     new GasCommand,
     new ChainAccountCommand,
     new ChainKeyCommand,
-    new ChainSignCommand
+    new ChainSignCommand,
+    new ChainCreateTxCommand
   )
 }
 
@@ -202,6 +207,75 @@ class ChainSignCommand extends Command {
       val tx = data + BinaryData(Seq(signature.length.toByte)).toString + BinaryData(signature).toString
 
       println("tx=" + tx)
+
+      Success("Done")
+    } catch {
+      case e: Throwable => {
+        println("input format error")
+        Error(e)
+      }
+    }
+  }
+}
+
+class ChainCreateTxCommand extends Command {
+  override val cmd = "createtx"
+  override val description = "create tx tool"
+
+  override val paramList: ParameterList = ParameterList.create(
+    new StringParameter("key", "key",
+      "", true, true),
+    new StringParameter("type", "type",
+      "", true, true),
+    new StringParameter("to", "to",
+      "", true, true),
+    new StringParameter("amount", "amount",
+      "", true, true),
+    new StringParameter("nonce", "nonce",
+      "", true, true),
+    new StringParameter("data", "data",
+      "", true, true),
+    new StringParameter("gasprice", "gasprice",
+      "", true, true),
+    new StringParameter("gaslimit", "gaslimit",
+      "", true, true),
+    new StringParameter("executetime", "executetime",
+      "", true, true),
+    new StringParameter("version", "version",
+      "", true, true)
+  )
+
+  override def execute(params: List[String]): Result = {
+    try {
+      val key = paramList.params(0).asInstanceOf[StringParameter].value
+      val txtype = TransactionType(paramList.params(1).asInstanceOf[StringParameter].value.toInt)
+      val toAddr = PublicKeyHash.fromAddress(paramList.params(2).asInstanceOf[StringParameter].value).get
+      val amount = FixedNumber(BigInt(paramList.params(3).asInstanceOf[StringParameter].value))
+      val nonce = paramList.params(4).asInstanceOf[StringParameter].value.toLong
+      val data = paramList.params(5).asInstanceOf[StringParameter].value
+      val gasprice = FixedNumber(BigInt(paramList.params(6).asInstanceOf[StringParameter].value))
+      val gaslimit = BigInt(paramList.params(7).asInstanceOf[StringParameter].value)
+      val executetime = paramList.params(8).asInstanceOf[StringParameter].value.toLong
+      val version = paramList.params(9).asInstanceOf[StringParameter].value.toInt
+
+      var txData = BinaryData.empty
+      if (data.length > 1)
+        txData = BinaryData(data)
+
+      val privateKey = Ecdsa.PrivateKey.fromWIF(key).get
+
+      val tx = new Transaction(txtype, privateKey.publicKey.pubKeyHash, toAddr, amount, nonce,
+        txData, gasprice, gaslimit, BinaryData.empty, version, executetime)
+
+      tx.sign(privateKey)
+
+      val bs = new ByteArrayOutputStream()
+      val os = new DataOutputStream(bs)
+      tx.serialize(os)
+
+      println("tx:" + BinaryData(bs.toByteArray).toString)
+
+      println("txid:" + tx.id)
 
       Success("Done")
     } catch {
