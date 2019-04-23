@@ -136,35 +136,52 @@ class ChainKeyCommand extends Command {
 
       if (input.length() == 64) {
         val privateKey = Ecdsa.PrivateKey(BinaryData(input))
-        print("priv key raw:         ");  println(privateKey.toString)  // 32
-        print("priv key WIF format:  ");  println(privateKey.toWIF)
-        print("pub key (compressed): ");  println(privateKey.publicKey.toString)  // 1 + 32
-        print("pub key hash160:      ");  println(privateKey.publicKey.pubKeyHash.toString)
-        print("Address:              ");  println(privateKey.publicKey.address)
+        print("priv key raw:         ");
+        println(privateKey.toString) // 32
+        print("priv key WIF format:  ");
+        println(privateKey.toWIF)
+        print("pub key (compressed): ");
+        println(privateKey.publicKey.toString) // 1 + 32
+        print("pub key hash160:      ");
+        println(privateKey.publicKey.pubKeyHash.toString)
+        print("Address:              ");
+        println(privateKey.publicKey.address)
       }
       else if (input.startsWith("K") || input.startsWith("L")) {
         val privateKey = Ecdsa.PrivateKey.fromWIF(input).get
-        print("priv key raw:         ");  println(privateKey.toString)  // 32
-        print("priv key WIF format:  ");  println(privateKey.toWIF)
-        print("pub key (compressed): ");  println(privateKey.publicKey.toString)  // 1 + 32
-        print("pub key hash160:      ");  println(privateKey.publicKey.pubKeyHash.toString)
-        print("Address:              ");  println(privateKey.publicKey.address)
+        print("priv key raw:         ");
+        println(privateKey.toString) // 32
+        print("priv key WIF format:  ");
+        println(privateKey.toWIF)
+        print("pub key (compressed): ");
+        println(privateKey.publicKey.toString) // 1 + 32
+        print("pub key hash160:      ");
+        println(privateKey.publicKey.pubKeyHash.toString)
+        print("Address:              ");
+        println(privateKey.publicKey.address)
       }
       else if (input.length() == 66) {
         val pubkey = Ecdsa.PublicKey(BinaryData(input))
-        print("pub key (compressed): ");  println(pubkey.toString)  // 1 + 32
-        print("pub key hash160:      ");  println(pubkey.pubKeyHash.toString)
-        print("Address:              ");  println(pubkey.address)
+        print("pub key (compressed): ");
+        println(pubkey.toString) // 1 + 32
+        print("pub key hash160:      ");
+        println(pubkey.pubKeyHash.toString)
+        print("Address:              ");
+        println(pubkey.address)
       }
       else if (input.length() == 40) {
         val pubkeyHash = UInt160.fromBytes(BinaryData(input))
-        print("pub key hash160:      ");  println(pubkeyHash.toString)
-        print("Address:              ");  println(pubkeyHash.address)
+        print("pub key hash160:      ");
+        println(pubkeyHash.toString)
+        print("Address:              ");
+        println(pubkeyHash.address)
       }
       else if (input.length() == 35) {
         val pubkeyHash = Ecdsa.PublicKeyHash.fromAddress(input).get
-        print("pub key hash160:      ");  println(pubkeyHash.toString)
-        print("Address:              ");  println(pubkeyHash.address)
+        print("pub key hash160:      ");
+        println(pubkeyHash.toString)
+        print("Address:              ");
+        println(pubkeyHash.address)
       }
       else {
         println("input format error")
@@ -357,7 +374,7 @@ class GasCommand extends Command {
 object ChainCommand {
 
   def getStrRes(rpcRes: JsValue): String = {
-    (rpcRes \ "result").as[String]
+    rpcRes.\("result").get.toString()
   }
 
   def getBooleanRes(rpcRes: JsValue): Boolean = {
@@ -369,14 +386,12 @@ object ChainCommand {
   }
 
   def checkTxSucceed(rpcRes: JsValue): Boolean = {
-
     if (checkSucceed(rpcRes) && getTxBooleanRes(rpcRes)) {
       true
     } else false
   }
 
   def checkSucceed(rpcRes: JsValue): Boolean = {
-
     if ((rpcRes \ "succeed").as[Boolean]) {
       true
     } else false
@@ -385,13 +400,12 @@ object ChainCommand {
   def checkNotNull(rpcRes: JsValue): Boolean = {
     val result = ChainCommand.getStrRes(rpcRes)
 
-    if (checkSucceed(rpcRes) && !"null".equals(result) && !result.isEmpty) {
+    if (checkSucceed(rpcRes) && !result.isEmpty) {
       true
     } else false
   }
 
   def checkRes(rpcRes: JsValue): Result = {
-
     if (checkSucceed(rpcRes)) {
       returnSuccess(rpcRes)
     } else {
@@ -401,7 +415,7 @@ object ChainCommand {
 
   def returnSuccess(rpcRes: JsValue): Result = {
     // 返回结果值
-    val result = (rpcRes \ "result").as[String]
+    val result = (rpcRes \ "result").get.toString()
     Success(Json prettyPrint Json.parse(result))
   }
 
