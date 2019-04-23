@@ -4,7 +4,7 @@ import java.io.{ByteArrayOutputStream, DataOutputStream}
 
 import com.apex.core.{Transaction, TransactionType}
 import com.apex.crypto.Ecdsa.PublicKeyHash
-import com.apex.crypto.{BinaryData, Crypto, Ecdsa, FixedNumber, UInt160}
+import com.apex.crypto.{BinaryData, Crypto, Ecdsa, FixedNumber, UInt160, UInt256}
 import play.api.libs.json.{JsObject, JsValue, Json}
 
 import scala.collection.mutable
@@ -136,52 +136,35 @@ class ChainKeyCommand extends Command {
 
       if (input.length() == 64) {
         val privateKey = Ecdsa.PrivateKey(BinaryData(input))
-        print("priv key raw:         ");
-        println(privateKey.toString) // 32
-        print("priv key WIF format:  ");
-        println(privateKey.toWIF)
-        print("pub key (compressed): ");
-        println(privateKey.publicKey.toString) // 1 + 32
-        print("pub key hash160:      ");
-        println(privateKey.publicKey.pubKeyHash.toString)
-        print("Address:              ");
-        println(privateKey.publicKey.address)
+        print("priv key raw:         ");  println(privateKey.toString)  // 32
+        print("priv key WIF format:  ");  println(privateKey.toWIF)
+        print("pub key (compressed): ");  println(privateKey.publicKey.toString)  // 1 + 32
+        print("pub key hash160:      ");  println(privateKey.publicKey.pubKeyHash.toString)
+        print("Address:              ");  println(privateKey.publicKey.address)
       }
       else if (input.startsWith("K") || input.startsWith("L")) {
         val privateKey = Ecdsa.PrivateKey.fromWIF(input).get
-        print("priv key raw:         ");
-        println(privateKey.toString) // 32
-        print("priv key WIF format:  ");
-        println(privateKey.toWIF)
-        print("pub key (compressed): ");
-        println(privateKey.publicKey.toString) // 1 + 32
-        print("pub key hash160:      ");
-        println(privateKey.publicKey.pubKeyHash.toString)
-        print("Address:              ");
-        println(privateKey.publicKey.address)
+        print("priv key raw:         ");  println(privateKey.toString)  // 32
+        print("priv key WIF format:  ");  println(privateKey.toWIF)
+        print("pub key (compressed): ");  println(privateKey.publicKey.toString)  // 1 + 32
+        print("pub key hash160:      ");  println(privateKey.publicKey.pubKeyHash.toString)
+        print("Address:              ");  println(privateKey.publicKey.address)
       }
       else if (input.length() == 66) {
         val pubkey = Ecdsa.PublicKey(BinaryData(input))
-        print("pub key (compressed): ");
-        println(pubkey.toString) // 1 + 32
-        print("pub key hash160:      ");
-        println(pubkey.pubKeyHash.toString)
-        print("Address:              ");
-        println(pubkey.address)
+        print("pub key (compressed): ");  println(pubkey.toString)  // 1 + 32
+        print("pub key hash160:      ");  println(pubkey.pubKeyHash.toString)
+        print("Address:              ");  println(pubkey.address)
       }
       else if (input.length() == 40) {
         val pubkeyHash = UInt160.fromBytes(BinaryData(input))
-        print("pub key hash160:      ");
-        println(pubkeyHash.toString)
-        print("Address:              ");
-        println(pubkeyHash.address)
+        print("pub key hash160:      ");  println(pubkeyHash.toString)
+        print("Address:              ");  println(pubkeyHash.address)
       }
       else if (input.length() == 35) {
         val pubkeyHash = Ecdsa.PublicKeyHash.fromAddress(input).get
-        print("pub key hash160:      ");
-        println(pubkeyHash.toString)
-        print("Address:              ");
-        println(pubkeyHash.address)
+        print("pub key hash160:      ");  println(pubkeyHash.toString)
+        print("Address:              ");  println(pubkeyHash.address)
       }
       else {
         println("input format error")
@@ -244,6 +227,8 @@ class ChainCreateTxCommand extends Command {
       "private key", true, true),
     new StringParameter("type", "type",
       "tx type", true, true),
+    new StringParameter("from", "from",
+      "from address", true, true),
     new StringParameter("to", "to",
       "to address", true, true),
     new StringParameter("amount", "amount",
@@ -265,15 +250,16 @@ class ChainCreateTxCommand extends Command {
   override def execute(params: List[String]): Result = {
     try {
       val key = paramList.params(0).asInstanceOf[StringParameter].value
-      val txtype = TransactionType(paramList.params(1).asInstanceOf[StringParameter].value.toInt)
-      val toAddr = PublicKeyHash.fromAddress(paramList.params(2).asInstanceOf[StringParameter].value).get
-      val amount = FixedNumber(BigInt(paramList.params(3).asInstanceOf[StringParameter].value))
-      val nonce = paramList.params(4).asInstanceOf[StringParameter].value.toLong
-      val data = paramList.params(5).asInstanceOf[StringParameter].value
-      val gasprice = FixedNumber(BigInt(paramList.params(6).asInstanceOf[StringParameter].value))
-      val gaslimit = BigInt(paramList.params(7).asInstanceOf[StringParameter].value)
-      val executetime = paramList.params(8).asInstanceOf[StringParameter].value.toLong
-      val version = paramList.params(9).asInstanceOf[StringParameter].value.toInt
+      val txtype = paramList.params(1).asInstanceOf[StringParameter].value.toInt
+      val fromAddr = PublicKeyHash.fromAddress(paramList.params(2).asInstanceOf[StringParameter].value).get
+      val toAddr = PublicKeyHash.fromAddress(paramList.params(3).asInstanceOf[StringParameter].value).get
+      val amount = FixedNumber(BigInt(paramList.params(4).asInstanceOf[StringParameter].value))
+      val nonce = paramList.params(5).asInstanceOf[StringParameter].value.toLong
+      val data = paramList.params(6).asInstanceOf[StringParameter].value
+      val gasprice = FixedNumber(BigInt(paramList.params(7).asInstanceOf[StringParameter].value))
+      val gaslimit = BigInt(paramList.params(8).asInstanceOf[StringParameter].value)
+      val executetime = paramList.params(9).asInstanceOf[StringParameter].value.toLong
+      val version = paramList.params(10).asInstanceOf[StringParameter].value.toInt
 
       var txData = BinaryData.empty
       if (data.length > 1)
@@ -281,18 +267,28 @@ class ChainCreateTxCommand extends Command {
 
       val privateKey = Ecdsa.PrivateKey.fromWIF(key).get
 
-      val tx = new Transaction(txtype, privateKey.publicKey.pubKeyHash, toAddr, amount, nonce,
+      val tx = new Transaction(TransactionType(1), fromAddr, toAddr, amount, nonce,
         txData, gasprice, gaslimit, BinaryData.empty, version, executetime)
 
       tx.sign(privateKey)
 
-      val bs = new ByteArrayOutputStream()
-      val os = new DataOutputStream(bs)
-      tx.serialize(os)
+      val dataForSign = tx.dataForSigning()
 
-      println("tx=" + BinaryData(bs.toByteArray).toString)
+      dataForSign(4) = txtype.byteValue()
 
-      println("txid=" + tx.id)
+      val signature = Crypto.sign(dataForSign, privateKey.toBin)
+
+      //println("signature=" + BinaryData(signature))
+
+      val newtx = BinaryData(dataForSign).toString +
+        BinaryData(Seq(signature.length.toByte)).toString +
+        BinaryData(signature).toString
+
+      println("tx=" + newtx)
+
+      val txid = UInt256.fromBytes(Crypto.hash256(BinaryData(newtx)))
+
+      println("txid=" + txid)
 
       Success("Done")
     } catch {
