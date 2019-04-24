@@ -136,35 +136,52 @@ class ChainKeyCommand extends Command {
 
       if (input.length() == 64) {
         val privateKey = Ecdsa.PrivateKey(BinaryData(input))
-        print("priv key raw:         ");  println(privateKey.toString)  // 32
-        print("priv key WIF format:  ");  println(privateKey.toWIF)
-        print("pub key (compressed): ");  println(privateKey.publicKey.toString)  // 1 + 32
-        print("pub key hash160:      ");  println(privateKey.publicKey.pubKeyHash.toString)
-        print("Address:              ");  println(privateKey.publicKey.address)
+        print("priv key raw:         ");
+        println(privateKey.toString) // 32
+        print("priv key WIF format:  ");
+        println(privateKey.toWIF)
+        print("pub key (compressed): ");
+        println(privateKey.publicKey.toString) // 1 + 32
+        print("pub key hash160:      ");
+        println(privateKey.publicKey.pubKeyHash.toString)
+        print("Address:              ");
+        println(privateKey.publicKey.address)
       }
       else if (input.startsWith("K") || input.startsWith("L")) {
         val privateKey = Ecdsa.PrivateKey.fromWIF(input).get
-        print("priv key raw:         ");  println(privateKey.toString)  // 32
-        print("priv key WIF format:  ");  println(privateKey.toWIF)
-        print("pub key (compressed): ");  println(privateKey.publicKey.toString)  // 1 + 32
-        print("pub key hash160:      ");  println(privateKey.publicKey.pubKeyHash.toString)
-        print("Address:              ");  println(privateKey.publicKey.address)
+        print("priv key raw:         ");
+        println(privateKey.toString) // 32
+        print("priv key WIF format:  ");
+        println(privateKey.toWIF)
+        print("pub key (compressed): ");
+        println(privateKey.publicKey.toString) // 1 + 32
+        print("pub key hash160:      ");
+        println(privateKey.publicKey.pubKeyHash.toString)
+        print("Address:              ");
+        println(privateKey.publicKey.address)
       }
       else if (input.length() == 66) {
         val pubkey = Ecdsa.PublicKey(BinaryData(input))
-        print("pub key (compressed): ");  println(pubkey.toString)  // 1 + 32
-        print("pub key hash160:      ");  println(pubkey.pubKeyHash.toString)
-        print("Address:              ");  println(pubkey.address)
+        print("pub key (compressed): ");
+        println(pubkey.toString) // 1 + 32
+        print("pub key hash160:      ");
+        println(pubkey.pubKeyHash.toString)
+        print("Address:              ");
+        println(pubkey.address)
       }
       else if (input.length() == 40) {
         val pubkeyHash = UInt160.fromBytes(BinaryData(input))
-        print("pub key hash160:      ");  println(pubkeyHash.toString)
-        print("Address:              ");  println(pubkeyHash.address)
+        print("pub key hash160:      ");
+        println(pubkeyHash.toString)
+        print("Address:              ");
+        println(pubkeyHash.address)
       }
       else if (input.length() == 35) {
         val pubkeyHash = Ecdsa.PublicKeyHash.fromAddress(input).get
-        print("pub key hash160:      ");  println(pubkeyHash.toString)
-        print("Address:              ");  println(pubkeyHash.address)
+        print("pub key hash160:      ");
+        println(pubkeyHash.toString)
+        print("Address:              ");
+        println(pubkeyHash.address)
       }
       else {
         println("input format error")
@@ -370,11 +387,12 @@ class GasCommand extends Command {
 object ChainCommand {
 
   def getStrRes(rpcRes: JsValue): String = {
-    var result = rpcRes.\("result").get.toString()
-    if (result.equals("\"\"")) {
-      result = ""
+    val result = rpcRes.\("result").get
+    if (result.toString().startsWith("\"")) {
+      result.as[String]
+    } else {
+      result.toString()
     }
-    result
   }
 
   def getBooleanRes(rpcRes: JsValue): Boolean = {
