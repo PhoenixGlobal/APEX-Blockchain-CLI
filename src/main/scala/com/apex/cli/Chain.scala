@@ -370,7 +370,11 @@ class GasCommand extends Command {
 object ChainCommand {
 
   def getStrRes(rpcRes: JsValue): String = {
-    rpcRes.\("result").get.toString()
+    var result = rpcRes.\("result").get.toString()
+    if (result.equals("\"\"")) {
+      result = ""
+    }
+    result
   }
 
   def getBooleanRes(rpcRes: JsValue): Boolean = {
