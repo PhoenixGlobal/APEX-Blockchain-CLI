@@ -15,7 +15,7 @@ object RPC {
   val client = new OkHttpClient
 
   var rpcUrl = "http://127.0.0.1:8080/"
-
+//var rpcUrl = "http://139.217.231.29:9091/"
   val mediaType = MediaType.parse("application/json; charset=utf-8")
 
   def post(path: String, data: String, callUrl: String = rpcUrl) = {
