@@ -3,16 +3,15 @@ package com.apex.cli
 import java.io.{File, FileWriter}
 import java.nio.file.Paths
 
-
 import com.apex.core.TransactionType
 import com.apex.crypto.{BinaryData, Ecdsa, FixedNumber, UInt160}
 import com.apex.solidity.Abi
 import com.apex.solidity.compiler.{CompilationResult, SolidityCompiler}
 import com.apex.solidity.compiler.SolidityCompiler.Options.{ABI, BIN, INTERFACE, METADATA}
 import javax.script.ScriptEngineManager
-
 import org.junit.Assert
 
+import scala.io.Source
 import scala.util.Try
 
 /*
@@ -241,28 +240,15 @@ case class DeployInfo(gasLimit: BigInt, gasPrice: FixedNumber, amount: BigDecima
 case class CallInfo(gasLimit: BigInt, gasPrice: FixedNumber, amount: BigDecimal, contractAddress: String, abiPath: String, methodName: String)
 
 object RunCommand {
-  val script =
-    "var BigInt = Java.type('scala.math.BigInt');\n" +
-      "var BigDecimal = Java.type('scala.math.BigDecimal');\n" +
-      "var FixedNumber = Java.type('com.apex.crypto.FixedNumber');\n" +
-      "var DeployInfo = Java.type('com.apex.cli.DeployInfo');\n" +
-      "var CallInfo = Java.type('com.apex.cli.CallInfo');\n" +
-      "function deploy(gas,price,amount,path,name) {\n" +
-      "   var gasLimit = BigInt.apply(gas);\n" +
-      "   var gasPrice = new FixedNumber(BigInt.apply(price));\n" +
-      //      "   var value = new FixedNumber(BigInt.apply(amount));\n" +
-      "   var value = BigDecimal.decimal(amount);\n" +
-      "   var args = Java.to(Array.prototype.slice.call(arguments,5), 'java.lang.Object[]');" +
-      "   var deploy = new DeployInfo(gasLimit,gasPrice,value,path,name,args)\n" +
-      "   return deploy;\n" +
-      "}\n" +
-      "function call(gasLimit,gasPrice,amount,contractAddress,abiPath, methodName) {\n" +
-      "   var gasLimit = BigInt.apply(gasLimit);\n" +
-      "   var gasPrice = new FixedNumber(BigInt.apply(gasPrice));\n" +
-      "   var value = BigDecimal.decimal(amount);\n" +
-      //      "   var args = Java.to(Array.prototype.slice.call(arguments,6), 'java.lang.Object[]');" +
-      "    return new CallInfo(gasLimit,gasPrice,value,contractAddress,abiPath, methodName)\n" +
-      "}\n"
+
+  val script = loadScript("script.txt")
+
+  private def loadScript(path: String): String = {
+    val source = Source.fromFile(path)
+    val content = source.getLines().mkString("\n")
+    source.close()
+    content
+  }
 }
 
 class RunCommand extends Command {
