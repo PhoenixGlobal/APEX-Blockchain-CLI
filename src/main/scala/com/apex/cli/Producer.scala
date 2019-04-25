@@ -136,8 +136,8 @@ class ProducerCommand extends CompositeCommand {
 
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
-      new AddressParameter("address", "address", "The supported node address."),
-      new AmountParameter("count", "count", "The number of votes."),
+      new AddressParameter("addr", "addr", "The supported node address."),
+      new AmountParameter("amount", "amount", "The number of votes."),
       new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay.")
     )
 
@@ -178,8 +178,8 @@ class ProducerCommand extends CompositeCommand {
 
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
-      new AddressParameter("address", "address", "The supported node address."),
-      new AmountParameter("count", "count", "The number of votes."),
+      new AddressParameter("addr", "addr", "The supported node address."),
+      new AmountParameter("amount", "amount", "The number of votes."),
       new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay.")
     )
 
@@ -243,7 +243,7 @@ class ProducerCommand extends CompositeCommand {
     override val description = "Query node information by node address"
 
     override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("address", "address", "The address of the producer node.")
+      new StringParameter("addr", "addr", "The address of the producer node.")
     )
 
     override def execute(params: List[String]): Result = {
@@ -268,7 +268,7 @@ class ProducerCommand extends CompositeCommand {
     override val description = "Query this address for currently redeemable votes."
 
     override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("address", "a", "Query this address for currently redeemable votes.")
+      new StringParameter("address", "addr", "Query this address for currently redeemable votes.")
     )
 
     override def execute(params: List[String]): Result = {

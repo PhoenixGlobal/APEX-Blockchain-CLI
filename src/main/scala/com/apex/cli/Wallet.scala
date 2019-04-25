@@ -151,17 +151,17 @@ object WalletCache {
   val filePath = System.getProperty("user.home") + "/cli_wallet/"
 
   def fileExist(name: String): Boolean = {
-    val path = filePath + name + ".json"
+    val path = filePath + name + ".wallet"
 
     Files.exists(Paths.get(path))
   }
 
   def getFileList(): Array[File] = {
-    new File(filePath).listFiles().filter(!_.isDirectory)
+    new File(filePath).listFiles().filter(!_.isDirectory).filter(f => f.getName.endsWith("wallet"))
   }
 
   def readWallet(name: String): String = {
-    val path = filePath + name + ".json"
+    val path = filePath + name + ".wallet"
     val file = Source.fromFile(path)
     val walletContent = file.getLines.mkString
     file.close()
@@ -183,7 +183,7 @@ object WalletCache {
       exportFile.mkdir()
     }
 
-    val path = filePath + name + ".json"
+    val path = filePath + name + ".wallet"
 
     val wallet = new Wallet(name, key, accounts)
 
@@ -225,7 +225,6 @@ class WalletCommand extends CompositeCommand {
 
   override val subCommands: Seq[Command] = Seq(
     new WalletNewCommand,
-    new WalletLoadCommand,
     new WalletCloseCommand,
     new WalletActivateCommand,
     new WalletActCommand,
@@ -321,22 +320,14 @@ class WalletCommand extends CompositeCommand {
   class WalletCloseCommand extends Command {
 
     override val cmd: String = "close"
-    override val description: String = "Close a loaded wallet"
-
-    override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("name", "n", "Wallet's name.")
-    )
+    override val description: String = "Close the currently active wallet"
 
     override def execute(params: List[String]): Result = {
 
       try {
-        val name = paramList.params(0).asInstanceOf[StringParameter].value
-
-        if (!WalletCache.isExist(name)) InvalidParams("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
-        else {
-          WalletCache.remove(name)
-          Success("wallet close success\n")
-        }
+        val name = WalletCache.activityWallet
+        WalletCache.remove(name)
+        Success("wallet close success\n")
       } catch {
         case e: Throwable => Error(e)
       }
@@ -346,7 +337,7 @@ class WalletCommand extends CompositeCommand {
   class WalletActivateCommand extends Command {
 
     override val cmd: String = "activate"
-    override val description: String = "Activate a candidate wallet. Use this command to switch amoung different wallets"
+    override val description: String = "Activate an existing wallet, only one wallet can be activated at a time"
 
     override val paramList: ParameterList = ParameterList.create(
       new StringParameter("name", "n", "Wallet's name.")
@@ -358,16 +349,15 @@ class WalletCommand extends CompositeCommand {
         val name = paramList.params(0).asInstanceOf[StringParameter].value
 
         // 判断要激活的钱包是否存在
-        if (!WalletCache.isExist(name)) InvalidParams("Wallet [" + name + "] have not loaded, type \"wallet list\" to see all loaded wallet.")
+
+        val password = Wallet.enterPassword()
+        if (password.isEmpty) Help("Welcome to CLI, type \"help\" for command list:")
         else {
-          val password = Wallet.enterPassword()
-          if (password.isEmpty) Help("Welcome to CLI, type \"help\" for command list:")
-          else {
-            loadWallet(name, password)
-            // 设置钱包的状态
-            WalletCache.setActivate(name)
-            Success("wallet activate success\n")
-          }
+          loadWallet(name, password)
+          // 设置钱包的状态
+          WalletCache.setActivate(name)
+          Success("wallet activate success\n")
+
         }
       } catch {
         case e: BadPaddingException => InvalidParams("Invalid password\n")
@@ -383,27 +373,33 @@ class WalletCommand extends CompositeCommand {
   class WalletListCommand extends Command {
 
     override val cmd: String = "list"
-    override val description: String = "List all candidate wallet"
+    override val description: String = "list existing wallets"
 
     override def execute(params: List[String]): Result = {
-
       try {
-        println("Wallet  --  Loaded  --  Activated")
-        WalletCache.getFileList().foreach { i =>
-          val filename = i.getName
-          val walletname = filename.substring(0, filename.lastIndexOf("."))
-          print(walletname + "  --  ")
-          if (!WalletCache.isExist(walletname)) {
-            print("False  --  False")
-          } else {
-            print("True  --  ")
-            val wallet = WalletCache.get(walletname)
-            if (wallet.activate && checkWalletStatus.isEmpty) print("True")
-            else print("False")
+        var walletListFile = WalletCache.getFileList()
+        if (walletListFile.size == 0) {
+          println("No found wallet in local, please use 'wallet new -n xxx' to create a wallet first.")
+        } else {
+          println("Wallet  --  Loaded  --  Activated")
+          walletListFile.foreach { i =>
+            val filename = i.getName
+            if (filename.endsWith(".wallet")) {
+              val walletname = filename.substring(0, filename.lastIndexOf("."))
+              print(walletname + "  --  ")
+              if (!WalletCache.isExist(walletname)) {
+                print("False  --  False")
+              } else {
+                print("True  --  ")
+                val wallet = WalletCache.get(walletname)
+                if (wallet.activate && checkWalletStatus.isEmpty) print("True")
+                else print("False")
+              }
+              println("")
+            }
           }
-          println("")
         }
-        Success("wallet list success\n")
+        Success("")
       } catch {
         case e: Throwable => Error(e)
       }

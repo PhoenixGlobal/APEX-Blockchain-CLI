@@ -87,7 +87,7 @@ class SendCommand extends Command {
               BinaryData.empty, true, nextNonce, gasPrice, BigInt(gasLimit))
             val result = Util.sendTx(tx)
 
-            if (ChainCommand.checkTxSucceed(result)) Success("execute succeed, the transaction hash is " + tx.id())
+            if (ChainCommand.checkTxSucceed(result)) Success("Transaction broadcast success, the transaction hash is " + tx.id())
             else ChainCommand.returnTxFail(result)
           }
 
@@ -121,7 +121,7 @@ class BroadcastCommand extends Command {
 
         if (tx.verifySignature()) {
           val rpcResult = Util.sendTx(tx)
-          if (ChainCommand.checkTxSucceed(rpcResult)) Success("execute succeed, the transaction hash is " + tx.id())
+          if (ChainCommand.checkTxSucceed(rpcResult)) Success("Transaction broadcast success, the transaction hash is " + tx.id())
           else ChainCommand.returnTxFail(rpcResult)
         } else Success("There was an error in the original transaction information that could not be resolved.")
       }

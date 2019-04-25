@@ -67,7 +67,7 @@ object Command {
 
   def execCommand(list: List[String], all: Map[String, Seq[Command]]): Result = {
     list match {
-        // 将集合分为1：其它，判断命令是否存在
+      // 将集合分为1：其它，判断命令是否存在
       case cmd :: tail if all.contains(cmd) =>
         // 验证参数信息
         all(cmd).find(_.validate(tail)) match {
@@ -99,7 +99,6 @@ object Command {
 
     if (message == null) {
       val title = titleMsg
-
       val column = s"${paddingTail("name", 15)} description"
 
       val content = all.flatMap(
@@ -127,13 +126,16 @@ object Command {
 
     if (message == null) {
       val title = command.description
+      if (command.paramList.params.size > 0) {
+        val column = s"${paddingTail("name", 15)} description"
 
-      val column = s"${paddingTail("name", 15)} description"
-
-      val content = command.paramList.params.map(p => {
-        s"${paddingTail("-" + p.shortName, 15)} ${p.description}"
-      }).mkString("\n")
-      message = s"$title\n$column\n$content"
+        val content = command.paramList.params.map(p => {
+          s"${paddingTail("-" + p.shortName, 15)} ${p.description}"
+        }).mkString("\n")
+        message = s"$title\n$column\n$content"
+      } else {
+        message = title
+      }
     }
 
     message;

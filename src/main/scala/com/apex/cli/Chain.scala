@@ -59,9 +59,9 @@ class BlockCommand extends Command {
 
   override val paramList: ParameterList = ParameterList.create(
     new IntParameter("height", "height",
-      "The height of block. Use either this param or \"id\", If both give, the front one make sense.", true, true),
+      "The height of block. Use either this param or \"hash\", If both give, the front one make sense.", true, true),
     new PrivKeyParameter("hash", "hash",
-      "The hash of block. Use either this param or \"id\", If both give, the front one make sense.", true, true)
+      "The height of block. Use either this param or \"hash\", If both give, the front one make sense.", true, true)
   )
 
   override def execute(params: List[String]): Result = {
@@ -319,7 +319,7 @@ class ChainCreateTxCommand extends Command {
 
 class TransactionCommand extends Command {
   override val cmd = "tx"
-  override val description = "how data of the transaction"
+  override val description = "show data of the transaction"
 
   override val paramList: ParameterList = ParameterList.create(
     new StringParameter("hash", "hash", "The hash of transaction.")

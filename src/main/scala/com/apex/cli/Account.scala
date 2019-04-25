@@ -182,7 +182,7 @@ object Account {
     walletCache.lastModify = Calendar.getInstance().getTimeInMillis
   }
 
-  def getNonce(address: String): Long ={
+  def getNonce(address: String): Long = {
     val account = RPC.post("showaccount", s"""{"address":"${address}"}""")
     Account.getResultNonce(account)
   }
@@ -263,7 +263,7 @@ class NewAccountCommand extends Command {
 
         WalletCache.writeActWallet
 
-        Success("success, address：" + account.address + "\n" +",publicKeyHash："+Ecdsa.PublicKeyHash.fromAddress(account.address))
+        Success("success, address：" + account.address + "\n" + ",publicKeyHash：" + Ecdsa.PublicKeyHash.fromAddress(account.address))
       }
     } catch {
       case e: Throwable => Error(e)
@@ -279,7 +279,7 @@ class DeleteCommand extends Command {
   override val paramList: ParameterList = ParameterList.create(
     new NicknameParameter("alias", "a",
       "The alias of account. Use either this param or \"address\", If both give, the front one make sense.", true, true),
-    new AddressParameter("address", "address",
+    new AddressParameter("addr", "addr",
       "The address of account. Use either this param or \"a\", If both give, the front one make sense.", true, true)
   )
 
@@ -352,7 +352,7 @@ class ShowCommand extends Command {
   override val paramList: ParameterList = ParameterList.create(
     new NicknameParameter("alias", "a",
       "The alias of account. Use either this param or \"address\", If both give, the front one make sense.", true, true),
-    new AddressParameter("address", "address",
+    new AddressParameter("addr", "addr",
       "The address of account. Use either this param or \"a\", If both give, the front one make sense.", true, true)
   )
 
@@ -385,7 +385,7 @@ class ImplyCommand extends Command {
   override val paramList: ParameterList = ParameterList.create(
     new NicknameParameter("alias", "a",
       "The alias of account. Use either this param or \"address\", If both give, the front one make sense.", true, true),
-    new AddressParameter("address", "address",
+    new AddressParameter("addr", "addr",
       "The address of account. Use either this param or \"a\", If both give, the front one make sense.", true, true)
   )
 
@@ -444,7 +444,7 @@ class GetNonceCommand extends Command {
   override val paramList: ParameterList = ParameterList.create(
     new NicknameParameter("alias", "a",
       "The alias of account. Use either this param or \"address\", If both give, the front one make sense.", true, true),
-    new AddressParameter("address", "address",
+    new AddressParameter("addr", "addr",
       "The address of account. Use either this param or \"a\", If both give, the front one make sense.", true, true)
   )
 
@@ -467,11 +467,11 @@ class GetNonceCommand extends Command {
 class ImportCommand extends Command {
 
   override val cmd: String = "import"
-  override val description: String = "Import account to current wallet"
+  override val description: String = "Import an account through a private key"
 
   override val paramList: ParameterList = ParameterList.create(
     new StringParameter("key", "key", "Pivate key"),
-    new NicknameParameter("alias", "a", "alias of account")
+    new NicknameParameter("alias", "a", "alias of account,should be at least a alphabet and number")
   )
 
   override def execute(params: List[String]): Result = {
@@ -518,15 +518,12 @@ class ExportCommand extends Command {
 
   override val paramList: ParameterList = ParameterList.create(
     new NicknameParameter("alias", "a", "alias of account"),
-    new StringParameter("file", "file",
-      "The file which the private key is wrote to.Omit it if you want to print the private key on the screen.", true)
   )
 
   override def execute(params: List[String]): Result = {
 
     try {
       val alias = paramList.params(0).asInstanceOf[NicknameParameter].value
-      val file = paramList.params(1).asInstanceOf[StringParameter].value
 
       val checkResult = Account.checkWalletStatus
       if (!checkResult.isEmpty) InvalidParams(checkResult)
@@ -534,12 +531,7 @@ class ExportCommand extends Command {
         WalletCache.reActWallet
         // 显示私钥
         val account = Account.getAccount(alias)
-
-        if (file == null)
-          println("pri ==> " + account.pri)
-        else {
-          WalletCache.exportAccount(account.pri, file)
-        }
+        println("pri ==> " + account.pri)
         Success("export success\n")
       }
     } catch {
