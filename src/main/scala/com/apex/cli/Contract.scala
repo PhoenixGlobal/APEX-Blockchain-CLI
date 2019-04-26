@@ -4,6 +4,7 @@ import java.io.{File, FileWriter}
 import java.nio.file.Paths
 
 import com.apex.core.TransactionType
+import com.apex.crypto.Crypto.sha3
 import com.apex.crypto.{BinaryData, Ecdsa, FixedNumber, UInt160}
 import com.apex.solidity.Abi
 import com.apex.solidity.compiler.{CompilationResult, SolidityCompiler}
@@ -381,4 +382,17 @@ class RunCommand extends Command {
     fw.write(data)
     fw.close()
   }
+
+}
+
+class FunctionCrypto {
+
+  def signFunction(addressWif: String, funcArgs: String): Array[Byte] = {
+    val publicKey = Ecdsa.PublicKeyHash.fromAddress(addressWif).get
+    val funcSign = sha3(funcArgs.getBytes).take(4)
+
+    publicKey.data ++ funcSign
+
+  }
+
 }

@@ -3,21 +3,48 @@ var BigDecimal = Java.type('scala.math.BigDecimal');
 var FixedNumber = Java.type('com.apex.crypto.FixedNumber');
 var DeployInfo = Java.type('com.apex.cli.DeployInfo');
 var CallInfo = Java.type('com.apex.cli.CallInfo');
+var FunctionCrypto = Java.type('com.apex.cli.FunctionCrypto');
 
 function deploy(gas,price,amount,path,name) {
     var gasLimit = BigInt.apply(gas);
     var gasPrice = new FixedNumber(BigInt.apply(price));
     //  var value = new FixedNumber(BigInt.apply(amount));
     var value = BigDecimal.decimal(amount);
+    print("++++++++")
     var args = Java.to(Array.prototype.slice.call(arguments,5), 'java.lang.Object[]');
     var deploy = new DeployInfo(gasLimit,gasPrice,value,path,name,args)
+
     return deploy;
 }
 
-function call(gasLimit,gasPrice,amount,contractAddress,abiPath, methodName) {
-    var gasLimit = BigInt.apply(gasLimit);
-    var gasPrice = new FixedNumber(BigInt.apply(gasPrice));
+function call(gas,price,amount,contractAddress,abiPath, methodName) {
+    var gasLimit = BigInt.apply(gas);
+    var gasPrice = new FixedNumber(BigInt.apply(price));
     var value = BigDecimal.decimal(amount);
     //         var args = Java.to(Array.prototype.slice.call(arguments,6), 'java.lang.Object[]');
     return new CallInfo(gasLimit,gasPrice,value,contractAddress,abiPath, methodName)
+}
+
+// contract A {
+//     constructor() public payable {}
+
+//     function a(uint p) public returns (uint) { return 1; }
+// }
+
+// contract B {
+//   constructor(function (uint) external returns(uint) f) public {}
+// }
+
+// contract run -p deploy(500000,100,1.1, "E:/contracts/B.sol","B", F("APDoJpn8aUCDgksSpWFkAmuG5v2qWRzGCDP", "a", "uint"))
+
+
+function F(address, method){
+    print("--------")
+    print(address)
+
+    var funcArgs = Array.prototype.slice.call(arguments,3);
+    var funcSign=method+"("+funcArgs.join(",")+")"
+
+    return new FunctionCrypto().signFunction(address,funcSign)
+
 }
