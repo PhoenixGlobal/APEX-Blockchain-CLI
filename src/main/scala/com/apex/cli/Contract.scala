@@ -245,7 +245,13 @@ object RunCommand {
   val script = loadScript("script.txt")
 
   private def loadScript(path: String): String = {
-    val source = Source.fromFile(path)
+    var file = path
+    if (!new File(path).exists()) {
+      file = "src/main/resources/script.txt"  //default path
+    }
+
+    val source = Source.fromFile(file)
+
     val content = source.getLines().mkString("\n")
     source.close()
     content
