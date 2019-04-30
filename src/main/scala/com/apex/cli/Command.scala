@@ -53,16 +53,31 @@ trait Command {
 }
 
 object Command {
+  var reg ="""\(.+\)""".r
 
   def execute(command: String): Result = {
     ParameterList.setNull()
     // 判断是否为空
     if (!command.trim.isEmpty) {
-      val list = command.trim.split("""\s+""").toList
+      val list = preProcess(command.trim).split("""\s+""").toList
       execCommand(list, all)
     } else {
       NoInput()
     }
+  }
+
+  /**
+    * @param command
+    * @return remove space in (), eg: (ab  cd) => (abcd)
+    */
+  def preProcess(command: String): String = {
+    val mat = reg.findFirstIn(command)
+    if (mat.isDefined) {
+      val matBefore = mat.get
+      val matAfter = matBefore.replaceAll("\\s+", "")
+      command.replace(matBefore, matAfter)
+    } else
+      command
   }
 
   def execCommand(list: List[String], all: Map[String, Seq[Command]]): Result = {
