@@ -431,7 +431,10 @@ class AccountListCommand extends Command {
         Success("account list success\n")
       }
     } catch {
-      case e: Throwable => Error(e)
+      case e: Throwable => {
+        e.printStackTrace()
+        Error(e)
+      }
     }
   }
 }

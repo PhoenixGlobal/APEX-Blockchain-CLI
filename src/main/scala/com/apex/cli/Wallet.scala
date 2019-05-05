@@ -401,7 +401,10 @@ class WalletCommand extends CompositeCommand {
         }
         Success("")
       } catch {
-        case e: Throwable => Error(e)
+        case e: Throwable => {
+          e.printStackTrace()
+          Error(e)
+        }
       }
     }
   }
