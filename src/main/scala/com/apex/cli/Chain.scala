@@ -92,10 +92,10 @@ class BlockCommand extends Command {
 
 class ChainAccountCommand extends Command {
   override val cmd = "account"
-  override val description = "Show data of a account"
+  override val description = "Show data of a account (-addr XXX)"
 
   override val paramList: ParameterList = ParameterList.create(
-    new AddressParameter("address", "address",
+    new AddressParameter("addr", "addr",
       "The address of account.", true, true)
   )
 
@@ -136,52 +136,35 @@ class ChainKeyCommand extends Command {
 
       if (input.length() == 64) {
         val privateKey = Ecdsa.PrivateKey(BinaryData(input))
-        print("priv key raw:         ");
-        println(privateKey.toString) // 32
-        print("priv key WIF format:  ");
-        println(privateKey.toWIF)
-        print("pub key (compressed): ");
-        println(privateKey.publicKey.toString) // 1 + 32
-        print("pub key hash160:      ");
-        println(privateKey.publicKey.pubKeyHash.toString)
-        print("Address:              ");
-        println(privateKey.publicKey.address)
+        print("priv key raw:         ");  println(privateKey.toString)  // 32
+        print("priv key WIF format:  ");  println(privateKey.toWIF)
+        print("pub key (compressed): ");  println(privateKey.publicKey.toString)  // 1 + 32
+        print("pub key hash160:      ");  println(privateKey.publicKey.pubKeyHash.toString)
+        print("Address:              ");  println(privateKey.publicKey.address)
       }
       else if (input.startsWith("K") || input.startsWith("L")) {
         val privateKey = Ecdsa.PrivateKey.fromWIF(input).get
-        print("priv key raw:         ");
-        println(privateKey.toString) // 32
-        print("priv key WIF format:  ");
-        println(privateKey.toWIF)
-        print("pub key (compressed): ");
-        println(privateKey.publicKey.toString) // 1 + 32
-        print("pub key hash160:      ");
-        println(privateKey.publicKey.pubKeyHash.toString)
-        print("Address:              ");
-        println(privateKey.publicKey.address)
+        print("priv key raw:         ");  println(privateKey.toString)  // 32
+        print("priv key WIF format:  ");  println(privateKey.toWIF)
+        print("pub key (compressed): ");  println(privateKey.publicKey.toString)  // 1 + 32
+        print("pub key hash160:      ");  println(privateKey.publicKey.pubKeyHash.toString)
+        print("Address:              ");  println(privateKey.publicKey.address)
       }
       else if (input.length() == 66) {
         val pubkey = Ecdsa.PublicKey(BinaryData(input))
-        print("pub key (compressed): ");
-        println(pubkey.toString) // 1 + 32
-        print("pub key hash160:      ");
-        println(pubkey.pubKeyHash.toString)
-        print("Address:              ");
-        println(pubkey.address)
+        print("pub key (compressed): ");  println(pubkey.toString)  // 1 + 32
+        print("pub key hash160:      ");  println(pubkey.pubKeyHash.toString)
+        print("Address:              ");  println(pubkey.address)
       }
       else if (input.length() == 40) {
         val pubkeyHash = UInt160.fromBytes(BinaryData(input))
-        print("pub key hash160:      ");
-        println(pubkeyHash.toString)
-        print("Address:              ");
-        println(pubkeyHash.address)
+        print("pub key hash160:      ");  println(pubkeyHash.toString)
+        print("Address:              ");  println(pubkeyHash.address)
       }
       else if (input.length() == 35) {
         val pubkeyHash = Ecdsa.PublicKeyHash.fromAddress(input).get
-        print("pub key hash160:      ");
-        println(pubkeyHash.toString)
-        print("Address:              ");
-        println(pubkeyHash.address)
+        print("pub key hash160:      ");  println(pubkeyHash.toString)
+        print("Address:              ");  println(pubkeyHash.address)
       }
       else {
         println("input format error")
