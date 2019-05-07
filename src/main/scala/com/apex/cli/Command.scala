@@ -171,6 +171,7 @@ object Command {
     new AssetCommand,
     new ContractCommand,
     new ProducerCommand,
+    new ProposalCommand,
 
     new HelpC,
     new VerC,
