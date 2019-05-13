@@ -123,11 +123,11 @@ class ChainAccountCommand extends Command {
 
 class ChainKeyCommand extends Command {
   override val cmd = "key"
-  override val description = "key convert tool (-input XXX)"
+  override val description = "Private key format conversion, which can convert one private key format to a private key in other format"
 
   override val paramList: ParameterList = ParameterList.create(
     new StringParameter("input", "input",
-      "The input key, any type", true, true)
+      "Private key in any format", true, true)
   )
 
   override def execute(params: List[String]): Result = {

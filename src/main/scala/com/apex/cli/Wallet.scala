@@ -285,6 +285,7 @@ class WalletCommand extends CompositeCommand {
 
   }
 
+  @Deprecated
   class WalletLoadCommand extends Command {
 
     override val cmd: String = "load"
@@ -381,20 +382,17 @@ class WalletCommand extends CompositeCommand {
         if (walletListFile.size == 0) {
           println("No found wallet in local, please use 'wallet new -n xxx' to create a wallet first.")
         } else {
-          println("Wallet  --  Loaded  --  Activated")
+          println("Wallet  --  Activated")
           walletListFile.foreach { i =>
             val filename = i.getName
             if (filename.endsWith(".wallet")) {
               val walletname = filename.substring(0, filename.lastIndexOf("."))
               print(walletname + "  --  ")
-              if (!WalletCache.isExist(walletname)) {
-                print("False  --  False")
-              } else {
-                print("True  --  ")
-                val wallet = WalletCache.get(walletname)
-                if (wallet.activate && checkWalletStatus.isEmpty) print("True")
-                else print("False")
-              }
+
+              val wallet = WalletCache.get(walletname)
+              if (wallet.activate && checkWalletStatus.isEmpty) print("True")
+              else print("False")
+
               println("")
             }
           }
