@@ -48,7 +48,7 @@ function call(gas,price,amount,contractAddress,abiPath, methodName) {
     return new CallInfo(gasLimit,gasPrice,value,contractAddress,abiPath, methodName)
 }
 
-function F(address, method){
+function signFunction(address, method){
     var funcArgs = Array.prototype.slice.call(arguments,2);
     var funcSign=method+"("+funcArgs.join(",")+")"
 
