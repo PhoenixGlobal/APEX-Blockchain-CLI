@@ -390,8 +390,8 @@ class WalletCommand extends CompositeCommand {
               print(walletname + "  --  ")
 
               val wallet = WalletCache.get(walletname)
-              if (wallet.activate && checkWalletStatus.isEmpty) print("True")
-              else print("False")
+              if (wallet == null || !wallet.activate) print("False")
+              else  print("True")
 
               println("")
             }
