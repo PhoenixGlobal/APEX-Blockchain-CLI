@@ -32,7 +32,7 @@ class ProposalCommand extends CompositeCommand {
 
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
-      new IntParameter("para", "para", "The parameter you proposal to change."),
+      new IntParameter("para", "para", "The parameter you proposal to change. (1:BlockAward, 2:TxMinGasPrice, 3:TxMaxGasLimit)"),
       new IntParameter("time", "time", "The proposal apply time (UTC seconds)"),
       new StringParameter("content", "content", "The proposal data."),
       new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay.")
@@ -56,7 +56,9 @@ class ProposalCommand extends CompositeCommand {
             val price = paramList.params(4).asInstanceOf[GasPriceParameter].value
             val gasPrice = Util.calcGasPrice(price)
 
-            val txData = ProposalData(ProposalType(para), time.longValue() * 1000, FixedNumber.fromDecimal(BigDecimal(content)).toBytes).toBytes
+            var txData = ProposalData(ProposalType(para), time.longValue() * 1000, FixedNumber.fromDecimal(BigDecimal(content)).toBytes).toBytes
+            if (para == 3)
+              txData = ProposalData(ProposalType(para), time.longValue() * 1000, FixedNumber(BigDecimal(content).toBigInt).toBytes).toBytes
             val tx = Util.buildTx(TransactionType.Call, from, proposalAddr.toUInt160, FixedNumber.Zero, txData, gasPrice = gasPrice)
             val rpcTxResult = Util.sendTx(tx)
             printRes(rpcTxResult, tx.id())
