@@ -76,21 +76,22 @@ class SendCommand extends Command {
           var nextNonce = Account.getResultNonce(account)
           val balance = Account.getResultBalance(account)
 
-          if (nextNonce != 0 && nonce > 0 && nextNonce > nonce) InvalidParams("The nonce must be greater than the maximum value that the current address has used on the chain.")
+          if (nextNonce != 0 && nonce > 0 && nextNonce > nonce)
+            InvalidParams("The nonce must be greater than the maximum value that the current address has used on the chain.")
           // 判断账户余额是否充足
-          else if (BigDecimal.apply(balance) < amount) InvalidParams("insufficient account balance")
+          else if (BigDecimal.apply(balance) < amount)
+            InvalidParams("insufficient account balance")
           else {
-
             if (nonce > 0) nextNonce = nonce.longValue()
 
             val tx = Util.buildTx(TransactionType.Transfer, from, Ecdsa.PublicKeyHash.fromAddress(toAdress).get, FixedNumber.fromDecimal(amount),
-              BinaryData.empty, true, nextNonce, gasPrice, BigInt(gasLimit))
+              BinaryData.empty, true, nextNonce, gasPrice, gasLimit)
             val result = Util.sendTx(tx)
 
-            if (ChainCommand.checkTxSucceed(result)) Success("Transaction broadcast success, the transaction hash is " + tx.id())
+            if (ChainCommand.checkTxSucceed(result))
+              Success("Transaction broadcast success, the transaction hash is " + tx.id())
             else ChainCommand.returnTxFail(result)
           }
-
         }
       }
     } catch {
@@ -183,7 +184,7 @@ class RawTxCommand extends Command {
           else {
 
             val tx = Util.buildTx(TransactionType.Transfer, from, Ecdsa.PublicKeyHash.fromAddress(toAdress).get, FixedNumber.fromDecimal(amount),
-              BinaryData.empty, true, nextNonce, gasPrice, BigInt(gasLimit))
+              BinaryData.empty, true, nextNonce, gasPrice, gasLimit)
 
             Success(BinaryData(tx.toBytes).toString)
           }

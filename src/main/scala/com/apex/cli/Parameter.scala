@@ -247,9 +247,9 @@ class AmountParameter(override val name: String = "amount", override val shortNa
 
 class GasParameter(override val name: String, override val shortName: String, override val description: String = "",
                    override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
-  var value: Integer = 0
+  var value: BigInt = 0
 
-  override def toJson: JsValue = JsNumber(value.toInt)
+  override def toJson: JsValue = JsNumber(BigDecimal(value))
 
   override def validate(n: String, v: String, setEmpty: Boolean = false): Boolean = {
     if (validateName(n) && setValue(v)) {
@@ -259,7 +259,7 @@ class GasParameter(override val name: String, override val shortName: String, ov
 
   private def setValue(s: String): Boolean = {
     try {
-      value = s.toInt
+      value = BigInt(s)
       if (value > 0) true
       else false
     } catch {

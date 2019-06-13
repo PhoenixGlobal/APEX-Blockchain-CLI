@@ -135,7 +135,7 @@ class ContractCommand extends CompositeCommand {
             }
             else {
               val tx = Util.buildTx(TransactionType.Deploy, from, UInt160.Zero, FixedNumber.fromDecimal(amount), BinaryData(dataContent),
-                true, nextNonce, gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
+                true, nextNonce, gasLimit = gasLimit, gasPrice = gasPrice)
               val rpcTxResult = Util.sendTx(tx)
               println("transaction hash is " + tx.id())
 
@@ -212,7 +212,7 @@ class ContractCommand extends CompositeCommand {
             }
             else {
               val tx = Util.buildTx(TransactionType.Call, from, Ecdsa.PublicKeyHash.fromAddress(to).get, FixedNumber.fromDecimal(amount), data,
-                true, nextNonce, gasLimit = BigInt(gasLimit), gasPrice = gasPrice)
+                true, nextNonce, gasLimit = gasLimit, gasPrice = gasPrice)
               val rpcTxResult = Util.sendTx(tx)
 
               if (ChainCommand.checkTxSucceed(rpcTxResult)) {
