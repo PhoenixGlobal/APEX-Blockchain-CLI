@@ -2,9 +2,10 @@ package com.apex.cli
 
 import java.io._
 import java.util.Calendar
+
 import com.apex.cli.Account.checkWalletStatus
 import com.apex.crypto.Ecdsa.PrivateKey
-import com.apex.crypto.{Base58Check, BinaryData, Crypto, Ecdsa, FixedNumber, UInt256}
+import com.apex.crypto.{Base58Check, BinaryData, Crypto, Ecdsa, FixedNumber, UInt160, UInt256}
 import play.api.libs.json.{JsValue, Json}
 
 /*
@@ -263,7 +264,7 @@ class NewAccountCommand extends Command {
 
         WalletCache.writeActWallet
 
-        Success("success, address：" + account.address + "\n" + ",publicKeyHash：" + Ecdsa.PublicKeyHash.fromAddress(account.address))
+        Success("success, address：" + account.address + "\n" + ",publicKeyHash：" + UInt160.fromAddress(account.address))
       }
     } catch {
       case e: Throwable => Error(e)

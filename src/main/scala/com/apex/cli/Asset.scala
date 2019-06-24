@@ -22,7 +22,7 @@ class AssetCommand extends CompositeCommand {
   override val subCommands: Seq[Command] = Seq(
     new BroadcastCommand,
     new SendCommand,
-    new RawTxCommand
+    //new RawTxCommand
   )
 }
 
@@ -61,7 +61,7 @@ class SendCommand extends Command {
         if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
         else if (toAdress.isEmpty) InvalidParams("to account not exists, please type a different one")
         else if (Account.getAccount(from).address.equals(toAdress)) InvalidParams("same address, please type a different one")
-        else if (Ecdsa.PublicKeyHash.fromAddress(toAdress) == None) InvalidParams("error to address, please type a different one")
+        else if (UInt160.fromAddress(toAdress) == None) InvalidParams("error to address, please type a different one")
         else {
           WalletCache.reActWallet
           val amount = paramList.params(2).asInstanceOf[AmountParameter].value
@@ -84,7 +84,7 @@ class SendCommand extends Command {
           else {
             if (nonce > 0) nextNonce = nonce.longValue()
 
-            val tx = Util.buildTx(TransactionType.Transfer, from, Ecdsa.PublicKeyHash.fromAddress(toAdress).get, FixedNumber.fromDecimal(amount),
+            val tx = Util.buildTx(TransactionType.Transfer, from, UInt160.fromAddress(toAdress).get, FixedNumber.fromDecimal(amount),
               BinaryData.empty, true, nextNonce, gasPrice, gasLimit)
             val result = Util.sendTx(tx)
 
@@ -166,7 +166,7 @@ class RawTxCommand extends Command {
         if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
         else if (toAdress.isEmpty) InvalidParams("to account not exists, please type a different one")
         else if (Account.getAccount(from).address.equals(toAdress)) InvalidParams("same address, please type a different one")
-        else if (Ecdsa.PublicKeyHash.fromAddress(toAdress) == None) InvalidParams("error to address, please type a different one")
+        else if (UInt160.fromAddress(toAdress) == None) InvalidParams("error to address, please type a different one")
         else {
           WalletCache.reActWallet
           val amount = paramList.params(2).asInstanceOf[AmountParameter].value
@@ -183,7 +183,7 @@ class RawTxCommand extends Command {
           if (BigDecimal.apply(balance) < amount) InvalidParams("insufficient account balance")
           else {
 
-            val tx = Util.buildTx(TransactionType.Transfer, from, Ecdsa.PublicKeyHash.fromAddress(toAdress).get, FixedNumber.fromDecimal(amount),
+            val tx = Util.buildTx(TransactionType.Transfer, from, UInt160.fromAddress(toAdress).get, FixedNumber.fromDecimal(amount),
               BinaryData.empty, true, nextNonce, gasPrice, gasLimit)
 
             Success(BinaryData(tx.toBytes).toString)

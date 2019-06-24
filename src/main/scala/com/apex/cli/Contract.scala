@@ -211,7 +211,7 @@ class ContractCommand extends CompositeCommand {
               InvalidParams("insufficient account balance")
             }
             else {
-              val tx = Util.buildTx(TransactionType.Call, from, Ecdsa.PublicKeyHash.fromAddress(to).get, FixedNumber.fromDecimal(amount), data,
+              val tx = Util.buildTx(TransactionType.Call, from, UInt160.fromAddress(to).get, FixedNumber.fromDecimal(amount), data,
                 true, nextNonce, gasLimit = gasLimit, gasPrice = gasPrice)
               val rpcTxResult = Util.sendTx(tx)
 
@@ -363,7 +363,7 @@ class RunCommand extends Command {
       val abiContent = Util.readFile(info.abiPath)
       val data = Abi.fromJson(abiContent).encode(info.methodName)
 
-      val tx = Util.buildTx(TransactionType.Call, from, Ecdsa.PublicKeyHash.fromAddress(to).get, FixedNumber.fromDecimal(info.amount), data,
+      val tx = Util.buildTx(TransactionType.Call, from, UInt160.fromAddress(to).get, FixedNumber.fromDecimal(info.amount), data,
         true, nextNonce, info.gasPrice, info.gasLimit)
       val rpcTxResult = Util.sendTx(tx)
 
@@ -394,7 +394,7 @@ class RunCommand extends Command {
 class FunctionCrypto {
 
   def signFunction(addressWif: String, funcArgs: String): Array[Byte] = {
-    val publicKey = Ecdsa.PublicKeyHash.fromAddress(addressWif).get
+    val publicKey = UInt160.fromAddress(addressWif).get
     val funcSign = sha3(funcArgs.getBytes).take(4)
 
     publicKey.data ++ funcSign

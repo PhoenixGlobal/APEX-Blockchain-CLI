@@ -8,7 +8,7 @@
 
 package com.apex.cli
 
-import com.apex.crypto.Ecdsa.PublicKeyHash
+import com.apex.crypto.UInt160
 import javax.script.ScriptEngineManager
 import play.api.libs.json.{JsNumber, JsObject, JsString, JsValue}
 
@@ -124,7 +124,7 @@ class AddressParameter(override val name: String = "address", override val short
   }
 
   private def setValue(s: String): Boolean = {
-    if (s.length == 35 && PublicKeyHash.fromAddress(s).isDefined) {
+    if (s.length == 35 && UInt160.fromAddress(s).isDefined) {
       value = s
       true
     } else {
@@ -306,7 +306,7 @@ class ContractAddressParameter(override val name: String = "address", override v
   private def setValue(s: String): Boolean = {
     if (s.length == 35) {
       value = s
-      if (PublicKeyHash.fromAddress(value).get != None)
+      if (UInt160.fromAddress(value).get != None)
         true
       else false
     } else {
