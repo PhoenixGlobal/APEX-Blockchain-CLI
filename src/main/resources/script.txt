@@ -1,0 +1,57 @@
+var BigInt = Java.type('scala.math.BigInt');
+var BigDecimal = Java.type('scala.math.BigDecimal');
+var FixedNumber = Java.type('com.apex.crypto.FixedNumber');
+var DeployInfo = Java.type('com.apex.cli.DeployInfo');
+var CallInfo = Java.type('com.apex.cli.CallInfo');
+var FunctionCrypto = Java.type('com.apex.cli.FunctionCrypto');
+
+var uint ="uint256";
+var int ="int256";
+var address ="uint160";
+var bool="uint8";
+//var function="bytes24"
+
+
+for(var i=8;i<=256;i=i+8){
+    eval("var uint"+String(i)+"=\"uint"+String(i)+"\"")
+    eval("var int"+String(i)+"=\"int"+String(i)+"\"")
+}
+
+for(var i=1;i<=32;i++){
+    eval("var bytes"+String(i)+"=\"bytes"+String(i)+"\"")
+}
+
+for(var i=8;i<=256;i=i+8){
+    for(var j=0;j<=80;j++){
+        eval("var fixed"+String(i)+"x"+String(j)+"=\"fixed"+String(i)+"x"+String(j)+"\"")
+        eval("var ufixed"+String(i)+"x"+String(j)+"=\"ufixed"+String(i)+"x"+String(j)+"\"")
+    }
+}
+
+function deploy(gas,price,amount,path,name) {
+    var gasLimit = BigInt.apply(gas);
+    var gasPrice = new FixedNumber(BigInt.apply(price));
+    //  var value = new FixedNumber(BigInt.apply(amount));
+    var value = BigDecimal.decimal(amount);
+
+    var args = Java.to(Array.prototype.slice.call(arguments,5), 'java.lang.Object[]');
+    var deploy = new DeployInfo(gasLimit,gasPrice,value,path,name,args)
+
+    return deploy;
+}
+
+function call(gas,price,amount,contractAddress,abiPath, methodName) {
+    var gasLimit = BigInt.apply(gas);
+    var gasPrice = new FixedNumber(BigInt.apply(price));
+    var value = BigDecimal.decimal(amount);
+    //         var args = Java.to(Array.prototype.slice.call(arguments,6), 'java.lang.Object[]');
+    return new CallInfo(gasLimit,gasPrice,value,contractAddress,abiPath, methodName)
+}
+
+function signFunction(address, method){
+    var funcArgs = Array.prototype.slice.call(arguments,2);
+    var funcSign=method+"("+funcArgs.join(",")+")"
+
+    return new FunctionCrypto().signFunction(address,funcSign)
+
+}

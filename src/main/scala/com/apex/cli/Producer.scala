@@ -1,8 +1,7 @@
 package com.apex.cli
 
-import com.apex.consensus.{RegisterData, VoteData, WitnessInfo}
+import com.apex.consensus.{RegisterData, WitnessVoteData, WitnessInfo}
 import com.apex.core.{OperationType, Transaction, TransactionType}
-import com.apex.crypto.Ecdsa.PublicKeyHash
 import com.apex.crypto.{BinaryData, FixedNumber, UInt160, UInt256}
 import com.apex.vm.DataWord
 import play.api.libs.json.{JsNull, JsValue, Json}
@@ -29,9 +28,7 @@ class ProducerCommand extends CompositeCommand {
     new VoteCancelCommand,
     new GetByAddrCommand,
     new ListCommand,
-    new GetVoteCommand,
-    new ResetGasLimitCommand,
-    new GasLimitCommand
+    new GetVoteCommand
   )
 
   class RegisterCommand extends Command {
@@ -71,12 +68,12 @@ class ProducerCommand extends CompositeCommand {
             val longitude = paramList.params(5).asInstanceOf[IntParameter].value
             val latitude = paramList.params(6).asInstanceOf[IntParameter].value
             val price = paramList.params(7).asInstanceOf[GasPriceParameter].value
-            val gasPrice = AssetCommand.calcGasPrice(price)
+            val gasPrice = Util.calcGasPrice(price)
 
             val witnessInfo = new WitnessInfo(name = company, addr = fromHash, url = url, country = country, address = address, longitude = longitude, latitude = latitude)
             val registerData = new RegisterData(fromHash, witnessInfo, OperationType.register)
-            val tx = AssetCommand.buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, FixedNumber.Zero, registerData.toBytes, gasPrice = gasPrice)
-            val rpcTxResult = AssetCommand.sendTx(tx)
+            val tx = Util.buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, FixedNumber.Zero, registerData.toBytes, gasPrice = gasPrice)
+            val rpcTxResult = Util.sendTx(tx)
 
             printRes(rpcTxResult, tx.id())
           }
@@ -112,15 +109,15 @@ class ProducerCommand extends CompositeCommand {
           if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
           else {
             val price = paramList.params(1).asInstanceOf[GasPriceParameter].value
-            val gasPrice = AssetCommand.calcGasPrice(price)
+            val gasPrice = Util.calcGasPrice(price)
 
             val fromHash = Account.getAccount(from).getPrivKey().publicKey.pubKeyHash
 
             val witnessInfo = new WitnessInfo(name = from, addr = fromHash)
             val registerData = new RegisterData(fromHash, witnessInfo, OperationType.resisterCancel)
 
-            val tx = AssetCommand.buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, FixedNumber.Zero, registerData.toBytes, gasPrice = gasPrice)
-            val rpcTxResult = AssetCommand.sendTx(tx)
+            val tx = Util.buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, FixedNumber.Zero, registerData.toBytes, gasPrice = gasPrice)
+            val rpcTxResult = Util.sendTx(tx)
 
             printRes(rpcTxResult, tx.id())
           }
@@ -138,8 +135,8 @@ class ProducerCommand extends CompositeCommand {
 
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
-      new AddressParameter("address", "address", "The supported node address."),
-      new AmountParameter("count", "count", "The number of votes."),
+      new AddressParameter("addr", "addr", "The supported node address."),
+      new AmountParameter("amount", "amount", "The number of votes."),
       new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay.")
     )
 
@@ -159,12 +156,12 @@ class ProducerCommand extends CompositeCommand {
             val candidate = paramList.params(1).asInstanceOf[AddressParameter].value
             val count = paramList.params(2).asInstanceOf[AmountParameter].value
             val price = paramList.params(3).asInstanceOf[GasPriceParameter].value
-            val gasPrice = AssetCommand.calcGasPrice(price)
+            val gasPrice = Util.calcGasPrice(price)
 
-            val voteData = new VoteData(PublicKeyHash.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.register)
+            val voteData = new WitnessVoteData(UInt160.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.register)
 
-            val tx = AssetCommand.buildTx(TransactionType.Call, from, voteAddr.toUInt160, FixedNumber.Zero, voteData.toBytes, gasPrice = gasPrice)
-            val rpcTxResult = AssetCommand.sendTx(tx)
+            val tx = Util.buildTx(TransactionType.Call, from, voteAddr.toUInt160, FixedNumber.Zero, voteData.toBytes, gasPrice = gasPrice)
+            val rpcTxResult = Util.sendTx(tx)
             printRes(rpcTxResult, tx.id())
           }
         }
@@ -180,8 +177,8 @@ class ProducerCommand extends CompositeCommand {
 
     override val paramList: ParameterList = ParameterList.create(
       new NicknameParameter("from", "from", "The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.", true),
-      new AddressParameter("address", "address", "The supported node address."),
-      new AmountParameter("count", "count", "The number of votes."),
+      new AddressParameter("addr", "addr", "The supported node address."),
+      new AmountParameter("amount", "amount", "The number of votes."),
       new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay.")
     )
 
@@ -201,12 +198,12 @@ class ProducerCommand extends CompositeCommand {
             val candidate = paramList.params(1).asInstanceOf[AddressParameter].value
             val count = paramList.params(2).asInstanceOf[AmountParameter].value
             val price = paramList.params(3).asInstanceOf[GasPriceParameter].value
-            val gasPrice = AssetCommand.calcGasPrice(price)
+            val gasPrice = Util.calcGasPrice(price)
 
-            val voteData = new VoteData(PublicKeyHash.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.resisterCancel)
+            val voteData = new WitnessVoteData(UInt160.fromAddress(candidate).get, FixedNumber.fromDecimal(count), OperationType.resisterCancel)
 
-            val tx = AssetCommand.buildTx(TransactionType.Call, from, voteAddr.toUInt160, FixedNumber.Zero, voteData.toBytes, gasPrice = gasPrice)
-            val rpcTxResult = AssetCommand.sendTx(tx)
+            val tx = Util.buildTx(TransactionType.Call, from, voteAddr.toUInt160, FixedNumber.Zero, voteData.toBytes, gasPrice = gasPrice)
+            val rpcTxResult = Util.sendTx(tx)
             printRes(rpcTxResult, tx.id())
           }
         }
@@ -245,7 +242,7 @@ class ProducerCommand extends CompositeCommand {
     override val description = "Query node information by node address"
 
     override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("address", "address", "The address of the producer node.")
+      new StringParameter("addr", "addr", "The address of the producer node.")
     )
 
     override def execute(params: List[String]): Result = {
@@ -270,7 +267,7 @@ class ProducerCommand extends CompositeCommand {
     override val description = "Query this address for currently redeemable votes."
 
     override val paramList: ParameterList = ParameterList.create(
-      new StringParameter("address", "a", "Query this address for currently redeemable votes.")
+      new StringParameter("address", "addr", "Query this address for currently redeemable votes.")
     )
 
     override def execute(params: List[String]): Result = {
@@ -298,52 +295,11 @@ class ProducerCommand extends CompositeCommand {
     }
   }
 
-
-  class ResetGasLimitCommand extends Command {
-    override val cmd = "resetGasLimit"
-    override val description = "The most complex smart contract that the production node is willing to execute, please configure according to the processing power of the node."
-
-    override val paramList: ParameterList = ParameterList.create(
-      new IntParameter("gasLimit", "gasLimit", "The most complex smart contract that the production node is willing to execute.If the gas limit of the contract exceeds this parameter, the production node will not process the contract.")
-    )
-
-    override def execute(params: List[String]): Result = {
-      try {
-        val gasLimit = paramList.params(0).asInstanceOf[IntParameter].value
-        val rpcResult = RPC.post("setGasLimit", s"""{"gasLimit":"${gasLimit}"}""", RPC.secretRpcUrl)
-
-        if (!ChainCommand.checkSucceed(rpcResult)) {
-          ChainCommand.returnFail(rpcResult)
-        } else if (ChainCommand.getBooleanRes(rpcResult)) {
-          Success("The gas limit for contract processing by the production node has been successfully modified.")
-        } else Success("Permission error.")
-
-      } catch {
-        case e: Throwable => Error(e)
-      }
-    }
-  }
-
-  class GasLimitCommand extends Command {
-    override val cmd = "gasLimit"
-    override val description = "Query the most complex smart contracts that production nodes are willing to execute"
-
-    override def execute(params: List[String]): Result = {
-
-      try {
-        val result = RPC.post("getGasLimit", paramList.toJson(), RPC.secretRpcUrl)
-        ChainCommand.checkRes(result)
-      } catch {
-        case e: Throwable => Error(e)
-      }
-    }
-  }
-
   def printRes(rpcTxResult: JsValue, hash: UInt256): Result = {
 
-    if (!ChainCommand.checkSucceed(rpcTxResult)) {
-      ChainCommand.returnFail(rpcTxResult)
-    } else if (ChainCommand.getBooleanRes(rpcTxResult)) {
+    if (!ChainCommand.checkTxSucceed(rpcTxResult)) {
+      ChainCommand.returnTxFail(rpcTxResult)
+    } else if (ChainCommand.getTxBooleanRes(rpcTxResult)) {
       Success("This transaction has been broadcast successfully, the transaction hash is " + hash)
     } else Success("This transaction failed to broadcast, please check the network.")
   }

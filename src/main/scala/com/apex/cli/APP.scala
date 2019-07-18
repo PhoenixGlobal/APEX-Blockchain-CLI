@@ -4,7 +4,7 @@ package com.apex.cli
 object APP {
 
   def main(args: Array[String]): Unit = {
-
+    // 接受用户rpc请求地址
     val parmLen = args.length
     if (parmLen > 0) {
       if (parmLen == 2) {
@@ -23,6 +23,7 @@ object APP {
 
     println("Welcome to CLI, type \"help\" for command list:")
     while (true) {
+      // 获取用户输入信息，并执行
       Command.execute(Console.in.readLine()) match {
         case UnKnown(cmd) =>
           println(s"unknown command: $cmd")

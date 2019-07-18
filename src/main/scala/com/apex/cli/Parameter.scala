@@ -8,8 +8,10 @@
 
 package com.apex.cli
 
-import com.apex.crypto.Ecdsa.PublicKeyHash
+import com.apex.crypto.UInt160
+import javax.script.ScriptEngineManager
 import play.api.libs.json.{JsNumber, JsObject, JsString, JsValue}
+
 import util.control.Breaks._
 
 trait Parameter {
@@ -122,7 +124,7 @@ class AddressParameter(override val name: String = "address", override val short
   }
 
   private def setValue(s: String): Boolean = {
-    if (s.length == 35) {
+    if (s.length == 35 && UInt160.fromAddress(s).isDefined) {
       value = s
       true
     } else {
@@ -173,7 +175,7 @@ class NicknameParameter(override val name: String, override val shortName: Strin
   }
 }
 
-class PasswordParameter(override val name: String = "password", override val shortName: String = "p", override val description: String = "") extends Parameter {
+/*class PasswordParameter(override val name: String = "password", override val shortName: String = "p", override val description: String = "") extends Parameter {
   var value: String = null
   private val regex = """^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{8,}$""".r
 
@@ -193,7 +195,7 @@ class PasswordParameter(override val name: String = "password", override val sho
       true
     } else false
   }
-}
+}*/
 
 class PrivKeyParameter(override val name: String = "privkey", override val shortName: String = "privkey", override val description: String = "",
                        override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
@@ -220,7 +222,7 @@ class PrivKeyParameter(override val name: String = "privkey", override val short
 }
 
 
-class AmountParameter(override val name: String = "amount", override val shortName: String = "amount", override val description: String = "") extends Parameter {
+class AmountParameter(override val name: String = "amount", override val shortName: String = "amount", override val description: String = "", override val halt: Boolean = false) extends Parameter {
   var value: BigDecimal = null
 
   override def toJson: JsValue = JsString(value.toString)
@@ -245,9 +247,9 @@ class AmountParameter(override val name: String = "amount", override val shortNa
 
 class GasParameter(override val name: String, override val shortName: String, override val description: String = "",
                    override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
-  var value: Integer = 0
+  var value: BigInt = 0
 
-  override def toJson: JsValue = JsNumber(value.toInt)
+  override def toJson: JsValue = JsNumber(BigDecimal(value))
 
   override def validate(n: String, v: String, setEmpty: Boolean = false): Boolean = {
     if (validateName(n) && setValue(v)) {
@@ -257,7 +259,7 @@ class GasParameter(override val name: String, override val shortName: String, ov
 
   private def setValue(s: String): Boolean = {
     try {
-      value = s.toInt
+      value = BigInt(s)
       if (value > 0) true
       else false
     } catch {
@@ -270,7 +272,6 @@ class GasParameter(override val name: String, override val shortName: String, ov
 class GasPriceParameter(override val name: String, override val shortName: String, override val description: String = "",
                         override val halt: Boolean = false, override val replaceable: Boolean = false) extends Parameter {
   var value: String = null
-  val regex = """^[0-9]*[1-9][0-9]*{1,}(p|P|k|K|m|M|g|G|c|C)$""".r
 
   override def toJson: JsValue = JsString(value)
 
@@ -283,10 +284,8 @@ class GasPriceParameter(override val name: String, override val shortName: Strin
   }
 
   private def setValue(s: String): Boolean = {
-    if (regex.pattern.matcher(s).matches()) {
-      value = s
-      true
-    } else false
+    value = s
+    true
   }
 }
 
@@ -307,9 +306,29 @@ class ContractAddressParameter(override val name: String = "address", override v
   private def setValue(s: String): Boolean = {
     if (s.length == 35) {
       value = s
-      if (PublicKeyHash.fromAddress(value).get != None)
+      if (UInt160.fromAddress(value).get != None)
         true
       else false
+    } else {
+      false
+    }
+  }
+}
+
+class DeployParameter(function: String) extends Parameter {
+  override val name: String = "p"
+  override val shortName: String = "p"
+  override val description: String = ""
+
+  override def toJson(): JsValue = ???
+
+  override def validate(n: String, v: String, setEmpty: Boolean): Boolean = {
+    if (validateName(n)) {
+      val manager = new ScriptEngineManager
+      val engine = manager.getEngineByName("nashorn")
+      val script = s"function deploy(limit, price, value, path, name, ...args){ return { 'gasLimit': limit, 'gasPrice': price, 'contractPath': path, 'contractName': name, 'contractArgs': args}; };$v;"
+      val deploy = engine.eval(script)
+      true
     } else {
       false
     }
@@ -367,6 +386,13 @@ object ParameterList {
     new UnOrdered(Seq(new IntParameter(name, shortName)))
   }
 
+//  def js(name: String, script: String) = {
+//    val manager = new ScriptEngineManager
+//    val engine = manager.getEngineByName("nashorn")
+//    val script = s"function ${func.name}(){ return Array.prototype.slice.call(arguments); };$callString;"
+//    val args = engine.eval(script)
+//  }
+
   def str(name: String, shortName: String) = {
     new UnOrdered(Seq(new StringParameter(name, shortName)))
   }
@@ -420,11 +446,12 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
     //    }
 
     def validate(name: String, v: String): Boolean = {
+      // 第三步
       name match {
         case regex(n) => dic.get(n) match {
           case Some(item) =>
             // 判断是否为可跳过参数
-            if (halt && item.parameter.halt && null == v ) halt
+            if (halt && item.parameter.halt && null == v) halt
             else {
               // 验证参数规则send -to t1 -amount 1 -gasLimit 70000 -gasPrice 2k
               val validate = item.markThenValidate(n, v)
@@ -448,7 +475,8 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
   private val track = new Track(params)
 
   override protected def validate(list: List[String], i: Int): Boolean = {
-    // 验证若是帮助参数，返回true
+    // 第一步
+    // 有需求是，一个参数（可填可不填），如果可跳过并且不可替换，返回true
     if (list.size == 0 && track.dic.size == 1) {
       var validate = false
       track.dic.keys.foreach { i =>
@@ -460,6 +488,7 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
         }
       }
       validate
+      // 验证若是帮助参数，返回true
     } else if (Command.checkHelpParam(list)) {
       true
     } else {
@@ -482,6 +511,7 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
   }
 
   private def validateParam(cloneDic: Map[String, TrackItem]): Boolean = {
+    // 第四步
     var validate = true
 
     // 循环剩余参数进行判断
@@ -496,7 +526,7 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
           ParameterList.setcheckMsg(i.parameter.name)
           break()
         }
-        // 判断为可替代项也返回false
+        // 判断无可替代项也返回false
         else if (!track.halt && i.parameter.replaceable) {
           validate = false
           ParameterList.setcheckMsg(i.parameter.name)
@@ -508,6 +538,7 @@ class UnOrdered(params: Seq[Parameter]) extends ParameterList(params) {
   }
 
   private def validateCore(list: List[String], track: Track): Boolean = {
+    // 第二步
     list match {
       case n :: v :: Nil => track.validate(n, v)
       case n :: v :: tail if track.validate(n, v) => validateCore(tail, track)
