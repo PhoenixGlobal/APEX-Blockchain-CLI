@@ -88,7 +88,13 @@
 
   <code>chain key -input KzjVsCDaRAGzhykx3hCZT5L7e9F5pa2jVHL7SR2C4YGqvus8X1e3</code>
   
+7. Create tx tool
+
+	<code>chain createtx -key KyAa97eFf7koU4pN62fYQQDDq474varenc9eQtc1R9X27UTnjAQ5 -type 1 -from APHLU98wbCvujZc1N8ddthDNEUhJaxki2sz -to APNvjvtwsxKuQak7P9ssZhgzcY3dTJDAsVg  -amount 100000000000000000000 -nonce 2 -data 0 -gasprice 1 -gaslimit 9000000 -executetime 0 -version 1</code>
   
+8. tx sign tool (-key XXX -data XXX)
+
+	<code>chain sign -key KyAa97eFf7koU4pN62fYQQDDq474varenc9eQtc1R9X27UTnjAQ5 -data 0000000101a8b14d178a255a7bf9b8d14fc85ac043fe982adae60540b15ad165489ac4624ee65b7e79cf403d3309056bc75e2d6310000000000000000000000001010400895440000000000000000045304302201d53b653d69d83e1cd8342148dd67b156dd38b697ebae03cc7213cd3b83e1703021f7b27e8ed192bb7000e3745c667bda1b69d8cdef7c303186753e510b54d4f77
 
 ### 3.wallet
 #### Operate a wallet, user accounts must add to one wallet before using it
@@ -174,6 +180,8 @@
 9. View the current nonce of the account
 
   <code>account getNonce -a Bytemaster1</code>
+  
+  <code>account getNonce -addr APK6FBosUGNqAXAsbJCi2kN5AMbgsjmvhrs</code>
 
 ### 5.Asset
 #### Interface to operate your funds,  omit it and type the sub command directly is legal.
@@ -293,7 +301,7 @@
   
 4. Enquire about callable votes
 
-   <code>producer getVote -a Bytemaster1</code>
+   <code>producer getVote -addr APMMCd8qWPm9QRzgspFXEBn8zGGuwrYYAJs</code>
    
 
 5. Redemption vote  
@@ -333,7 +341,7 @@
    Parameter interpretation:
   
    - from:The account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.  
-   - para:The parameter you proposal to change.  
+   - para:The parameter you proposal to change. (1:BlockAward, 2:TxMinGasPrice, 3:TxMaxGasLimit)
    - time:The proposal apply time (UTC seconds)   
    - content: The proposal data.   
    - gasPrice:The price of gas that the transaction / contract is willing to pay.
