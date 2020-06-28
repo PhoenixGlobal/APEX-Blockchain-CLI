@@ -200,7 +200,7 @@ object Account {
     if (!"null".equals(rpcResult)) {
       // 转换查询结果
       val result = ChainCommand.getStrRes(rpcResult)
-      if (!result.isEmpty && !"null".equals(result)  && !result.equals("{}")) {
+      if (!result.isEmpty && !"null".equals(result)) {
         balance = (Json.parse(result) \ "balance").as[String]
       }
     }
