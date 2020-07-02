@@ -1,6 +1,6 @@
 package com.apex.cli
 
-import com.apex.consensus.{RegisterData, WitnessVoteData, WitnessInfo}
+import com.apex.consensus.{OwnerInfo, RegisterData, WitnessInfo, WitnessVoteData}
 import com.apex.core.{OperationType, Transaction, TransactionType}
 import com.apex.crypto.{BinaryData, FixedNumber, UInt160, UInt256}
 import com.apex.vm.DataWord
@@ -43,7 +43,8 @@ class ProducerCommand extends CompositeCommand {
       new StringParameter("address", "address", "The contact address of the producer node,which is used to determind the order of all producers."),
       new IntParameter("longitude", "longitude", "The position of the production node in the whole network is used to determine the working order of all producers."),
       new IntParameter("latitude", "latitude", "The position of the production node in the whole network is used to determine the working order of all producers."),
-      new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay.")
+      new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay."),
+      new AddressParameter("producerAddress","ownerAddr","the address of producer owner, it is equal to the producer address if it is empty",true)
     )
 
     override def execute(params: List[String]): Result = {
@@ -54,13 +55,17 @@ class ProducerCommand extends CompositeCommand {
         else {
           WalletCache.reActWallet
           // 赋值from昵称
-          var from = WalletCache.getActivityWallet().implyAccount
+          val defaultAccount = WalletCache.getActivityWallet().implyAccount
+          val defaultAccountAddress = Account.getAccount(defaultAccount).getPrivKey().publicKey.pubKeyHash
+          val producerAddress = paramList.params(8).asInstanceOf[AddressParameter].value
+          val from = paramList.params(0).asInstanceOf[NicknameParameter].value
+          val ownerName = if(from.isEmpty || from == null) defaultAccount else from
+          val owner = Account.getAccount(ownerName).getPrivKey().publicKey.pubKeyHash
+          val producer = if(from.isEmpty || producerAddress == null) owner else UInt160.fromAddress(producerAddress).get
           // 根据昵称获取转账地址
-          if (params.size / 2 == paramList.params.size) from = paramList.params(0).asInstanceOf[NicknameParameter].value
 
           if (!Account.checkAccountStatus(from)) InvalidParams("from account not exists, please type a different one")
           else {
-            val fromHash = Account.getAccount(from).getPrivKey().publicKey.pubKeyHash
             val url = paramList.params(1).asInstanceOf[StringParameter].value
             val company = paramList.params(2).asInstanceOf[StringParameter].value
             val country = paramList.params(3).asInstanceOf[StringParameter].value
@@ -70,9 +75,12 @@ class ProducerCommand extends CompositeCommand {
             val price = paramList.params(7).asInstanceOf[GasPriceParameter].value
             val gasPrice = Util.calcGasPrice(price)
 
-            val witnessInfo = new WitnessInfo(name = company, addr = fromHash, url = url, country = country, address = address, longitude = longitude, latitude = latitude)
-            val registerData = new RegisterData(fromHash, witnessInfo, OperationType.register)
-            val tx = Util.buildTx(TransactionType.Call, from, registerNodeAddr.toUInt160, FixedNumber.Zero, registerData.toBytes, gasPrice = gasPrice)
+
+            //val ownerAddr = if(paramList.params.length == 9) UInt160.fromAddress(paramList.params(8).asInstanceOf[AddressParameter].value).get else fromHash
+
+            val witnessInfo = new WitnessInfo(name = company, addr = producer, url = url, country = country, address = address, longitude = longitude, latitude = latitude, ownerInfo= OwnerInfo(owner))
+            val registerData = new RegisterData(producer, witnessInfo, OperationType.register)
+            val tx = Util.buildTx(TransactionType.Call, ownerName, registerNodeAddr.toUInt160, FixedNumber.Zero, registerData.toBytes, gasPrice = gasPrice)
             val rpcTxResult = Util.sendTx(tx)
 
             printRes(rpcTxResult, tx.id())
@@ -80,7 +88,11 @@ class ProducerCommand extends CompositeCommand {
 
         }
       } catch {
-        case e: Throwable => Error(e)
+        case e: Throwable =>
+          {e.printStackTrace()
+            println(e.getCause)
+            Error(e)
+          }
       }
     }
   }

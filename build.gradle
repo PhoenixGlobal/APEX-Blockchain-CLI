@@ -55,6 +55,8 @@ repositories{
 
 dependencies{
     compile project('APEX-Blockchain-Core')
+    //compile 'com.lagou:IPersistence:1.0-SNAPSHOT'
+    compile 'apex:APEX-Blockchain-Core:1.0-SNAPSHOT'
     compile "org.scala-lang:scala-library:2.12.3"
     compile "org.scala-lang:scala-compiler:2.12.3"
     compile "org.scala-lang:scala-reflect:2.12.3"
