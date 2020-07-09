@@ -44,7 +44,7 @@ class ProducerCommand extends CompositeCommand {
       new IntParameter("longitude", "longitude", "The position of the production node in the whole network is used to determine the working order of all producers."),
       new IntParameter("latitude", "latitude", "The position of the production node in the whole network is used to determine the working order of all producers."),
       new GasPriceParameter("gasPrice", "gasPrice", "The price of gas that the transaction / contract is willing to pay."),
-      new AddressParameter("producerAddress","ownerAddr","the address of producer owner, it is equal to the producer address if it is empty",true)
+      new AddressParameter("witness","witness","the address of producer owner, it is equal to the producer address if it is empty",true)
     )
 
     override def execute(params: List[String]): Result = {
@@ -56,7 +56,6 @@ class ProducerCommand extends CompositeCommand {
           WalletCache.reActWallet
           // 赋值from昵称
           val defaultAccount = WalletCache.getActivityWallet().implyAccount
-          val defaultAccountAddress = Account.getAccount(defaultAccount).getPrivKey().publicKey.pubKeyHash
           val producerAddress = paramList.params(8).asInstanceOf[AddressParameter].value
           val from = paramList.params(0).asInstanceOf[NicknameParameter].value
           val ownerName = if(from.isEmpty || from == null) defaultAccount else from

@@ -267,7 +267,7 @@
 
 1. Registered alternative producer
 
-  <code>producer reg -from Vitalik1 -url www.test.com -country china -address 浦江金融国际广场 -longitude 20 -latitude 40 -company APEX_NETWORK -gasPrice 300g</code>
+  <code>producer reg -from Vitalik1 -url www.test.com -country china -address 浦江金融国际广场 -longitude 20 -latitude 40 -company APEX_NETWORK -gasPrice 300g -witness AP8AP8iUQsnpbT73LkpBS8oNzSRGJAvBoVE</code>
   
    Parameter interpretation   
    * from:the account where the asset come from. Omit it if you want to send your tokens to the default account in the active wallet.
@@ -285,6 +285,8 @@
    * latitude: the position of the production node in the whole network is used to determine the working order of all producers.
    
    * gasPrice: the price of gas that the transaction is willing to pay.
+
+   * witness: the address of producer to register
    
   
   
