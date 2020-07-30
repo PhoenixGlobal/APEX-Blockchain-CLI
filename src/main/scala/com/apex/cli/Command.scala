@@ -55,6 +55,8 @@ trait Command {
 object Command {
   var reg ="""\(.+\)""".r
 
+  var inputCommand = ""
+
   def execute(command: String): Result = {
     ParameterList.setNull()
     // 判断是否为空

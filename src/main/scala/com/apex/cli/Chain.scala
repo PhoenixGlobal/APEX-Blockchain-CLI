@@ -75,7 +75,7 @@ class BlockCommand extends Command {
         data = JsObject(
           mutable.HashMap(paramList.params(1).asInstanceOf[PrivKeyParameter].name.toString -> paramList.params(1).asInstanceOf[PrivKeyParameter].toJson)).toString()
 
-      val rpcResult = RPC.post("getblock", data)
+      val rpcResult = RPC.rpcHandler.post("getblock", data)
 
       if (!ChainCommand.checkSucceed(rpcResult)) {
         ChainCommand.returnFail(rpcResult)

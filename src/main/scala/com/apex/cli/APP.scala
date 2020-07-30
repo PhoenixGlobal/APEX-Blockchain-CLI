@@ -64,7 +64,8 @@ object APP {
     else {
       flag = false
     }
-    return flag
+    println(RPC.rpcUrl)
+    flag
   }
 
 }

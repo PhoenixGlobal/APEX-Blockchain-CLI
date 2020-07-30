@@ -8,10 +8,14 @@
 
 package com.apex.cli
 
+import com.apex.cli.RPC.{client, mediaType, rpcUrl}
 import okhttp3.{MediaType, OkHttpClient, Request, RequestBody}
 import play.api.libs.json.Json
 
+import scala.io.Source
+
 object RPC {
+  var rpcHandler = new RPC()
   val client = new OkHttpClient
 
   var rpcUrl = "http://127.0.0.1:8080/"
@@ -35,3 +39,36 @@ object RPC {
     }
   }
 }
+
+class RPC {
+  def post(path: String, data: String, callUrl: String = rpcUrl) = {
+    val url = callUrl + s"$path"
+    val body = RequestBody.create(mediaType, data)
+    val req = new Request.Builder()
+      .url(url)
+      .post(body)
+      .build()
+
+    val res = client.newCall(req).execute()
+    try {
+      val result = res.body.string()
+      Json parse result
+    } finally {
+      res.close()
+    }
+  }
+}
+
+class FakeRPC extends RPC{
+  val RPCPathMap = Map[String, String](
+    "getblock" -> "src/main/resources/GetBlockByheight.json"
+  )
+  override def post(path: String, data: String, callUrl: String) = {
+
+    val jsonFile = RPCPathMap(path)
+    val result = Source.fromFile(jsonFile).mkString
+    Json.parse(result)
+  }
+}
+
+
